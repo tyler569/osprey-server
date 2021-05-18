@@ -2,6 +2,7 @@ package io.philbrick.minecraft;
 
 import java.io.*;
 import java.nio.*;
+import java.nio.charset.*;
 
 public class Protocol {
     public static String readString(InputStream is) throws IOException {
@@ -22,5 +23,18 @@ public class Protocol {
         buffer.order(ByteOrder.BIG_ENDIAN);
         buffer.rewind();
         return buffer.getLong();
+    }
+
+    public static void writeString(OutputStream os, String str) throws IOException {
+        VarInt.write(str.length(), os);
+        os.write(str.getBytes());
+    }
+
+    public static void writeVarInt(OutputStream os, int number) throws IOException {
+        VarInt.write(number, os);
+    }
+
+    public static void writeBytes(OutputStream os, byte[] bytes) throws IOException {
+        os.write(bytes);
     }
 }

@@ -1,8 +1,11 @@
 package io.philbrick.minecraft;
 
 import java.io.*;
+import java.math.*;
 import java.net.*;
 import java.nio.*;
+import java.security.*;
+import java.security.interfaces.*;
 import java.util.*;
 
 public class Main {
@@ -28,30 +31,21 @@ public class Main {
         }
         """;
 
-
-    static void joinWrapper(Thread thread) {
-        try {
-            thread.join();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-    }
-
-    static void connectionHandler(Socket connection) {
-        try {
-            var instream = connection.getInputStream();
-            var outstream = connection.getOutputStream();
-
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-    static ArrayList<Player> players = new ArrayList<Player>();
+    static KeyPair encryptionKey;
+    static ArrayList<Player> players = new ArrayList<>();
+    // static ArrayList<World> worlds = new ArrayList<>();
+    // etc
 
     public static void main(String[] args) throws IOException {
+        try {
+            var kpg = KeyPairGenerator.getInstance("RSA");
+            kpg.initialize(1024);
+            encryptionKey = kpg.generateKeyPair();
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+        }
+
         final var socket = new ServerSocket(25565);
-        var threads = new ArrayList<Thread>();
         while (!socket.isClosed()) {
             var connection = socket.accept();
             players.add(new Player(connection));
