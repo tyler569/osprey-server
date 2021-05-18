@@ -9,12 +9,13 @@ import java.util.ArrayList;
 public class VarInt {
     static int read(InputStream is) throws IOException {
         int result = 0;
+        int numRead = 0;
         byte b;
-
         do {
             b = (byte)is.read();
-            result <<= 7;
-            result |= b & 0b0111_1111;
+            int value = b & 0b0111_1111;
+            result |= value << (7 * numRead);
+            numRead++;
         } while ((b & 0b1000_0000) != 0);
         return result;
     }
