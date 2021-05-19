@@ -37,4 +37,33 @@ public class Protocol {
     public static void writeBytes(OutputStream os, byte[] bytes) throws IOException {
         os.write(bytes);
     }
+
+    public static void writeLong(OutputStream os, long number) throws IOException {
+        var buffer = ByteBuffer.allocate(Long.BYTES);
+        buffer.order(ByteOrder.BIG_ENDIAN);
+        buffer.putLong(number);
+        os.write(buffer.array());
+    }
+
+    public static void writeBoolean(OutputStream os, boolean b) throws IOException {
+        os.write(b ? 1 : 0);
+    }
+
+    public static void writeInt(OutputStream os, int number) throws IOException {
+        var buffer = ByteBuffer.allocate(Integer.BYTES);
+        buffer.order(ByteOrder.BIG_ENDIAN);
+        buffer.putInt(number);
+        os.write(buffer.array());
+    }
+
+    public static void writeShort(OutputStream os, short number) throws IOException {
+        var buffer = ByteBuffer.allocate(Short.BYTES);
+        buffer.order(ByteOrder.BIG_ENDIAN);
+        buffer.putShort(number);
+        os.write(buffer.array());
+    }
+
+    public static void writeByte(OutputStream os, byte number) throws IOException {
+        os.write(number);
+    }
 }

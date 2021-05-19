@@ -7,7 +7,7 @@ import java.io.OutputStream;
 import java.util.ArrayList;
 
 public class VarInt {
-    static int read(InputStream is) throws IOException {
+    public static int read(InputStream is) throws IOException {
         int result = 0;
         int numRead = 0;
         byte b;
@@ -20,7 +20,7 @@ public class VarInt {
         return result;
     }
 
-    static void write(int i, OutputStream os) throws IOException {
+    public static void write(int i, OutputStream os) throws IOException {
         var arr = new ArrayList<Byte>();
         do {
             byte elem = (byte)(i & 0b0111_1111);

@@ -1,11 +1,8 @@
 package io.philbrick.minecraft;
 
 import java.io.*;
-import java.math.*;
 import java.net.*;
-import java.nio.*;
 import java.security.*;
-import java.security.interfaces.*;
 import java.util.*;
 
 public class Main {

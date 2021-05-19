@@ -1,11 +1,10 @@
 package io.philbrick.minecraft;
 
 import javax.crypto.*;
-import javax.swing.*;
+import javax.crypto.spec.*;
 import java.io.*;
 import java.net.*;
 import java.nio.*;
-import java.security.*;
 import java.util.*;
 
 public class Player {
@@ -22,7 +21,10 @@ public class Player {
     Thread thread;
     State state;
 
-    byte[] encryptionKey;
+    SecretKey protocolKey;
+    IvParameterSpec protocolIv;
+    Cipher protocolCipher;
+    boolean protocolEncryptionEnabled;
 
     // Inventory
     // World
@@ -32,7 +34,7 @@ public class Player {
     Player(Socket sock) {
         connection = sock;
         state = State.Status;
-        thread = new Thread(() -> connectionWrapper());
+        thread = new Thread(this::connectionWrapper);
         thread.start();
     }
 
@@ -44,24 +46,32 @@ public class Player {
         }
     }
 
-    static void sendPacket(OutputStream os, int type, PacketBuilder closure) throws IOException {
+    void sendPacket(int type, PacketBuilder closure) throws IOException {
         var m = new ByteArrayOutputStream();
         Protocol.writeVarInt(m, type);
         closure.apply(m);
-        VarInt.write(m.size(), os);
-        os.write(m.toByteArray());
-        os.flush();
+        VarInt.write(m.size(), outstream);
+        var data = m.toByteArray();
+        System.out.println(Arrays.toString(data));
+        if (false && protocolEncryptionEnabled) {
+            var encrypted = protocolCipher.update(data);
+            System.out.println(Arrays.toString(encrypted));
+            outstream.write(encrypted);
+        } else {
+            outstream.write(data);
+        }
+        outstream.flush();
     }
 
-    static void writeHandshakeResponse(OutputStream os) throws IOException {
-        sendPacket(os, 0, (m) -> {
+    void writeHandshakeResponse() throws IOException {
+        sendPacket(0, (m) -> {
             VarInt.write(Main.handshake_json.length(), m);
             m.write(Main.handshake_json.getBytes());
         });
     }
 
-    static void writePingResponse(OutputStream os, long number) throws IOException {
-        sendPacket(os, 1, (m) -> {
+    void writePingResponse(long number) throws IOException {
+        sendPacket(1, (m) -> {
             var b = ByteBuffer.allocate(Long.BYTES);
             b.order(ByteOrder.BIG_ENDIAN);
             b.putLong(number);
@@ -84,12 +94,12 @@ public class Player {
                         state = State.Login;
                     }
                 } else {
-                    writeHandshakeResponse(outstream);
+                    writeHandshakeResponse();
                 }
                 break;
             case 1: // ping
                 long number = Protocol.readLong(instream);
-                writePingResponse(outstream, number);
+                writePingResponse(number);
                 break;
         }
     }
@@ -99,9 +109,8 @@ public class Player {
             case 0: // login start
                 String name = Protocol.readString(instream);
                 System.out.format("login: '%s'%n", name);
-                sendPacket(outstream, 1, (m) -> { // encryption request
-                    Protocol.writeVarInt(m, 1);
-                    Protocol.writeString(m, "");
+                sendPacket(1, (m) -> { // encryption request
+                    Protocol.writeString(m, "server id not short");
                     var encodedKey = Main.encryptionKey.getPublic().getEncoded();
                     Protocol.writeVarInt(m, encodedKey.length);
                     Protocol.writeBytes(m, encodedKey);
@@ -115,24 +124,64 @@ public class Player {
                 int tokenLength = VarInt.read(instream);
                 byte[] token = instream.readNBytes(tokenLength);
 
-                System.out.format("  secret: %d %s token: %d %s%n",
-                        secretLength, Arrays.toString(secret),
-                        tokenLength, Arrays.toString(token));
+                byte[] decryptedSecret;
+                byte[] decryptedToken;
+
+                // System.out.format("  secret: %d %s token: %d %s%n",
+                //         secretLength, Arrays.toString(secret),
+                //         tokenLength, Arrays.toString(token));
 
                 try {
                     var cipher = Cipher.getInstance("RSA");
                     cipher.init(Cipher.DECRYPT_MODE, Main.encryptionKey.getPrivate());
-                    var decryptedToken = cipher.doFinal(token);
+                    decryptedToken = cipher.doFinal(token);
                     System.out.format("  decrypted token: %s%n",
                             Arrays.toString(decryptedToken));
 
                     cipher.init(Cipher.DECRYPT_MODE, Main.encryptionKey.getPrivate());
-                    encryptionKey = cipher.doFinal(secret);
+                    decryptedSecret = cipher.doFinal(secret);
                     System.out.format("  decrypted secret key: %s%n",
-                            Arrays.toString(encryptionKey));
+                            Arrays.toString(decryptedSecret));
                 } catch (Exception e) {
                     e.printStackTrace();
+                    // login failure
+                    return;
                 }
+
+                try {
+                    protocolKey = new SecretKeySpec(decryptedSecret, "AES");
+                    protocolIv = new IvParameterSpec(decryptedSecret);
+                    protocolCipher = Cipher.getInstance("AES/CFB8/NoPadding");
+                    protocolCipher.init(Cipher.ENCRYPT_MODE, protocolKey, protocolIv);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    // login failure
+                    return;
+                }
+
+                protocolEncryptionEnabled = true;
+                instream = new CipherInputStream(instream, protocolCipher);
+                outstream = new CipherOutputStream(outstream, protocolCipher);
+
+                System.out.println("Writing Login Success!");
+                sendPacket(2, (m) -> { // login success
+                    Protocol.writeLong(m, 0);
+                    Protocol.writeLong(m, 0);
+                    Protocol.writeString(m, "tyler569");
+                });
+
+                // login success
+                state = State.Play;
+
+                sendPacket(0x24, (m) -> { // Join Game
+                    Protocol.writeInt(m, 1); // Entity ID
+                    Protocol.writeBoolean(m, false); // is hardcore
+                    Protocol.writeByte(m, (byte)1); // gamemode creative
+                    Protocol.writeByte(m, (byte)-1); // previous gamemode
+                    Protocol.writeVarInt(m, 1); // world count
+                    Protocol.writeString(m, "minecraft:overworld"); // the world
+                    // etc TODO
+                });
         }
     }
 
@@ -154,7 +203,6 @@ public class Player {
         outstream = connection.getOutputStream();
 
         while (!connection.isClosed()) {
-            System.out.println("Waiting for a packet");
             handlePacket();
         }
         System.out.println("Leaving handleConnection");
