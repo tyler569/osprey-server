@@ -6,7 +6,7 @@ public class NBTFloat extends NBTValue {
     public static int ID = 5;
     float value;
 
-    NBTFloat(String n, float v) {
+    public NBTFloat(String n, float v) {
         super(n);
         value = v;
     }

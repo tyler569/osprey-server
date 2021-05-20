@@ -6,9 +6,14 @@ public class NBTByte extends NBTValue {
     public static int ID = 1;
     byte value;
 
-    NBTByte(String n, byte v) {
+    public NBTByte(String n, byte v) {
         super(n);
         value = v;
+    }
+
+    public NBTByte(String n, int v) {
+        super(n);
+        value = (byte)v;
     }
 
     public int id() {

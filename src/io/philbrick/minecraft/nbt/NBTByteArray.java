@@ -3,10 +3,10 @@ package io.philbrick.minecraft.nbt;
 import java.io.*;
 
 public class NBTByteArray extends NBTValue {
-    public static int ID = 4;
+    public static int ID = 7;
     byte[] value;
 
-    NBTByteArray(String n, byte[] v) {
+    public NBTByteArray(String n, byte[] v) {
         super(n);
         value = v;
     }

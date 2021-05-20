@@ -12,6 +12,12 @@ public class Conversion {
         buffer.rewind();
     }
 
+    public static void outputShort(OutputStream os, int v) throws IOException {
+        buffer.putShort((short)v);
+        os.write(buffer.array(), 0, Short.BYTES);
+        buffer.rewind();
+    }
+
     public static void outputInteger(OutputStream os, int v) throws IOException {
         buffer.putInt(v);
         os.write(buffer.array(), 0, Integer.BYTES);
@@ -34,5 +40,11 @@ public class Conversion {
         buffer.putDouble(v);
         os.write(buffer.array(), 0, Double.BYTES);
         buffer.rewind();
+    }
+
+    public static void putModifiedString(OutputStream os, String str) throws IOException {
+        DataOutputStream dso = new DataOutputStream(os);
+        dso.writeUTF(str);
+        dso.close();
     }
 }

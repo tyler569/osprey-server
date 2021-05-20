@@ -6,7 +6,7 @@ public class NBTDouble extends NBTValue {
     public static int ID = 6;
     double value;
 
-    NBTDouble(String n, double v) {
+    public NBTDouble(String n, double v) {
         super(n);
         value = v;
     }

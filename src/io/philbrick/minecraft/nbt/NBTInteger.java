@@ -6,7 +6,7 @@ public class NBTInteger extends NBTValue {
     public static int ID = 3;
     int value;
 
-    NBTInteger(String n, int v) {
+    public NBTInteger(String n, int v) {
         super(n);
         value = v;
     }

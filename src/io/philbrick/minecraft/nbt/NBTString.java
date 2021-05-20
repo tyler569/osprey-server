@@ -1,12 +1,13 @@
 package io.philbrick.minecraft.nbt;
 
 import java.io.*;
+import java.nio.charset.*;
 
 public class NBTString extends NBTValue {
     public static int ID = 8;
     String value;
 
-    NBTString(String n, String v) {
+    public NBTString(String n, String v) {
         super(n);
         value = v;
     }
@@ -16,7 +17,7 @@ public class NBTString extends NBTValue {
     }
 
     public void innerEncode(OutputStream os) throws IOException {
-        Conversion.outputShort(os, (short)value.length());
-        os.write(value.getBytes());
+        // Conversion.outputShort(os, (short)value.length());
+        Conversion.putModifiedString(os, value);
     }
 }

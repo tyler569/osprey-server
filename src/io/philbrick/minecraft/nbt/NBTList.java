@@ -12,7 +12,7 @@ public class NBTList<T extends NBTValue> extends NBTValue {
         value = v;
     }
 
-    NBTList(String n, T... vs) {
+    public NBTList(String n, T... vs) {
         super(n);
         value = Arrays.asList(vs);
     }

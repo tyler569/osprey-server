@@ -7,12 +7,12 @@ public class NBTCompound extends NBTValue {
     public static int ID = 10;
     List<NBTValue> value;
 
-    NBTCompound(String n, ArrayList<NBTValue> v) {
+    public NBTCompound(String n, ArrayList<NBTValue> v) {
         super(n);
         value = v;
     }
 
-    NBTCompound(String n, NBTValue... vs) {
+    public NBTCompound(String n, NBTValue... vs) {
         super(n);
         value = Arrays.asList(vs);
     }

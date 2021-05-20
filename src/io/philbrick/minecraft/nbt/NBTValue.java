@@ -17,10 +17,9 @@ public abstract class NBTValue {
     public void encode(OutputStream os) throws IOException {
         os.write(id());
         if (name != null) {
-            Conversion.outputShort(os, (short)name.length());
-            os.write(name.getBytes());
+            Conversion.putModifiedString(os, name);
         } else {
-            VarInt.write(0, os);
+            Conversion.outputShort(os, 0);
         }
         innerEncode(os);
     }
