@@ -179,8 +179,17 @@ public class Player {
                     Protocol.writeByte(m, (byte)1); // gamemode creative
                     Protocol.writeByte(m, (byte)-1); // previous gamemode
                     Protocol.writeVarInt(m, 1); // world count
-                    Protocol.writeString(m, "minecraft:overworld"); // the world
-                    // etc TODO
+                    Protocol.writeString(m, "minecraft:overworld"); // list of worlds (# count)
+                    Main.dimensionCodec.encode(m);
+                    Main.dimension.encode(m);
+                    Protocol.writeString(m, "minecraft:overworld"); // world name
+                    Protocol.writeLong(m, 1); // hashed seed
+                    Protocol.writeVarInt(m, 100); // max players
+                    Protocol.writeVarInt(m, 10); // view distance
+                    Protocol.writeBoolean(m, false); // reduce debug info
+                    Protocol.writeBoolean(m, true); // enable respawn screen
+                    Protocol.writeBoolean(m, false); // world is debug (never)
+                    Protocol.writeBoolean(m, true); // world is superflat
                 });
         }
     }
