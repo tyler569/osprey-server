@@ -5,11 +5,16 @@ import java.util.*;
 
 public class NBTList<T extends NBTValue> extends NBTValue {
     public static int ID = 9;
-    ArrayList<T> value;
+    List<T> value;
 
     NBTList(String n, ArrayList<T> v) {
         super(n);
         value = v;
+    }
+
+    NBTList(String n, T... vs) {
+        super(n);
+        value = Arrays.asList(vs);
     }
 
     public int id() {
