@@ -29,4 +29,10 @@ public class Conversion {
         os.write(buffer.array(), 0, Float.BYTES);
         buffer.rewind();
     }
+
+    public static void outputDouble(OutputStream os, double v) throws IOException {
+        buffer.putDouble(v);
+        os.write(buffer.array(), 0, Double.BYTES);
+        buffer.rewind();
+    }
 }

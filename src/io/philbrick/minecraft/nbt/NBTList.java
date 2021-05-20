@@ -24,11 +24,11 @@ public class NBTList<T extends NBTValue> extends NBTValue {
         }
         Conversion.outputInteger(os, value.size());
         if (value.size() == 0) {
-            (new NBTEnd()).encode(os);
+            (new NBTEnd()).innerEncode(os);
             return;
         }
         for (T v : value) {
-            v.encode(os);
+            v.innerEncode(os);
         }
     }
 }
