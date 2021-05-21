@@ -3,7 +3,7 @@ package io.philbrick.minecraft.nbt;
 import java.io.*;
 import java.util.*;
 
-public class Test {
+public class NBTTest {
     public static void main(String[] args) throws IOException {
         small();
         large();
