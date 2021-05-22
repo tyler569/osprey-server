@@ -3,10 +3,10 @@ package io.philbrick.minecraft;
 import io.philbrick.minecraft.nbt.*;
 
 import javax.crypto.*;
-import javax.crypto.spec.*;
 import java.io.*;
 import java.net.*;
 import java.nio.*;
+import java.time.*;
 import java.util.*;
 
 public class Player {
@@ -16,29 +16,23 @@ public class Player {
         Play,
     }
 
+    static final byte[] encryptionToken = "Hello World".getBytes();
+
     String playerName;
-
-    Socket connection;
-    InputStream instream;
-    OutputStream outstream;
-
+    Connection connection;
+    Duration ping;
     Thread thread;
     State state;
-
-    boolean protocolEncryptionEnabled;
 
     // Inventory
     // World
     // Vector3 position
     // Orientation
 
-    static final byte[] encryptionToken = "Hello World".getBytes();
     boolean printUnknownPackets = true;
-    boolean printSentPackets = false;
-    long lastKeepAlive;
 
-    Player(Socket sock) {
-        connection = sock;
+    Player(Socket sock) throws IOException {
+        connection = new Connection(sock);
         state = State.Status;
         thread = new Thread(this::connectionWrapper);
         thread.start();
@@ -53,97 +47,60 @@ public class Player {
     }
 
     void handleConnection() throws IOException {
-        connection.setSoTimeout(5000);
-        instream = new BufferedInputStream(connection.getInputStream());
-        outstream = new BufferedOutputStream(connection.getOutputStream());
-
         while (true) {
-            try {
-                if (connection.isClosed()) break;
-                handlePacket();
-            } catch(SocketTimeoutException e){
-                sendKeepAlive();
-            }
+            if (connection.isClosed()) break;
+            Packet p = connection.readPacket();
+            handlePacket(p);
         }
         System.out.println("Leaving handleConnection");
     }
 
-    void handlePacket() throws IOException {
-        // The "- 1" here is because the packet format is to send the length of
-        // *everything* after the length in the first VarInt, including the
-        // length of the packet id. We've already read the packet ID at this
-        // point, so we can't read it again. The ID is a VarInt, so it can be
-        // variable length, but for now all packets are less than 0x80, so
-        // in practice today they're all one byte. This will need to change if
-        // that ever changes.
-        int packetLen = VarInt.read(instream) - 1;
-        int packetType = VarInt.read(instream);
+    void handlePacket(Packet packet) throws IOException {
         switch (state) {
-            case Status -> handleStatusPacket(packetLen, packetType);
-            case Login -> handleLoginPacket(packetLen, packetType);
-            case Play -> handlePlayPacket(packetLen, packetType);
+            case Status -> handleStatusPacket(packet);
+            case Login -> handleLoginPacket(packet);
+            case Play -> handlePlayPacket(packet);
         }
     }
 
-    void unknownPacket(int len, int type) throws IOException {
-        System.out.format("Unknown packet type %d in state %s%n", type, state);
-        if (printUnknownPackets) {
-            var data = instream.readNBytes(len);
-            System.out.print("  ");
-            System.out.println(Arrays.toString(data));
-        } else {
-            instream.skipNBytes(len);
+    void unknownPacket(Packet packet) {
+        System.out.format("Unknown packet type %d in state %s%n", packet.type, state);
+    }
+
+    void handleStatusPacket(Packet packet) throws IOException {
+        switch (packet.type) {
+            case 0 -> handleHandshake(packet);
+            case 1 -> handlePing(packet);
+            default -> unknownPacket(packet);
         }
     }
 
-        void handleStatusPacket(int len, int type) throws IOException {
-        switch (type) {
-            case 0 -> handleHandshake(len);
-            case 1 -> handlePing();
-            default -> unknownPacket(len, type);
+    void handleLoginPacket(Packet packet) throws IOException {
+        switch (packet.type) {
+            case 0 -> handleLoginStart(packet);
+            case 1 -> handleEncryptionResponse(packet);
+            default -> unknownPacket(packet);
         }
     }
 
-    void handleLoginPacket(int len, int type) throws IOException {
-        switch (type) {
-            case 0 -> handleLoginStart();
-            case 1 -> handleEncryptionResponse();
-            default -> unknownPacket(len, type);
+    void handlePlayPacket(Packet packet) throws IOException {
+        switch (packet.type) {
+            case 5 -> handleSettings(packet);
+            case 16 -> handleKeepAlive(packet);
+            default -> unknownPacket(packet);
         }
     }
 
-    void handlePlayPacket(int len, int type) throws IOException {
-        switch (type) {
-            case 5 -> handleSettings(len);
-            case 16 -> handleKeepAlive();
-            default -> unknownPacket(len, type);
-        }
-    }
-
-
-    void sendPacket(int type, PacketBuilder closure) throws IOException {
-        var m = new ByteArrayOutputStream();
-        Protocol.writeVarInt(m, type);
-        closure.apply(m);
-        VarInt.write(m.size(), outstream);
-        var data = m.toByteArray();
-        if (printSentPackets) {
-            System.out.print("<- ");
-            System.out.println(Arrays.toString(data));
-        }
-        outstream.write(data);
-        outstream.flush();
-    }
 
     void writeHandshakeResponse() throws IOException {
-        sendPacket(0, (m) -> {
-            VarInt.write(Main.handshake_json.length(), m);
+        connection.sendPacket(0, (m) -> {
+            VarInt.write(m, Main.handshake_json.length());
             m.write(Main.handshake_json.getBytes());
         });
     }
 
     void writePingResponse(long number) throws IOException {
-        sendPacket(1, (m) -> {
+        connection.sendPacket(1, (m) -> {
             var b = ByteBuffer.allocate(Long.BYTES);
             b.order(ByteOrder.BIG_ENDIAN);
             b.putLong(number);
@@ -153,12 +110,12 @@ public class Player {
 
     // handle Status packets
 
-    void handleHandshake(int len) throws IOException {
-        if (len > 2) {
-            int protocolVersion = VarInt.read(instream);
-            String address = Protocol.readString(instream);
-            short port = Protocol.readShort(instream);
-            int next = VarInt.read(instream);
+    void handleHandshake(Packet packet) throws IOException {
+        if (packet.originalLen > 2) {
+            int protocolVersion = packet.readVarInt();
+            String address = packet.readString();
+            short port = packet.readShort();
+            int next = packet.readVarInt();
 
             System.out.format("handshake: version: %d address: '%s' port: %d next: %d%n",
                 protocolVersion, address, port, next);
@@ -170,15 +127,15 @@ public class Player {
         }
     }
 
-    void handlePing() throws IOException {
-        long number = Protocol.readLong(instream);
+    void handlePing(Packet packet) throws IOException {
+        long number = packet.readLong();
         writePingResponse(number);
     }
 
     // handle login packets
 
     void sendEncryptionRequest() throws IOException {
-        sendPacket(1, (m) -> { // encryption request
+        connection.sendPacket(1, (m) -> { // encryption request
             Protocol.writeString(m, "server id not short");
             var encodedKey = Main.encryptionKey.getPublic().getEncoded();
             Protocol.writeVarInt(m, encodedKey.length);
@@ -188,15 +145,15 @@ public class Player {
         });
     }
 
-    void handleLoginStart() throws IOException {
-        String name = Protocol.readString(instream);
+    void handleLoginStart(Packet packet) throws IOException {
+        String name = packet.readString();
         playerName = name;
         System.out.format("login: '%s'%n", name);
         sendEncryptionRequest();
     }
 
     void sendLoginSuccess() throws IOException {
-        sendPacket(2, (m) -> { // login success
+        connection.sendPacket(2, (m) -> { // login success
             Protocol.writeLong(m, 0);
             Protocol.writeLong(m, 0);
             Protocol.writeString(m, playerName);
@@ -204,14 +161,14 @@ public class Player {
     }
 
     void sendBrand(String brand) throws IOException {
-        sendPacket(0x17, (m) -> {
+        connection.sendPacket(0x17, (m) -> {
             Protocol.writeString(m, "minecraft:brand");
             Protocol.writeBytes(m, brand.getBytes());
         });
     }
 
     void sendJoinGame() throws IOException {
-        sendPacket(0x24, (m) -> { // Join Game
+        connection.sendPacket(0x24, (m) -> { // Join Game
             Protocol.writeInt(m, 1); // Entity ID
             Protocol.writeBoolean(m, false); // is hardcore
             Protocol.writeByte(m, (byte)1); // gamemode creative
@@ -232,11 +189,11 @@ public class Player {
     }
 
     // TODO: break this up
-    void handleEncryptionResponse() throws IOException {
-        int secretLength = VarInt.read(instream);
-        byte[] secret = instream.readNBytes(secretLength);
-        int tokenLength = VarInt.read(instream);
-        byte[] token = instream.readNBytes(tokenLength);
+    void handleEncryptionResponse(Packet packet) throws IOException {
+        int secretLength = packet.readVarInt();
+        byte[] secret = packet.readNBytes(secretLength);
+        int tokenLength = packet.readVarInt();
+        byte[] token = packet.readNBytes(tokenLength);
 
         byte[] decryptedSecret;
         byte[] decryptedToken;
@@ -259,22 +216,14 @@ public class Player {
         }
 
         try {
-            var protocolKey = new SecretKeySpec(decryptedSecret, "AES");
-            var protocolIv = new IvParameterSpec(decryptedSecret);
-            var protocolCipherOut = Cipher.getInstance("AES/CFB8/NoPadding");
-            protocolCipherOut.init(Cipher.ENCRYPT_MODE, protocolKey, protocolIv);
-            var protocolCipherIn = Cipher.getInstance("AES/CFB8/NoPadding");
-            protocolCipherIn.init(Cipher.DECRYPT_MODE, protocolKey, protocolIv);
-
-            instream = new CipherInputStream(instream, protocolCipherIn);
-            outstream = new CipherOutputStream(outstream, protocolCipherOut);
-            protocolEncryptionEnabled = true;
+            connection.setEncryption(decryptedSecret);
         } catch (Exception e) {
-            e.printStackTrace();
-            // login failure
+            // send Login Failure
+            System.out.println("Encryption failure!");
             return;
         }
 
+        // setCompression(1024);
         System.out.println("Writing Login Success!");
         sendLoginSuccess();
         state = State.Play;
@@ -284,13 +233,6 @@ public class Player {
 
     // handle play packets
 
-    void sendKeepAlive() throws IOException {
-        lastKeepAlive = new Random().nextLong();
-        sendPacket(0x1F, (m) -> {
-            Protocol.writeLong(m, lastKeepAlive);
-        });
-    }
-
     void sendChunk(int x, int z) throws IOException {
         var heightmap = new Long[36];
         Arrays.fill(heightmap, 0x0L);
@@ -299,7 +241,7 @@ public class Player {
                 heightmap
             )
         );
-        sendPacket(0x20, (m) -> {
+        connection.sendPacket(0x20, (m) -> {
             Protocol.writeInt(m, x);
             Protocol.writeInt(m, z);
             Protocol.writeBoolean(m, true);
@@ -317,7 +259,7 @@ public class Player {
     }
 
     void sendPositionLook(double x, double y, double z, float yaw, float pitch) throws IOException {
-        sendPacket(0x34, (m) -> {
+        connection.sendPacket(0x34, (m) -> {
             Protocol.writeDouble(m, x);
             Protocol.writeDouble(m, y);
             Protocol.writeDouble(m, z);
@@ -328,8 +270,7 @@ public class Player {
         });
     }
 
-    void handleSettings(int len) throws IOException {
-        instream.skipNBytes(len);
+    void handleSettings(Packet packet) throws IOException {
         sendBrand("corvidio");
         sendPositionLook(0, 32, 0, 0, 0);
         for (int x = -3; x <= 3; x++) {
@@ -340,10 +281,11 @@ public class Player {
         sendPositionLook(0, 32, 0, 0, 0);
     }
 
-    void handleKeepAlive() throws IOException {
-        long keepAlive = Protocol.readLong(instream);
-        if (keepAlive != lastKeepAlive) {
-            System.out.format("Keepalives did not match! %d %d%n", keepAlive, lastKeepAlive);
+    void handleKeepAlive(Packet packet) throws IOException {
+        long keepAlive = packet.readLong();
+        if (!connection.validateKeepAlive(keepAlive)) {
+            System.out.println("Keepalives did not match!");
         }
+        ping = connection.pingTime();
     }
 }

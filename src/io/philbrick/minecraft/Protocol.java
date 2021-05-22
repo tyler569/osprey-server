@@ -2,7 +2,6 @@ package io.philbrick.minecraft;
 
 import java.io.*;
 import java.nio.*;
-import java.nio.charset.*;
 
 public class Protocol {
     private static ByteBuffer buffer = ByteBuffer.allocate(Long.BYTES).order(ByteOrder.BIG_ENDIAN);
@@ -20,6 +19,13 @@ public class Protocol {
         return buffer.getShort();
     }
 
+    public static int readInteger(InputStream is) throws IOException {
+        var buffer = ByteBuffer.wrap(is.readNBytes(Integer.BYTES));
+        buffer.order(ByteOrder.BIG_ENDIAN);
+        buffer.rewind();
+        return buffer.getInt();
+    }
+
     public static long readLong(InputStream is) throws IOException {
         var buffer = ByteBuffer.wrap(is.readNBytes(Long.BYTES));
         buffer.order(ByteOrder.BIG_ENDIAN);
@@ -27,13 +33,30 @@ public class Protocol {
         return buffer.getLong();
     }
 
+    public static float readFloat(InputStream is) throws IOException {
+        var buffer = ByteBuffer.wrap(is.readNBytes(Float.BYTES));
+        buffer.order(ByteOrder.BIG_ENDIAN);
+        buffer.rewind();
+        return buffer.getFloat();
+    }
+
+    public static double readDouble(InputStream is) throws IOException {
+        var buffer = ByteBuffer.wrap(is.readNBytes(Double.BYTES));
+        buffer.order(ByteOrder.BIG_ENDIAN);
+        buffer.rewind();
+        return buffer.getDouble();
+    }
+
+    // write
+    // todo: these buffers should be at most thread-local
+
     public static void writeString(OutputStream os, String str) throws IOException {
-        VarInt.write(str.length(), os);
+        VarInt.write(os, str.length());
         os.write(str.getBytes());
     }
 
     public static void writeVarInt(OutputStream os, int number) throws IOException {
-        VarInt.write(number, os);
+        VarInt.write(os, number);
     }
 
     public static void writeByte(OutputStream os, byte b) throws IOException {

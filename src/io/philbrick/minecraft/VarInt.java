@@ -20,7 +20,7 @@ public class VarInt {
         return result;
     }
 
-    public static void write(int i, OutputStream os) throws IOException {
+    public static void write(OutputStream os, int i) throws IOException {
         var arr = new ArrayList<Byte>();
         do {
             byte elem = (byte)(i & 0b0111_1111);
@@ -32,10 +32,19 @@ public class VarInt {
         } while (i != 0);
     }
 
+    public static int len(int i) {
+        int len = 0;
+        do {
+            i >>>= 7;
+            len += 1;
+        } while (i != 0);
+        return len;
+    }
+
     static byte[] encode(int i) {
         var m = new ByteArrayOutputStream();
         try {
-            write(i, m);
+            write(m, i);
         } catch (IOException e) {
             e.printStackTrace();
         }
