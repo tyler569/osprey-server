@@ -107,6 +107,7 @@ public class Main {
     // static ArrayList<World> worlds = new ArrayList<>();
     // etc
     static final Reaper reaper = new Reaper();
+    static int nextEntityId = 1;
 
     public static void main(String[] args) throws IOException {
         try {
@@ -120,7 +121,8 @@ public class Main {
         final var socket = new ServerSocket(25565);
         while (!socket.isClosed()) {
             var connection = socket.accept();
-            new Player(connection);
+            Player.runThread(nextEntityId, connection);
+            nextEntityId += 1;
         }
     }
 }

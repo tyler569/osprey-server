@@ -118,5 +118,9 @@ public class Connection {
         return established && pingTime().compareTo(keepAliveInterval) > 0;
     }
 
+    boolean isEstablished() {
+        return established;
+    }
+
     // ================= packets
 }

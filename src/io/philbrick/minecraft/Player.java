@@ -26,6 +26,8 @@ public class Player {
     State state;
     int entityId;
     UUID uuid;
+    ArrayList<Player> nearbyPlayers;
+    Position position;
 
     // Inventory
     // World
@@ -34,11 +36,16 @@ public class Player {
 
     boolean printUnknownPackets = true;
 
-    Player(Socket sock) throws IOException {
+    Player(int entity, Socket sock) throws IOException {
         connection = new Connection(sock);
         state = State.Status;
+        entityId = entity;
         thread = new Thread(this::connectionWrapper);
         thread.start();
+    }
+
+    static void runThread(int entityId, Socket sock) throws IOException {
+        new Player(entityId, sock);
     }
 
     void connectionWrapper() {
@@ -46,22 +53,33 @@ public class Player {
             handleConnection();
         } catch (EOFException e) {
             disconnect();
-            return;
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
     void disconnect() {
-        for (var player : Main.players) {
-            try {
-                player.sendRemovePlayer(this);
-                player.sendSystemMessage(String.format("%s has left the game.", name));
-            } catch (IOException ignored) {
+        if (connection.isEstablished()) {
+            for (var player : Main.players) {
+                try {
+                    player.sendDespawnPlayer(this);
+                    player.sendRemovePlayer(this);
+                    player.sendSystemMessage(String.format("%s has left the game.", name));
+                } catch (IOException ignored) {
+                }
             }
         }
         Main.reaper.appendDeadThread(thread);
         Main.players.remove(this);
+    }
+
+    void teleport(Location location) throws IOException {
+        sendPositionLook(location.x(), location.y(), location.z(), 0, 0);
+        position.x = location.x();
+        position.y = location.y();
+        position.z = location.z();
+        for (var player : Main.players) {
+        }
     }
 
     void handleConnection() throws IOException {
@@ -106,6 +124,10 @@ public class Player {
             case 3 -> handleChat(packet);
             case 5 -> handleSettings(packet);
             case 16 -> handleKeepAlive(packet);
+            case 18 -> handlePosition(packet);
+            case 19 -> handlePositionAndRotation(packet);
+            case 20 -> handleRotation(packet);
+            case 21 -> handleMovement(packet);
             default -> unknownPacket(packet);
         }
     }
@@ -141,7 +163,6 @@ public class Player {
             if (next == 2) {
                 state = State.Login;
                 uuid = UUID.randomUUID();
-                Main.players.add(this);
             }
         } else {
             writeHandshakeResponse();
@@ -190,7 +211,7 @@ public class Player {
 
     void sendJoinGame() throws IOException {
         connection.sendPacket(0x24, (m) -> { // Join Game
-            Protocol.writeInt(m, 1); // Entity ID
+            Protocol.writeInt(m, entityId);
             Protocol.writeBoolean(m, false); // is hardcore
             Protocol.writeByte(m, (byte)1); // gamemode creative
             Protocol.writeByte(m, (byte)-1); // previous gamemode
@@ -209,10 +230,15 @@ public class Player {
         });
 
         sendAddPlayers(Main.players);
+        sendAddPlayer(this);
+        position = new Position();
         for (var player : Main.players) {
             player.sendAddPlayer(this);
+            player.sendSpawnPlayer(this);
+            sendSpawnPlayer(player);
             player.sendSystemMessage(String.format("%s has joined the game.", name));
         }
+        Main.players.add(this);
     }
 
     // TODO: break this up
@@ -389,12 +415,32 @@ public class Player {
         });
     }
 
+    void sendSpawnPlayer(Player player) throws IOException {
+        connection.sendPacket(4, (m) -> {
+            Protocol.writeVarInt(m, player.entityId);
+            Protocol.writeLong(m, player.uuid.getMostSignificantBits());
+            Protocol.writeLong(m, player.uuid.getLeastSignificantBits());
+            Protocol.writeDouble(m, player.position.x);
+            Protocol.writeDouble(m, player.position.y);
+            Protocol.writeDouble(m, player.position.z);
+            Protocol.writeByte(m, player.position.yawAngle());
+            Protocol.writeByte(m, player.position.pitchAngle());
+        });
+    }
+
     void sendRemovePlayer(Player player) throws IOException {
         connection.sendPacket(0x32, (m) -> {
             Protocol.writeVarInt(m, 4);
             Protocol.writeVarInt(m, 1);
             Protocol.writeLong(m, player.uuid.getMostSignificantBits());
             Protocol.writeLong(m, player.uuid.getLeastSignificantBits());
+        });
+    }
+
+    void sendDespawnPlayer(Player player) throws IOException {
+        connection.sendPacket(0x36, (m) -> {
+            Protocol.writeVarInt(m, 1);
+            Protocol.writeVarInt(m, player.entityId);
         });
     }
 
@@ -426,5 +472,86 @@ public class Player {
         for (var player : Main.players) {
             player.sendChat(this, message);
         }
+    }
+
+    // movement
+
+    void sendEntityPositionAndRotation(int entityId, double dx, double dy, double dz, Position position) throws IOException {
+        short protocol_dx = (short)(dx * 4096);
+        short protocol_dy = (short)(dy * 4096);
+        short protocol_dz = (short)(dz * 4096);
+        connection.sendPacket(0x28, (m) -> {
+            Protocol.writeVarInt(m, entityId);
+            Protocol.writeShort(m, protocol_dx);
+            Protocol.writeShort(m, protocol_dy);
+            Protocol.writeShort(m, protocol_dz);
+            Protocol.writeByte(m, position.yawAngle());
+            Protocol.writeByte(m, position.pitchAngle());
+            Protocol.writeBoolean(m, position.onGround);
+        });
+        connection.sendPacket(0x3A, (m) -> {
+            Protocol.writeVarInt(m, entityId);
+            Protocol.writeByte(m, position.yawAngle());
+        });
+    }
+
+    void updatePosition(double x, double y, double z, float pitch, float yaw, boolean onGround) throws IOException {
+        double delta_x = x - position.x;
+        double delta_y = y - position.y;
+        double delta_z = z - position.z;
+        position.x = x;
+        position.y = y;
+        position.z = z;
+        position.pitch = pitch;
+        position.yaw = yaw;
+        position.onGround = onGround;
+        for (var player : Main.players) {
+            if (player == this) {
+                continue;
+            }
+            player.sendEntityPositionAndRotation(entityId, delta_x, delta_y, delta_z, position);
+        }
+    }
+
+    void updatePosition(double x, double y, double z, boolean onGround) throws IOException {
+        updatePosition(x, y, z, position.pitch, position.yaw, onGround);
+    }
+
+    void updatePosition(float pitch, float yaw, boolean onGround) throws IOException {
+        updatePosition(position.x, position.y, position.z, pitch, yaw, onGround);
+    }
+
+    void updatePosition(boolean onGround) throws IOException {
+        updatePosition(position.x, position.y, position.z, position.pitch, position.yaw, onGround);
+    }
+
+    void handlePosition(Packet packet) throws IOException {
+        double x = packet.readDouble();
+        double y = packet.readDouble();
+        double z = packet.readDouble();
+        boolean onGround = packet.readBoolean();
+        updatePosition(x, y, z, onGround);
+    }
+
+    void handlePositionAndRotation(Packet packet) throws IOException {
+        double x = packet.readDouble();
+        double y = packet.readDouble();
+        double z = packet.readDouble();
+        float yaw = packet.readFloat();
+        float pitch = packet.readFloat();
+        boolean onGround = packet.readBoolean();
+        updatePosition(x, y, z, pitch, yaw, onGround);
+    }
+
+    void handleRotation(Packet packet) throws IOException {
+        float yaw = packet.readFloat();
+        float pitch = packet.readFloat();
+        boolean onGround = packet.readBoolean();
+        updatePosition(pitch, yaw, onGround);
+    }
+
+    void handleMovement(Packet packet) throws IOException {
+        boolean onGround = packet.readBoolean();
+        updatePosition(onGround);
     }
 }
