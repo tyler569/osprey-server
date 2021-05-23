@@ -109,6 +109,8 @@ public class Main {
     static final Reaper reaper = new Reaper();
     static int nextEntityId = 1;
 
+    static Chunk theChunk = new Chunk();
+
     public static void main(String[] args) throws IOException {
         try {
             var kpg = KeyPairGenerator.getInstance("RSA");

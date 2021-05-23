@@ -43,24 +43,13 @@ public class Connection {
             }
             try {
                 originalLen = VarInt.read(instream);
-                data = instream.readNBytes(originalLen);
+                data = new byte[originalLen];
+                instream.readNBytes(data, 0, originalLen);
                 break;
             } catch (SocketTimeoutException e) {}
         }
-
         Packet packet = new Packet(data, originalLen);
-
-        if (compressionEnabled) {
-            compressedLen = packet.readVarInt();
-            packet.compressedLen = compressedLen;
-            if (compressedLen == 0) {
-                compressedLen = originalLen;
-                // not a compressed packet
-            }
-        }
-
         packet.type = packet.readVarInt();
-
         return packet;
     }
 

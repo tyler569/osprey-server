@@ -43,4 +43,8 @@ public class Packet extends ByteArrayInputStream {
     double readDouble() throws IOException {
         return Protocol.readDouble(this);
     }
+
+    Location readLocation() throws IOException {
+        return new Location(Protocol.readLong(this));
+    }
 }

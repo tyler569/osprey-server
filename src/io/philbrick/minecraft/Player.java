@@ -28,11 +28,9 @@ public class Player {
     UUID uuid;
     ArrayList<Player> nearbyPlayers;
     Position position;
+    Inventory inventory;
 
-    // Inventory
-    // World
-    // Vector3 position
-    // Orientation
+    Chunk theChunk;
 
     boolean printUnknownPackets = true;
 
@@ -64,7 +62,7 @@ public class Player {
                 try {
                     player.sendDespawnPlayer(this);
                     player.sendRemovePlayer(this);
-                    player.sendSystemMessage(String.format("%s has left the game.", name));
+                    player.sendNotification(String.format("%s has left the game.", name));
                 } catch (IOException ignored) {
                 }
             }
@@ -100,7 +98,7 @@ public class Player {
     }
 
     void unknownPacket(Packet packet) {
-        System.out.format("Unknown packet type %d in state %s%n", packet.type, state);
+        System.out.format("Unknown packet type %d %#x in state %s%n", packet.type, packet.type, state);
     }
 
     void handleStatusPacket(Packet packet) throws IOException {
@@ -128,6 +126,10 @@ public class Player {
             case 19 -> handlePositionAndRotation(packet);
             case 20 -> handleRotation(packet);
             case 21 -> handleMovement(packet);
+            case 27 -> handlePlayerDigging(packet);
+            case 28 -> handleEntityAction(packet);
+            case 44 -> handleAnimation(packet);
+            case 46 -> handlePlayerPlaceBlock(packet);
             default -> unknownPacket(packet);
         }
     }
@@ -228,17 +230,26 @@ public class Player {
             Protocol.writeBoolean(m, false); // world is debug (never)
             Protocol.writeBoolean(m, true); // world is superflat
         });
+    }
 
+    void join() throws IOException {
+        sendJoinGame();
         sendAddPlayers(Main.players);
         sendAddPlayer(this);
+        sendBrand("Tyler");
         position = new Position();
+        inventory = new Inventory();
+        theChunk = Main.theChunk;
+        sendInventory();
         for (var player : Main.players) {
             player.sendAddPlayer(this);
             player.sendSpawnPlayer(this);
             sendSpawnPlayer(player);
-            player.sendSystemMessage(String.format("%s has joined the game.", name));
         }
         Main.players.add(this);
+        for (var player : Main.players) {
+            player.sendNotification(String.format("%s has joined the game (id %d)", name, entityId));
+        }
     }
 
     // TODO: break this up
@@ -280,8 +291,7 @@ public class Player {
         System.out.println("Writing Login Success!");
         sendLoginSuccess();
         state = State.Play;
-        sendJoinGame();
-        sendBrand("corvidio");
+        join();
     }
 
     // handle play packets
@@ -296,28 +306,10 @@ public class Player {
             )
         );
         var chunkData = new ByteArrayOutputStream();
-        for (int y = 0; y < 16; y++) {
-            if (y == 0) { // block count
-                Protocol.writeShort(chunkData, 256);
-            } else {
-                Protocol.writeShort(chunkData, 0);
-            }
-            Protocol.writeByte(chunkData, 4); // bits per block
-            Protocol.writeVarInt(chunkData, 2); // palette length
-            Protocol.writeVarInt(chunkData, 0); // 0 : air
-            Protocol.writeVarInt(chunkData, 1); // 1 : stone
-            Protocol.writeVarInt(chunkData, 16 * 16);
-            for (int by = 0; by < 16; by++) {
-                for (int bz = 0; bz < 16; bz++) {
-                    // for (int bx = 0; bx < 16; bx++) {
-                    // }
-                    if (by == 0 && y == 0) {
-                        Protocol.writeLong(chunkData, 0x1111_1111_1111_1111L);
-                    } else {
-                        Protocol.writeLong(chunkData, 0);
-                    }
-                }
-            }
+        if (((x & 1) ^ (z & 1)) == 0) {
+            theChunk.encodeMap(chunkData);
+        } else {
+            theChunk.encodeArray(chunkData);
         }
 
         connection.sendPacket(0x20, (m) -> {
@@ -334,6 +326,16 @@ public class Player {
             Protocol.writeBytes(m, chunkData.toByteArray());
             Protocol.writeVarInt(m, 0);
             // Array of NBT containing block entities
+        });
+    }
+
+    void sendInventory() throws IOException {
+        connection.sendPacket(0x13, (m) -> {
+            Protocol.writeByte(m, 0);
+            Protocol.writeShort(m, inventory.size());
+            for (var slot : inventory.slots) {
+                slot.encode(m);
+            }
         });
     }
 
@@ -455,10 +457,10 @@ public class Player {
         });
     }
 
-    void sendSystemMessage(String message) throws IOException {
+    void sendSystemMessage(String message, String color) throws IOException {
         var chat = new JSONObject();
         chat.put("text", message);
-        chat.put("color", "yellow");
+        chat.put("color", color);
         connection.sendPacket(0x0E, (m) -> {
             Protocol.writeString(m, chat.toString());
             Protocol.writeByte(m, 0);
@@ -467,8 +469,21 @@ public class Player {
         });
     }
 
+    void sendNotification(String message) throws IOException {
+        sendSystemMessage(message, "yellow");
+    }
+
+    void sendError(String message) throws IOException {
+        sendSystemMessage(message, "red");
+    }
+
     void handleChat(Packet packet) throws IOException {
         String message = packet.readString();
+        System.out.format("[chat] %s: %s%n", name, message);
+        if (message.startsWith("/")) {
+            sendError(String.format("Invalid command \"%s\".", message.split(" ")[0]));
+            return;
+        }
         for (var player : Main.players) {
             player.sendChat(this, message);
         }
@@ -495,10 +510,20 @@ public class Player {
         });
     }
 
+    void checkChunkPosition(double x, double z) throws IOException {
+        int chunkX = (int)x >> 4;
+        int chunkZ = (int)z >> 4;
+        if (chunkX != position.chunkX() || chunkZ != position.chunkZ()) {
+            sendUpdateChunkPosition(chunkX, chunkZ);
+            System.out.format("new chunk %d %d%n", chunkX, chunkZ);
+        }
+    }
+
     void updatePosition(double x, double y, double z, float pitch, float yaw, boolean onGround) throws IOException {
         double delta_x = x - position.x;
         double delta_y = y - position.y;
         double delta_z = z - position.z;
+        checkChunkPosition(x, z);
         position.x = x;
         position.y = y;
         position.z = z;
@@ -554,4 +579,69 @@ public class Player {
         boolean onGround = packet.readBoolean();
         updatePosition(onGround);
     }
+
+    boolean intersectsLocation(Location location) {
+        if (position.x + 0.3 < location.x() || location.x() + 1 < position.x - 0.3) return false;
+        if (position.z + 0.3 < location.z() || location.z() + 1 < position.z - 0.3) return false;
+        if (position.y + 1.8 < location.y() || location.y() + 1 <= position.y) return false;
+
+        return true;
+    }
+
+    // animation
+
+    void handleEntityAction(Packet packet) {}
+
+    void handleAnimation(Packet packet) {}
+
+    // block place & remove
+
+    void sendBlockChange(Location location, int blockId) throws IOException {
+        connection.sendPacket(0xB, (m) -> {
+            Protocol.writeLong(m, location.encode());
+            Protocol.writeVarInt(m, blockId);
+        });
+    }
+
+    void handlePlayerDigging(Packet packet) throws IOException {
+        var status = packet.readVarInt();
+        var location = packet.readLocation();
+        var face = packet.read();
+        System.out.format("%s Dig %s : %d%n", name, location, status);
+        theChunk.setBlock(location.positionInChunk(), 0);
+        for (var player : Main.players) {
+            if (player == this) continue;
+            player.sendBlockChange(location, 0);
+        }
+    }
+
+    void handlePlayerPlaceBlock(Packet packet) throws IOException {
+        var hand = packet.readVarInt();
+        var location = packet.readLocation();
+        var face = packet.readVarInt();
+        switch (face) {
+            case 0 -> location = location.offset(0, -1, 0);
+            case 1 -> location = location.offset(0, 1, 0);
+            case 2 -> location = location.offset(0, 0, -1);
+            case 3 -> location = location.offset(0, 0, 1);
+            case 4 -> location = location.offset(-1, 0, 0);
+            case 5 -> location = location.offset(1, 0, 0);
+        }
+        float cursorX = packet.readFloat();
+        float cursorY = packet.readFloat();
+        float cursorZ = packet.readFloat();
+        boolean insideBlock = packet.readBoolean();
+        System.out.printf("Place %d %s %s %f %f %f %b%n", hand, location, face, cursorX, cursorY, cursorZ, insideBlock);
+        for (var player : Main.players) {
+            if (player.intersectsLocation(location)) {
+                sendBlockChange(location, 0);
+                return;
+            }
+        }
+        theChunk.setBlock(location.positionInChunk(), 1);
+        for (var player : Main.players) {
+            player.sendBlockChange(location, 1);
+        }
+    }
+
 }

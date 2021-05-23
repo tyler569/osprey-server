@@ -29,4 +29,16 @@ public class Position {
     byte pitchAngle() {
         return (byte)(pitch / 360 * 256);
     }
+
+    int chunkX() {
+        return (int)x >> 4;
+    }
+
+    int chunkZ() {
+        return (int)z >> 4;
+    }
+
+    Location location() {
+        return new Location((int)x, (int)y, (int)z);
+    }
 }
