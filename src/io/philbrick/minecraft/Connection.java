@@ -4,7 +4,6 @@ import javax.crypto.*;
 import javax.crypto.spec.*;
 import java.io.*;
 import java.net.*;
-import java.nio.*;
 import java.security.*;
 import java.time.*;
 import java.util.*;
@@ -17,14 +16,16 @@ public class Connection {
     private int maxUncompressedPacket;
     private boolean compressionEnabled;
     private long lastKeepAlive;
-    private Instant lastKeepAliveTime;
+    private boolean established;
+    private Instant lastKeepAliveTime = Instant.now();
+    private final static Duration keepAliveInterval = Duration.ofSeconds(5);
     private final static Random rng = new Random();
 
     Connection(Socket s) throws IOException {
         socket = s;
         instream = new BufferedInputStream(socket.getInputStream());
         outstream = new BufferedOutputStream(socket.getOutputStream());
-        socket.setSoTimeout(5000);
+        socket.setSoTimeout(5050);
     }
 
     boolean isClosed() {
@@ -37,13 +38,14 @@ public class Connection {
         int compressedLen;
 
         while (true) {
+            if (shouldKeepAlive()) {
+                sendKeepAlive();
+            }
             try {
                 originalLen = VarInt.read(instream);
                 data = instream.readNBytes(originalLen);
                 break;
-            } catch (SocketTimeoutException e) {
-                sendKeepAlive();
-            }
+            } catch (SocketTimeoutException e) {}
         }
 
         Packet packet = new Packet(data, originalLen);
@@ -86,6 +88,7 @@ public class Connection {
         instream = new CipherInputStream(instream, protocolCipherIn);
         outstream = new CipherOutputStream(outstream, protocolCipherOut);
         encryptionEnabled = true;
+        established = true;
     }
 
     void setCompression(int maxPacket) {
@@ -109,6 +112,10 @@ public class Connection {
 
     Duration pingTime() {
         return Duration.between(lastKeepAliveTime, Instant.now());
+    }
+
+    boolean shouldKeepAlive() {
+        return established && pingTime().compareTo(keepAliveInterval) > 0;
     }
 
     // ================= packets

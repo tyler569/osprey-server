@@ -76,7 +76,7 @@ public class Main {
             new NBTList<>("value",
                 new NBTCompound(null,
                     new NBTString("name", "minecraft:plains"),
-                    new NBTInteger("id", 1),
+                    new NBTInteger("id", 0),
                     new NBTCompound("element",
                         new NBTString("precipitation", "rain"),
                         new NBTCompound("effects",
@@ -106,6 +106,7 @@ public class Main {
     static ArrayList<Player> players = new ArrayList<>();
     // static ArrayList<World> worlds = new ArrayList<>();
     // etc
+    static final Reaper reaper = new Reaper();
 
     public static void main(String[] args) throws IOException {
         try {
@@ -119,7 +120,7 @@ public class Main {
         final var socket = new ServerSocket(25565);
         while (!socket.isClosed()) {
             var connection = socket.accept();
-            players.add(new Player(connection));
+            new Player(connection);
         }
     }
 }

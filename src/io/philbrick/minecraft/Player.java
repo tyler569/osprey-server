@@ -1,6 +1,7 @@
 package io.philbrick.minecraft;
 
 import io.philbrick.minecraft.nbt.*;
+import org.json.*;
 
 import javax.crypto.*;
 import java.io.*;
@@ -18,11 +19,13 @@ public class Player {
 
     static final byte[] encryptionToken = "Hello World".getBytes();
 
-    String playerName;
+    String name;
     Connection connection;
     Duration ping;
     Thread thread;
     State state;
+    int entityId;
+    UUID uuid;
 
     // Inventory
     // World
@@ -41,9 +44,24 @@ public class Player {
     void connectionWrapper() {
         try {
             handleConnection();
+        } catch (EOFException e) {
+            disconnect();
+            return;
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    void disconnect() {
+        for (var player : Main.players) {
+            try {
+                player.sendRemovePlayer(this);
+                player.sendSystemMessage(String.format("%s has left the game.", name));
+            } catch (IOException ignored) {
+            }
+        }
+        Main.reaper.appendDeadThread(thread);
+        Main.players.remove(this);
     }
 
     void handleConnection() throws IOException {
@@ -85,6 +103,7 @@ public class Player {
 
     void handlePlayPacket(Packet packet) throws IOException {
         switch (packet.type) {
+            case 3 -> handleChat(packet);
             case 5 -> handleSettings(packet);
             case 16 -> handleKeepAlive(packet);
             default -> unknownPacket(packet);
@@ -121,6 +140,8 @@ public class Player {
                 protocolVersion, address, port, next);
             if (next == 2) {
                 state = State.Login;
+                uuid = UUID.randomUUID();
+                Main.players.add(this);
             }
         } else {
             writeHandshakeResponse();
@@ -147,7 +168,7 @@ public class Player {
 
     void handleLoginStart(Packet packet) throws IOException {
         String name = packet.readString();
-        playerName = name;
+        this.name = name;
         System.out.format("login: '%s'%n", name);
         sendEncryptionRequest();
     }
@@ -156,7 +177,7 @@ public class Player {
         connection.sendPacket(2, (m) -> { // login success
             Protocol.writeLong(m, 0);
             Protocol.writeLong(m, 0);
-            Protocol.writeString(m, playerName);
+            Protocol.writeString(m, name);
         });
     }
 
@@ -186,6 +207,12 @@ public class Player {
             Protocol.writeBoolean(m, false); // world is debug (never)
             Protocol.writeBoolean(m, true); // world is superflat
         });
+
+        sendAddPlayers(Main.players);
+        for (var player : Main.players) {
+            player.sendAddPlayer(this);
+            player.sendSystemMessage(String.format("%s has joined the game.", name));
+        }
     }
 
     // TODO: break this up
@@ -234,13 +261,39 @@ public class Player {
     // handle play packets
 
     void sendChunk(int x, int z) throws IOException {
-        var heightmap = new Long[36];
-        Arrays.fill(heightmap, 0x0L);
+        var heightMap = new Long[37];
+        Arrays.fill(heightMap, 0x0100804020100804L);
+        heightMap[36] = 0x0000000020100804L;
         var heightmapNBT = new NBTCompound(null,
             new NBTLongArray("MOTION_BLOCKING",
-                heightmap
+                heightMap
             )
         );
+        var chunkData = new ByteArrayOutputStream();
+        for (int y = 0; y < 16; y++) {
+            if (y == 0) { // block count
+                Protocol.writeShort(chunkData, 256);
+            } else {
+                Protocol.writeShort(chunkData, 0);
+            }
+            Protocol.writeByte(chunkData, 4); // bits per block
+            Protocol.writeVarInt(chunkData, 2); // palette length
+            Protocol.writeVarInt(chunkData, 0); // 0 : air
+            Protocol.writeVarInt(chunkData, 1); // 1 : stone
+            Protocol.writeVarInt(chunkData, 16 * 16);
+            for (int by = 0; by < 16; by++) {
+                for (int bz = 0; bz < 16; bz++) {
+                    // for (int bx = 0; bx < 16; bx++) {
+                    // }
+                    if (by == 0 && y == 0) {
+                        Protocol.writeLong(chunkData, 0x1111_1111_1111_1111L);
+                    } else {
+                        Protocol.writeLong(chunkData, 0);
+                    }
+                }
+            }
+        }
+
         connection.sendPacket(0x20, (m) -> {
             Protocol.writeInt(m, x);
             Protocol.writeInt(m, z);
@@ -251,8 +304,8 @@ public class Player {
             for (int i = 0; i < 1024; i++) {
                 Protocol.writeVarInt(m, 0);
             }
-            Protocol.writeVarInt(m, 0);
-            // Byte array containing chunk data
+            Protocol.writeVarInt(m, chunkData.size());
+            Protocol.writeBytes(m, chunkData.toByteArray());
             Protocol.writeVarInt(m, 0);
             // Array of NBT containing block entities
         });
@@ -270,14 +323,28 @@ public class Player {
         });
     }
 
+    void sendUpdateChunkPosition(int x, int z) throws IOException {
+        connection.sendPacket(0x40, (m) -> {
+            Protocol.writeVarInt(m, x);
+            Protocol.writeVarInt(m, z);
+        });
+    }
+
+    void sendSpawnPosition() throws IOException {
+        connection.sendPacket(0x42, (m) -> {
+            Protocol.writePosition(m, 0, 32, 0);
+        });
+    }
+
     void handleSettings(Packet packet) throws IOException {
         sendBrand("corvidio");
-        sendPositionLook(0, 32, 0, 0, 0);
         for (int x = -3; x <= 3; x++) {
             for (int z = -3; z <= 3; z++) {
                 sendChunk(x, z);
             }
         }
+        sendSpawnPosition();
+        sendUpdateChunkPosition(0, 0);
         sendPositionLook(0, 32, 0, 0, 0);
     }
 
@@ -287,5 +354,77 @@ public class Player {
             System.out.println("Keepalives did not match!");
         }
         ping = connection.pingTime();
+    }
+
+    void sendAddPlayers(Collection<Player> players) throws IOException {
+        if (players.size() == 0) {
+            return;
+        }
+        connection.sendPacket(0x32, (m) -> {
+            Protocol.writeVarInt(m, 0);
+            Protocol.writeVarInt(m, players.size());
+            for (var player : players) {
+                Protocol.writeLong(m, player.uuid.getMostSignificantBits());
+                Protocol.writeLong(m, player.uuid.getLeastSignificantBits());
+                Protocol.writeString(m, player.name);
+                Protocol.writeVarInt(m, 0); // number of properties
+                Protocol.writeVarInt(m, 1); // gamemode
+                Protocol.writeVarInt(m, 0); // ping
+                Protocol.writeBoolean(m, false); // has display name
+            }
+        });
+    }
+
+    void sendAddPlayer(Player player) throws IOException {
+        connection.sendPacket(0x32, (m) -> {
+            Protocol.writeVarInt(m, 0);
+            Protocol.writeVarInt(m, 1);
+            Protocol.writeLong(m, player.uuid.getMostSignificantBits());
+            Protocol.writeLong(m, player.uuid.getLeastSignificantBits());
+            Protocol.writeString(m, player.name);
+            Protocol.writeVarInt(m, 0); // number of properties
+            Protocol.writeVarInt(m, 1); // gamemode
+            Protocol.writeVarInt(m, 0); // ping
+            Protocol.writeBoolean(m, false); // has display name
+        });
+    }
+
+    void sendRemovePlayer(Player player) throws IOException {
+        connection.sendPacket(0x32, (m) -> {
+            Protocol.writeVarInt(m, 4);
+            Protocol.writeVarInt(m, 1);
+            Protocol.writeLong(m, player.uuid.getMostSignificantBits());
+            Protocol.writeLong(m, player.uuid.getLeastSignificantBits());
+        });
+    }
+
+    void sendChat(Player sender, String message) throws IOException {
+        var chat = new JSONObject();
+        chat.put("text", String.format("<%s> %s", sender.name, message));
+        connection.sendPacket(0x0E, (m) -> {
+            Protocol.writeString(m, chat.toString());
+            Protocol.writeByte(m, 0);
+            Protocol.writeLong(m, sender.uuid.getMostSignificantBits());
+            Protocol.writeLong(m, sender.uuid.getLeastSignificantBits());
+        });
+    }
+
+    void sendSystemMessage(String message) throws IOException {
+        var chat = new JSONObject();
+        chat.put("text", message);
+        chat.put("color", "yellow");
+        connection.sendPacket(0x0E, (m) -> {
+            Protocol.writeString(m, chat.toString());
+            Protocol.writeByte(m, 0);
+            Protocol.writeLong(m, 0);
+            Protocol.writeLong(m, 0);
+        });
+    }
+
+    void handleChat(Packet packet) throws IOException {
+        String message = packet.readString();
+        for (var player : Main.players) {
+            player.sendChat(this, message);
+        }
     }
 }

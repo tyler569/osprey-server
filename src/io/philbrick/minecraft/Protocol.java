@@ -110,4 +110,9 @@ public class Protocol {
         os.write(buffer.array(), 0, Double.BYTES);
         buffer.rewind();
     }
+
+    public static void writePosition(OutputStream os, int x, int y, int z) throws IOException {
+        long encoded = (((long)x & 0x3FFFFFF) << 38) | (((long)z & 0x3FFFFFF) << 12) | (y & 0xFFF);
+        writeLong(os, encoded);
+    }
 }

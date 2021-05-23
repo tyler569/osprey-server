@@ -1,9 +1,6 @@
 package io.philbrick.minecraft;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.*;
 import java.util.ArrayList;
 
 public class VarInt {
@@ -12,7 +9,11 @@ public class VarInt {
         int numRead = 0;
         byte b;
         do {
-            b = (byte)is.read();
+            int v = is.read();
+            if (v == -1) {
+                throw new EOFException("EOF");
+            }
+            b = (byte)v;
             int value = b & 0b0111_1111;
             result |= value << (7 * numRead);
             numRead++;

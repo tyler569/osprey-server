@@ -32,7 +32,7 @@ public class Packet extends ByteArrayInputStream {
         return Protocol.readString(this);
     }
 
-    boolean readBoolean() throws IOException {
+    boolean readBoolean() {
         return read() != 0;
     }
 
