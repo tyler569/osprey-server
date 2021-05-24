@@ -22,7 +22,6 @@ public class VarInt {
     }
 
     public static void write(OutputStream os, int i) throws IOException {
-        var arr = new ArrayList<Byte>();
         do {
             byte elem = (byte)(i & 0b0111_1111);
             i >>>= 7;
