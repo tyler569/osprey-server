@@ -1,13 +1,11 @@
 package io.philbrick.minecraft;
 
-import io.philbrick.minecraft.nbt.*;
 import org.json.*;
 
 import javax.crypto.*;
 import java.io.*;
 import java.net.*;
 import java.nio.*;
-import java.nio.charset.*;
 import java.time.*;
 import java.util.*;
 
@@ -58,6 +56,7 @@ public class Player {
             disconnect();
         } catch (IOException e) {
             e.printStackTrace();
+            disconnect();
         }
     }
 
@@ -89,8 +88,7 @@ public class Player {
     }
 
     void handleConnection() throws IOException {
-        while (true) {
-            if (connection.isClosed()) break;
+        while (!connection.isClosed()) {
             Packet p = connection.readPacket();
             handlePacket(p);
         }
@@ -198,7 +196,8 @@ public class Player {
 
     void handleLoginStart(Packet packet) throws IOException {
         name = packet.readString();
-        uuid = UUID.nameUUIDFromBytes(name.getBytes());
+        uuid = UUID.nameUUIDFromBytes(String.format("OfflinePlayer:%s", name).getBytes());
+        // uuid = UUID.randomUUID();
         System.out.format("login: '%s'%n", name);
         sendEncryptionRequest();
     }
