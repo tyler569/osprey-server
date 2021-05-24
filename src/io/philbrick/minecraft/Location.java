@@ -17,6 +17,10 @@ public record Location(int x, int y, int z) {
         return z >> 4;
     }
 
+    Location chunkAddress() {
+        return new Location(chunkX(), 0, chunkZ());
+    }
+
     Location offsetByChunks(int dx, int dz) {
         return new Location(x + dx * 16, y, z + dz * 16);
     }

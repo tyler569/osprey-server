@@ -7,6 +7,7 @@ import javax.crypto.*;
 import java.io.*;
 import java.net.*;
 import java.nio.*;
+import java.nio.charset.*;
 import java.time.*;
 import java.util.*;
 
@@ -18,6 +19,7 @@ public class Player {
     }
 
     static final byte[] encryptionToken = "Hello World".getBytes();
+    static final int maxRenderDistance = 10;
 
     String name;
     Connection connection;
@@ -29,6 +31,9 @@ public class Player {
     ArrayList<Player> nearbyPlayers;
     Position position;
     Inventory inventory;
+    Set<Location> loadedChunks;
+    int renderDistance;
+    boolean firstSettings = true;
 
     Chunk theChunk;
 
@@ -66,18 +71,21 @@ public class Player {
                 } catch (IOException ignored) {
                 }
             }
+            Main.playerLocations.put(name, position);
         }
         Main.reaper.appendDeadThread(thread);
         Main.players.remove(this);
     }
 
     void teleport(Location location) throws IOException {
-        sendPositionLook(location.x(), location.y(), location.z(), 0, 0);
-        position.x = location.x();
-        position.y = location.y();
-        position.z = location.z();
+        position = new Position(location);
+        sendPositionLook();
+        sendUpdateChunkPosition();
         for (var player : Main.players) {
+            if (player == this) continue;
+            player.sendEntityTeleport(entityId, position);
         }
+        loadCorrectChunks();
     }
 
     void handleConnection() throws IOException {
@@ -164,7 +172,6 @@ public class Player {
                 protocolVersion, address, port, next);
             if (next == 2) {
                 state = State.Login;
-                uuid = UUID.randomUUID();
             }
         } else {
             writeHandshakeResponse();
@@ -190,8 +197,8 @@ public class Player {
     }
 
     void handleLoginStart(Packet packet) throws IOException {
-        String name = packet.readString();
-        this.name = name;
+        name = packet.readString();
+        uuid = UUID.nameUUIDFromBytes(name.getBytes());
         System.out.format("login: '%s'%n", name);
         sendEncryptionRequest();
     }
@@ -236,9 +243,11 @@ public class Player {
         sendJoinGame();
         sendAddPlayers(Main.players);
         sendAddPlayer(this);
-        sendBrand("Tyler");
-        position = new Position();
+        sendBrand("BeforeBrand");
+        position = Main.playerLocations.getOrDefault(name, new Position());
+        sendUpdateChunkPosition();
         inventory = new Inventory();
+        loadedChunks = new HashSet<>();
         theChunk = Main.theChunk;
         sendInventory();
         for (var player : Main.players) {
@@ -250,6 +259,18 @@ public class Player {
         for (var player : Main.players) {
             player.sendNotification(String.format("%s has joined the game (id %d)", name, entityId));
         }
+    }
+
+    void sendEntityTeleport(int entityId, Position position) throws IOException {
+        connection.sendPacket(0x56, (m) -> {
+            Protocol.writeVarInt(m, entityId);
+            Protocol.writeDouble(m, position.x);
+            Protocol.writeDouble(m, position.y);
+            Protocol.writeDouble(m, position.z);
+            Protocol.writeByte(m, position.yawAngle());
+            Protocol.writeByte(m, position.pitchAngle());
+            Protocol.writeBoolean(m, position.onGround);
+        });
     }
 
     // TODO: break this up
@@ -297,36 +318,26 @@ public class Player {
     // handle play packets
 
     void sendChunk(int x, int z) throws IOException {
-        var heightMap = new Long[37];
-        Arrays.fill(heightMap, 0x0100804020100804L);
-        heightMap[36] = 0x0000000020100804L;
-        var heightmapNBT = new NBTCompound(null,
-            new NBTLongArray("MOTION_BLOCKING",
-                heightMap
-            )
-        );
-        var chunkData = new ByteArrayOutputStream();
-        if (((x & 1) ^ (z & 1)) == 0) {
-            theChunk.encodeMap(chunkData);
-        } else {
-            theChunk.encodeArray(chunkData);
-        }
-
         connection.sendPacket(0x20, (m) -> {
             Protocol.writeInt(m, x);
             Protocol.writeInt(m, z);
-            Protocol.writeBoolean(m, true);
-            Protocol.writeVarInt(m, 0xFFFF); // primary bitmask
-            heightmapNBT.encode(m);
-            Protocol.writeVarInt(m, 1024);
-            for (int i = 0; i < 1024; i++) {
-                Protocol.writeVarInt(m, 0);
-            }
-            Protocol.writeVarInt(m, chunkData.size());
-            Protocol.writeBytes(m, chunkData.toByteArray());
-            Protocol.writeVarInt(m, 0);
-            // Array of NBT containing block entities
+            theChunk.encodePacket(m);
         });
+        loadedChunks.add(new Location(x, 0, z));
+    }
+
+    void unloadChunk(int x, int z) throws IOException {
+        connection.sendPacket(0x1c, (m) -> {
+            Protocol.writeInt(m, x);
+            Protocol.writeInt(m, z);
+        });
+        loadedChunks.remove(new Location(x, 0, z));
+    }
+
+    void unloadChunkSafe(int x, int z) {
+        try {
+            unloadChunk(x, z);
+        } catch (IOException ignored) {}
     }
 
     void sendInventory() throws IOException {
@@ -339,13 +350,13 @@ public class Player {
         });
     }
 
-    void sendPositionLook(double x, double y, double z, float yaw, float pitch) throws IOException {
+    void sendPositionLook() throws IOException {
         connection.sendPacket(0x34, (m) -> {
-            Protocol.writeDouble(m, x);
-            Protocol.writeDouble(m, y);
-            Protocol.writeDouble(m, z);
-            Protocol.writeFloat(m, yaw);
-            Protocol.writeFloat(m, pitch);
+            Protocol.writeDouble(m, position.x);
+            Protocol.writeDouble(m, position.y);
+            Protocol.writeDouble(m, position.z);
+            Protocol.writeFloat(m, position.yaw);
+            Protocol.writeFloat(m, position.pitch);
             Protocol.writeByte(m, 0);
             Protocol.writeVarInt(m, 0);
         });
@@ -358,22 +369,38 @@ public class Player {
         });
     }
 
+    void sendUpdateChunkPosition() throws IOException {
+        sendUpdateChunkPosition(position.chunkX(), position.chunkZ());
+    }
+
     void sendSpawnPosition() throws IOException {
         connection.sendPacket(0x42, (m) -> {
             Protocol.writePosition(m, 0, 32, 0);
         });
     }
 
-    void handleSettings(Packet packet) throws IOException {
-        sendBrand("corvidio");
-        for (int x = -3; x <= 3; x++) {
-            for (int z = -3; z <= 3; z++) {
-                sendChunk(x, z);
-            }
-        }
+    void initialSpawnPlayer() throws IOException {
         sendSpawnPosition();
-        sendUpdateChunkPosition(0, 0);
-        sendPositionLook(0, 32, 0, 0, 0);
+        loadCorrectChunks();
+        sendUpdateChunkPosition();
+        sendPositionLook();
+        sendBrand("AfterBrand");
+    }
+
+    void handleSettings(Packet packet) throws IOException {
+        String locale = packet.readString();
+        renderDistance = packet.read();
+        if (renderDistance > maxRenderDistance) renderDistance = maxRenderDistance;
+        int chatMode = packet.readVarInt();
+        boolean chatColors = packet.readBoolean();
+        int skinParts = packet.read();
+        int mainHand = packet.readVarInt();
+        if (firstSettings) {
+            firstSettings = false;
+            initialSpawnPlayer();
+        } else {
+            loadCorrectChunks();
+        }
     }
 
     void handleKeepAlive(Packet packet) throws IOException {
@@ -481,7 +508,21 @@ public class Player {
         String message = packet.readString();
         System.out.format("[chat] %s: %s%n", name, message);
         if (message.startsWith("/")) {
-            sendError(String.format("Invalid command \"%s\".", message.split(" ")[0]));
+            var parts = message.split(" ");
+            switch (parts[0]) {
+                case "/tp" -> {
+                    try {
+                        teleport(new Location(
+                            Integer.parseInt(parts[1]),
+                            Integer.parseInt(parts[2]),
+                            Integer.parseInt(parts[3]))
+                        );
+                    } catch (NumberFormatException e) {
+                        sendError(String.format("Invalid teleport command \"%s\"", message));
+                    }
+                }
+                default -> sendError(String.format("Invalid command \"%s\"", parts[0]));
+            }
             return;
         }
         for (var player : Main.players) {
@@ -510,12 +551,37 @@ public class Player {
         });
     }
 
+    void loadCorrectChunks(int chunkX, int chunkZ) throws IOException {
+        Set<Location> shouldLoad = new HashSet<>();
+        for (int cx = chunkX - renderDistance; cx <= chunkX + renderDistance; cx++) {
+            for (int cz = chunkZ - renderDistance; cz <= chunkZ + renderDistance; cz++) {
+                shouldLoad.add(new Location(cx, 0, cz));
+            }
+        }
+        var unloadChunks = new HashSet<>(loadedChunks);
+        unloadChunks.removeAll(shouldLoad);
+        for (var chunk : unloadChunks) {
+            unloadChunk(chunk.x(), chunk.z());
+            // System.out.printf("unload %d %d%n", chunk.x(), chunk.z());
+        }
+        shouldLoad.removeAll(loadedChunks);
+        for (var chunk : shouldLoad) {
+            sendChunk(chunk.x(), chunk.z());
+            // System.out.printf("load %d %d%n", chunk.x(), chunk.z());
+        }
+    }
+
+    void loadCorrectChunks() throws IOException {
+        loadCorrectChunks(position.chunkX(), position.chunkZ());
+    }
+
     void checkChunkPosition(double x, double z) throws IOException {
         int chunkX = (int)x >> 4;
         int chunkZ = (int)z >> 4;
         if (chunkX != position.chunkX() || chunkZ != position.chunkZ()) {
             sendUpdateChunkPosition(chunkX, chunkZ);
             System.out.format("new chunk %d %d%n", chunkX, chunkZ);
+            loadCorrectChunks(chunkX, chunkZ);
         }
     }
 
@@ -590,9 +656,21 @@ public class Player {
 
     // animation
 
+    void sendEntityAnimation(int entityId, int animation) throws IOException {
+        connection.sendPacket(5, (m) -> {
+            Protocol.writeVarInt(m, entityId);
+            Protocol.writeByte(m, animation);
+        });
+    }
+
     void handleEntityAction(Packet packet) {}
 
-    void handleAnimation(Packet packet) {}
+    void handleAnimation(Packet packet) throws IOException {
+        for (var player : Main.players) {
+            if (player == this) continue;
+            player.sendEntityAnimation(this.entityId, 0);
+        }
+    }
 
     // block place & remove
 

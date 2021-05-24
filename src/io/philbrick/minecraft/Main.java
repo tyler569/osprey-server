@@ -104,6 +104,7 @@ public class Main {
 
     static KeyPair encryptionKey;
     static ArrayList<Player> players = new ArrayList<>();
+    static HashMap<String, Position> playerLocations = new HashMap<>();
     // static ArrayList<World> worlds = new ArrayList<>();
     // etc
     static final Reaper reaper = new Reaper();

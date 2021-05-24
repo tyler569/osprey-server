@@ -15,9 +15,8 @@ public class Reaper {
         while (true) {
             try {
                 var deadThread = deadThreads.take();
-                System.out.format("reap thread %s%n", deadThread);
+                System.out.format("reap %s%n", deadThread);
                 deadThread.join();
-                System.out.println("reaped");
             } catch (InterruptedException ignored) {
             }
         }

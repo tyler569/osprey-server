@@ -4,8 +4,6 @@ import java.io.*;
 import java.nio.*;
 
 public class Protocol {
-    private static ByteBuffer buffer = ByteBuffer.allocate(Long.BYTES).order(ByteOrder.BIG_ENDIAN);
-
     public static String readString(InputStream is) throws IOException {
         int stringLen = VarInt.read(is);
         var data = is.readNBytes(stringLen);
@@ -76,39 +74,39 @@ public class Protocol {
     }
 
     public static void writeShort(OutputStream os, short v) throws IOException {
+        var buffer = ByteBuffer.allocate(Long.BYTES);
         buffer.putShort(v);
         os.write(buffer.array(), 0, Short.BYTES);
-        buffer.rewind();
     }
 
     public static void writeShort(OutputStream os, int v) throws IOException {
+        var buffer = ByteBuffer.allocate(Long.BYTES);
         buffer.putShort((short)v);
         os.write(buffer.array(), 0, Short.BYTES);
-        buffer.rewind();
     }
 
     public static void writeInt(OutputStream os, int v) throws IOException {
+        var buffer = ByteBuffer.allocate(Long.BYTES);
         buffer.putInt(v);
         os.write(buffer.array(), 0, Integer.BYTES);
-        buffer.rewind();
     }
 
     public static void writeLong(OutputStream os, long v) throws IOException {
+        var buffer = ByteBuffer.allocate(Long.BYTES);
         buffer.putLong(v);
         os.write(buffer.array(), 0, Long.BYTES);
-        buffer.rewind();
     }
 
     public static void writeFloat(OutputStream os, float v) throws IOException {
+        var buffer = ByteBuffer.allocate(Long.BYTES);
         buffer.putFloat(v);
         os.write(buffer.array(), 0, Float.BYTES);
-        buffer.rewind();
     }
 
     public static void writeDouble(OutputStream os, double v) throws IOException {
+        var buffer = ByteBuffer.allocate(Long.BYTES);
         buffer.putDouble(v);
         os.write(buffer.array(), 0, Double.BYTES);
-        buffer.rewind();
     }
 
     public static void writePosition(OutputStream os, int x, int y, int z) throws IOException {

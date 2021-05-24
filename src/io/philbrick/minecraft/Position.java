@@ -41,4 +41,8 @@ public class Position {
     Location location() {
         return new Location((int)x, (int)y, (int)z);
     }
+
+    public String toString() {
+        return String.format("Position{%f, %f, %f, %f, %f}", x, y, z, pitch, yaw);
+    }
 }
