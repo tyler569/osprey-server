@@ -58,10 +58,11 @@ public class Connection {
         Protocol.writeVarInt(m, type);
         closure.apply(m);
         var data = m.toByteArray();
-        // System.out.printf("<- %d %s%n", type, Arrays.toString(data));
-        VarInt.write(outstream, data.length);
-        outstream.write(data);
-        outstream.flush();
+        synchronized (socket) {
+            VarInt.write(outstream, data.length);
+            outstream.write(data);
+            outstream.flush();
+        }
     }
 
 
