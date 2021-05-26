@@ -8,6 +8,7 @@ import java.net.*;
 import java.nio.*;
 import java.time.*;
 import java.util.*;
+import java.util.concurrent.atomic.*;
 
 public class Player {
     enum State {
@@ -17,7 +18,7 @@ public class Player {
     }
 
     static final byte[] encryptionToken = "Hello World".getBytes();
-    static final int maxRenderDistance = 10;
+    static final int maxRenderDistance = 3;
 
     String name;
     Connection connection;
@@ -26,16 +27,12 @@ public class Player {
     State state;
     int entityId;
     UUID uuid;
-    ArrayList<Player> nearbyPlayers;
+    Set<Player> nearbyPlayers;
     Position position;
     Inventory inventory;
-    Set<Location> loadedChunks;
+    Set<ChunkLocation> loadedChunks;
     int renderDistance;
     boolean firstSettings = true;
-
-    Chunk theChunk;
-
-    boolean printUnknownPackets = true;
 
     Player(int entity, Socket sock) throws IOException {
         connection = new Connection(sock);
@@ -53,11 +50,11 @@ public class Player {
         try {
             handleConnection();
         } catch (EOFException e) {
-            disconnect();
-        } catch (IOException e) {
+            System.out.println("EOF");
+        } catch (Exception e) {
             e.printStackTrace();
-            disconnect();
         }
+        disconnect();
     }
 
     void disconnect() {
@@ -71,9 +68,12 @@ public class Player {
                 }
             }
             Main.playerLocations.put(name, position);
+            for (var chunk : loadedChunks) {
+                Main.world.saveChunkSafe(chunk);
+            }
         }
-        Main.reaper.appendDeadThread(thread);
         Main.players.remove(this);
+        Main.reaper.appendDeadThread(thread);
     }
 
     void teleport(Location location) throws IOException {
@@ -238,7 +238,7 @@ public class Player {
         });
     }
 
-    void join() throws IOException {
+    void doPreJoin() throws IOException {
         sendJoinGame();
         sendAddPlayers(Main.players);
         sendAddPlayer(this);
@@ -247,7 +247,6 @@ public class Player {
         sendUpdateChunkPosition();
         inventory = new Inventory();
         loadedChunks = new HashSet<>();
-        theChunk = Main.theChunk;
         sendInventory();
         for (var player : Main.players) {
             player.sendAddPlayer(this);
@@ -311,7 +310,7 @@ public class Player {
         System.out.println("Writing Login Success!");
         sendLoginSuccess();
         state = State.Play;
-        join();
+        doPreJoin();
     }
 
     // handle play packets
@@ -320,9 +319,9 @@ public class Player {
         connection.sendPacket(0x20, (m) -> {
             Protocol.writeInt(m, x);
             Protocol.writeInt(m, z);
-            theChunk.encodePacket(m);
+            Main.world.load(x, z).encodePacket(m);
         });
-        loadedChunks.add(new Location(x, 0, z));
+        loadedChunks.add(new ChunkLocation(x, z));
     }
 
     void unloadChunk(int x, int z) throws IOException {
@@ -330,13 +329,9 @@ public class Player {
             Protocol.writeInt(m, x);
             Protocol.writeInt(m, z);
         });
-        loadedChunks.remove(new Location(x, 0, z));
-    }
-
-    void unloadChunkSafe(int x, int z) {
-        try {
-            unloadChunk(x, z);
-        } catch (IOException ignored) {}
+        var location = new ChunkLocation(x, z);
+        loadedChunks.remove(location);
+        Main.world.saveChunkSafe(location);
     }
 
     void sendInventory() throws IOException {
@@ -551,22 +546,20 @@ public class Player {
     }
 
     void loadCorrectChunks(int chunkX, int chunkZ) throws IOException {
-        Set<Location> shouldLoad = new HashSet<>();
+        Set<ChunkLocation> shouldLoad = new HashSet<>();
         for (int cx = chunkX - renderDistance; cx <= chunkX + renderDistance; cx++) {
             for (int cz = chunkZ - renderDistance; cz <= chunkZ + renderDistance; cz++) {
-                shouldLoad.add(new Location(cx, 0, cz));
+                shouldLoad.add(new ChunkLocation(cx, cz));
             }
         }
         var unloadChunks = new HashSet<>(loadedChunks);
         unloadChunks.removeAll(shouldLoad);
         for (var chunk : unloadChunks) {
             unloadChunk(chunk.x(), chunk.z());
-            // System.out.printf("unload %d %d%n", chunk.x(), chunk.z());
         }
         shouldLoad.removeAll(loadedChunks);
         for (var chunk : shouldLoad) {
             sendChunk(chunk.x(), chunk.z());
-            // System.out.printf("load %d %d%n", chunk.x(), chunk.z());
         }
     }
 
@@ -685,7 +678,7 @@ public class Player {
         var location = packet.readLocation();
         var face = packet.read();
         System.out.format("%s Dig %s : %d%n", name, location, status);
-        theChunk.setBlock(location.positionInChunk(), 0);
+        Main.world.setBlock(location, 0);
         for (var player : Main.players) {
             if (player == this) continue;
             player.sendBlockChange(location, 0);
@@ -715,7 +708,7 @@ public class Player {
                 return;
             }
         }
-        theChunk.setBlock(location.positionInChunk(), 1);
+        Main.world.setBlock(location, 1);
         for (var player : Main.players) {
             player.sendBlockChange(location, 1);
         }

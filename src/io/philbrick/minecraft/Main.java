@@ -5,6 +5,7 @@ import io.philbrick.minecraft.nbt.*;
 import java.io.*;
 import java.net.*;
 import java.security.*;
+import java.sql.*;
 import java.util.*;
 
 public class Main {
@@ -15,7 +16,7 @@ public class Main {
             "protocol": 754
           },
           "players": {
-            "max": -1,
+            "max": 10,
             "online": 1,
             "sample": [
               {
@@ -103,16 +104,22 @@ public class Main {
     );
 
     static KeyPair encryptionKey;
-    static ArrayList<Player> players = new ArrayList<>();
-    static HashMap<String, Position> playerLocations = new HashMap<>();
+    static Set<Player> players = new HashSet<>();
+    static Map<String, Position> playerLocations = new HashMap<>();
+    static World world;
+
     // static ArrayList<World> worlds = new ArrayList<>();
     // etc
     static final Reaper reaper = new Reaper();
     static int nextEntityId = 1;
 
-    static Chunk theChunk = new Chunk();
-
     public static void main(String[] args) throws IOException {
+        try {
+            world = World.open("world.db");
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
         try {
             var kpg = KeyPairGenerator.getInstance("RSA");
             kpg.initialize(1024);

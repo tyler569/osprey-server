@@ -2,12 +2,15 @@ package io.philbrick.minecraft;
 
 import io.philbrick.minecraft.nbt.*;
 
+import javax.sql.rowset.serial.*;
 import java.io.*;
+import java.nio.*;
+import java.sql.*;
 import java.util.*;
+import java.util.zip.*;
 
 public class Chunk {
     Map<Location, Short> blockMap;
-    short[] blockArray;
     short[] heightMap;
 
     byte[] cachedPacket;
@@ -16,25 +19,19 @@ public class Chunk {
     Chunk() {
         blockMap = new HashMap<>();
         heightMap = new short[256];
-        blockArray = new short[4096 * 16];
+    }
+
+    static Chunk defaultGeneration() {
+        var c = new Chunk();
         for (int x = 0; x < 16; x += 1) {
             for (int z = 0; z < 16; z += 1) {
                 for (int y = 0; y < 32; y++) {
-                    setBlock(new Location(x, y, z), 1);
+                    c.setBlock(new Location(x, y, z), 1);
                 }
-                // fun pattern
-                // for (int y = 32; y < 256; y++) {
-                //     if (x == y % 16 && y % 16 == z || x == 0 && z == 0 || x == 0 && y % 16 == 0 || z == 0 && y % 16 == 0) {
-                //         setBlock(new Location(x, y, z), 1);
-                //     }
-                // }
             }
         }
+        return c;
     }
-
-    // static int index(Location location) {
-    //     return location.y() * 256 + location.z() * 16 + location.x();
-    // }
 
     void setBlock(Location location, int id) {
         if (id == 0) {
@@ -42,7 +39,6 @@ public class Chunk {
         } else {
             blockMap.put(location, (short) id);
         }
-        // blockArray[index(location)] = (short)id;
         cacheValid = false;
     }
 
@@ -82,7 +78,7 @@ public class Chunk {
         }
     }
 
-    NBTValue heightMap() {
+    NBTValue heightMapNBT() {
         var data = new Long[37];
         Arrays.fill(data, 0L);
         int index = 0;
@@ -118,7 +114,7 @@ public class Chunk {
         var buffer = new ByteArrayOutputStream();
 
         byte[] chunkData = encodeChunkData();
-        NBTValue heightmap = heightMap();
+        NBTValue heightmap = heightMapNBT();
 
         Protocol.writeBoolean(buffer, true);
         Protocol.writeVarInt(buffer, 0xFFFF); // primary bitmask
@@ -135,5 +131,37 @@ public class Chunk {
         cachedPacket = buffer.toByteArray();
         cacheValid = true;
         m.write(cachedPacket);
+    }
+
+    byte[] encodeBlob() throws IOException {
+        var inner = new ByteArrayOutputStream();
+        var stream = new DeflaterOutputStream(inner);
+        for (int y = 0; y < 256; y++) {
+            for (int z = 0; z < 16; z++) {
+                for (int x = 0; x < 16; x++) {
+                    Protocol.writeShort(stream, blockMap.getOrDefault(new Location(x, y, z), (short)0));
+                }
+            }
+        }
+        stream.finish();
+        return inner.toByteArray();
+    }
+
+    static Chunk fromBlob(byte[] data) throws IOException {
+        try {
+            var stream = new InflaterInputStream(new ByteArrayInputStream(data));
+            var c = new Chunk();
+            for (int y = 0; y < 256; y++) {
+                for (int z = 0; z < 16; z++) {
+                    for (int x = 0; x < 16; x++) {
+                        c.setBlock(new Location(x, y, z), Protocol.readShort(stream));
+                    }
+                }
+            }
+            return c;
+        } catch (EOFException e) {
+            System.out.println("Problem decoding chunk from disk!");
+        }
+        return null;
     }
 }

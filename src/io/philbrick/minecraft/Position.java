@@ -7,19 +7,15 @@ public class Position {
     float yaw;
 
     Position() {
-        x = 0;
+        x = 0.5;
+        z = 0.5;
         y = 32;
-        z = 0;
-        pitch = 0;
-        yaw = 0;
     }
 
     Position(Location p) {
-        x = p.x();
+        x = p.x() + 0.5;
         y = p.y();
-        z = p.z();
-        pitch = 0;
-        yaw = 0;
+        z = p.z() + 0.5;
     }
 
     byte yawAngle() {
@@ -40,6 +36,10 @@ public class Position {
 
     Location location() {
         return new Location((int)x, (int)y, (int)z);
+    }
+
+    ChunkLocation chunkLocation() {
+        return new ChunkLocation(chunkX(), chunkZ());
     }
 
     public String toString() {
