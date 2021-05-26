@@ -8,7 +8,6 @@ import java.net.*;
 import java.nio.*;
 import java.time.*;
 import java.util.*;
-import java.util.concurrent.atomic.*;
 
 public class Player {
     enum State {
@@ -18,7 +17,7 @@ public class Player {
     }
 
     static final byte[] encryptionToken = "Hello World".getBytes();
-    static final int maxRenderDistance = 3;
+    static final int maxRenderDistance = 10;
 
     String name;
     Connection connection;
@@ -202,6 +201,13 @@ public class Player {
         sendEncryptionRequest();
     }
 
+    void setCompression(int maxLen) throws IOException {
+        connection.sendPacket(3, (m) -> {
+            Protocol.writeVarInt(m, maxLen);
+        });
+        connection.setCompression(maxLen);
+    }
+
     void sendLoginSuccess() throws IOException {
         connection.sendPacket(2, (m) -> { // login success
             Protocol.writeLong(m, 0);
@@ -306,7 +312,7 @@ public class Player {
             return;
         }
 
-        // setCompression(1024);
+        setCompression(128);
         System.out.println("Writing Login Success!");
         sendLoginSuccess();
         state = State.Play;
@@ -315,23 +321,22 @@ public class Player {
 
     // handle play packets
 
-    void sendChunk(int x, int z) throws IOException {
+    void sendChunk(ChunkLocation chunkLocation) throws IOException {
         connection.sendPacket(0x20, (m) -> {
-            Protocol.writeInt(m, x);
-            Protocol.writeInt(m, z);
-            Main.world.load(x, z).encodePacket(m);
+            Protocol.writeInt(m, chunkLocation.x());
+            Protocol.writeInt(m, chunkLocation.z());
+            Main.world.load(chunkLocation).encodePacket(m);
         });
-        loadedChunks.add(new ChunkLocation(x, z));
+        loadedChunks.add(chunkLocation);
     }
 
-    void unloadChunk(int x, int z) throws IOException {
+    void unloadChunk(ChunkLocation chunkLocation) throws IOException {
         connection.sendPacket(0x1c, (m) -> {
-            Protocol.writeInt(m, x);
-            Protocol.writeInt(m, z);
+            Protocol.writeInt(m, chunkLocation.x());
+            Protocol.writeInt(m, chunkLocation.z());
         });
-        var location = new ChunkLocation(x, z);
-        loadedChunks.remove(location);
-        Main.world.saveChunkSafe(location);
+        loadedChunks.remove(chunkLocation);
+        Main.world.saveChunkSafe(chunkLocation);
     }
 
     void sendInventory() throws IOException {
@@ -555,11 +560,11 @@ public class Player {
         var unloadChunks = new HashSet<>(loadedChunks);
         unloadChunks.removeAll(shouldLoad);
         for (var chunk : unloadChunks) {
-            unloadChunk(chunk.x(), chunk.z());
+            unloadChunk(chunk);
         }
         shouldLoad.removeAll(loadedChunks);
         for (var chunk : shouldLoad) {
-            sendChunk(chunk.x(), chunk.z());
+            sendChunk(chunk);
         }
     }
 
