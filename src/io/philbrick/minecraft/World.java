@@ -6,18 +6,22 @@ import java.sql.Connection;
 import java.util.*;
 
 public class World {
-    Connection db;
+    String databaseURL;
     HashMap<ChunkLocation, Chunk> loadedChunks;
 
     private World() {
         loadedChunks = new HashMap<>();
     }
 
+    private Connection connect() throws SQLException {
+        var connection = DriverManager.getConnection(databaseURL);
+        connection.setAutoCommit(false);
+        return connection;
+    }
+
     static World open(String filename) throws SQLException {
         var world = new World();
-        var url = String.format("jdbc:sqlite:%s", filename);
-        world.db = DriverManager.getConnection(url);
-        world.db.setAutoCommit(false);
+        world.databaseURL = String.format("jdbc:sqlite:%s", filename);
         world.migrate();
         return world;
     }
@@ -25,9 +29,6 @@ public class World {
     Chunk load(ChunkLocation location) throws IOException {
         var chunk = loadedChunks.get(location);
         if (chunk == null) {
-            if (location.x() == 0 && location.z() == 0) {
-                System.out.println("Loading 0, 0");
-            }
             try {
                 chunk = loadFromDisk(location);
                 loadedChunks.put(location, chunk);
@@ -38,9 +39,6 @@ public class World {
             }
         }
         if (chunk == null) {
-            if (location.x() == 0 && location.z() == 0) {
-                System.out.println("Generating 0, 0");
-            }
             chunk = Chunk.defaultGeneration();
             loadedChunks.put(location, chunk);
         }
@@ -61,14 +59,12 @@ public class World {
             INSERT OR REPLACE INTO chunks (x, z, data)
             VALUES (?, ?, ?);
             """;
-        var statement = db.prepareStatement(sql);
-        statement.setInt(1, location.x());
-        statement.setInt(2, location.z());
-        statement.setBytes(3, chunkBlob);
-        statement.execute();
-        db.commit();
-        if (location.x() == 0 && location.z() == 0) {
-            System.out.println("Saving 0, 0");
+        try (var connection = connect();
+             var statement = connection.prepareStatement(sql)) {
+            statement.setInt(1, location.x());
+            statement.setInt(2, location.z());
+            statement.setBytes(3, chunkBlob);
+            statement.execute();
         }
     }
 
@@ -87,16 +83,18 @@ public class World {
             SELECT data FROM chunks
             WHERE x = ? AND z = ?;
             """;
-        var statement = db.prepareStatement(sql);
-        statement.setInt(1, location.x());
-        statement.setInt(2, location.z());
-        var results = statement.executeQuery();
-        if (results.isClosed()) return null;
-        byte[] blob = results.getBytes(1);
-        if (blob != null && blob.length != 0) {
-            return Chunk.fromBlob(blob);
-        } else {
-            return null;
+        try (var connection = connect();
+             var statement = connection.prepareStatement(sql)) {
+            statement.setInt(1, location.x());
+            statement.setInt(2, location.z());
+            var results = statement.executeQuery();
+            if (results.isClosed()) return null;
+            byte[] blob = results.getBytes(1);
+            if (blob != null && blob.length != 0) {
+                return Chunk.fromBlob(blob);
+            } else {
+                return null;
+            }
         }
     }
 
@@ -105,51 +103,57 @@ public class World {
             SELECT x, z, data FROM chunks
             WHERE x > ? AND x < ? AND z > ? AND z < ?
             """;
-        var statement = db.prepareStatement(sql);
-        statement.setInt(1, minus.x());
-        statement.setInt(2, plus.x());
-        statement.setInt(3, minus.z());
-        statement.setInt(4, plus.z());
-        var results = statement.executeQuery();
-        while (results.next()) {
-            byte[] blob = results.getBytes(3);
-            var location = new ChunkLocation(results.getInt(1), results.getInt(2));
-            loadedChunks.put(location, Chunk.fromBlob(blob));
+        try (var connection = connect();
+             var statement = connection.prepareStatement(sql)) {
+            statement.setInt(1, minus.x());
+            statement.setInt(2, plus.x());
+            statement.setInt(3, minus.z());
+            statement.setInt(4, plus.z());
+            var results = statement.executeQuery();
+            while (results.next()) {
+                byte[] blob = results.getBytes(3);
+                var location = new ChunkLocation(results.getInt(1), results.getInt(2));
+                loadedChunks.put(location, Chunk.fromBlob(blob));
+            }
         }
     }
 
     private void migrationStep(int id, String sql) throws SQLException {
-        var statement = db.prepareStatement(sql);
-        try {
+        try (var connection = connect()) {
+            var statement = connection.prepareStatement(sql);
             statement.execute();
-            statement = db.prepareStatement("""
+            statement = connection.prepareStatement("""
                 INSERT INTO schema_migrations VALUES (?);
                 """);
             statement.setInt(1, id);
             statement.execute();
-        } catch (Exception e) {
-            db.rollback();
+            connection.commit();
         }
-        db.commit();
     }
 
     private void migrate() throws SQLException {
+        int version;
+
         String sql = """
             CREATE TABLE IF NOT EXISTS schema_migrations(
                 id INTEGER NOT NULL PRIMARY KEY
             );
             """;
-        var statement = db.createStatement();
-        statement.execute(sql);
+        try (var connection = connect();
+             var statement = connection.prepareStatement(sql)) {
+            statement.execute();
+            connection.commit();
+        }
+
         sql = """
             SELECT MAX(id) FROM schema_migrations;
             """;
-        statement = db.createStatement();
-        ResultSet results = statement.executeQuery(sql);
-        var version = results.getInt(1);
-        System.out.printf("Found world version %d%n", version);
-        results.close();
-        db.commit();
+        try (var connection = connect();
+             var statement = connection.prepareStatement(sql)) {
+            var results = statement.executeQuery();
+            version = results.getInt(1);
+            System.out.printf("Found world version %d%n", version);
+        }
 
         switch (version) {
             case 0:
