@@ -36,4 +36,8 @@ public record Location(int x, int y, int z) {
     long encode() {
         return ((long) (x & 0x3FFFFFF) << 38) | ((long) (z & 0x3FFFFFF) << 12) | (y & 0xFFF);
     }
+
+    int blockIndex() {
+        return y * 256 + z * 16 + x;
+    }
 }

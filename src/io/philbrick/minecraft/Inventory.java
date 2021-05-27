@@ -17,4 +17,12 @@ public class Inventory {
     int size() {
         return slots.length;
     }
+
+    public void put(short slotNumber, Slot slot) {
+        slots[slotNumber] = slot;
+    }
+
+    public Slot get(int slotNumber) {
+        return slots[slotNumber];
+    }
 }

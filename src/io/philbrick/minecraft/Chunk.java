@@ -2,72 +2,81 @@ package io.philbrick.minecraft;
 
 import io.philbrick.minecraft.nbt.*;
 
-import javax.sql.rowset.serial.*;
 import java.io.*;
-import java.nio.*;
-import java.sql.*;
 import java.util.*;
 import java.util.zip.*;
 
 public class Chunk {
-    Map<Location, Short> blockMap;
+    static final int chunkSectionBlockCount = 16 * 16 * 16;
+    static final int chunkBlockCount = chunkSectionBlockCount * 16;
+    short[] blockArray;
     short[] heightMap;
 
     byte[] cachedPacket;
     boolean cacheValid;
 
     Chunk() {
-        blockMap = new HashMap<>();
+        blockArray = new short[chunkBlockCount];
         heightMap = new short[256];
     }
 
     static Chunk defaultGeneration() {
         var c = new Chunk();
-        for (int x = 0; x < 16; x += 1) {
+        for (int y = 0; y < 32; y++) {
             for (int z = 0; z < 16; z += 1) {
-                for (int y = 0; y < 32; y++) {
-                    c.setBlock(new Location(x, y, z), 1);
+                for (int x = 0; x < 16; x += 1) {
+                    c.setBlock(x, y, z, 1);
                 }
             }
         }
         return c;
     }
 
-    void setBlock(Location location, int id) {
-        if (id == 0) {
-            blockMap.remove(location);
-        } else {
-            blockMap.put(location, (short) id);
-        }
+    void setBlock(int b, short id) {
+        blockArray[b] = id;
         cacheValid = false;
+    }
+
+    void setBlock(int b, int id) {
+        setBlock(b, (short) id);
+    }
+
+    void setBlock(int x, int y, int z, short id) {
+        setBlock(y * 256 + z * 16 + x, id);
+    }
+
+    void setBlock(int x, int y, int z, int id) {
+        setBlock(x, y, z, (short) id);
+    }
+
+    void setBlock(Location location, short id) {
+        setBlock(location.blockIndex(), id);
+    }
+
+    void setBlock(Location location, int id) {
+        setBlock(location, (short) id);
     }
 
     void encodeMap(OutputStream chunkData) throws IOException {
         final var buffer = new ByteArrayOutputStream();
         final var bitsPerBlock = 15;
         final int blocksPerLong = Long.SIZE / bitsPerBlock;
-        for (int y = 0; y < 16; y++) {
+        for (int chunkSectionY = 0; chunkSectionY < 16; chunkSectionY++) {
             long acc = 0;
             int index = 0;
             int count = 0;
-            for (int by = 0; by < 16; by++) {
-                for (int bz = 0; bz < 16; bz++) {
-                    for (int bx = 0; bx < 16; bx++) {
-                        var worldY = y*16 + by;
-                        var l = new Location(bx, worldY, bz);
-                        var block = (long)blockMap.getOrDefault(l, (short)0);
-                        if (block != 0) {
-                            count++;
-                            heightMap[16*bz + bx] = (short)worldY;
-                        }
-                        acc |= block << (index * bitsPerBlock);
-                        index += 1;
-                        if (index >= blocksPerLong) {
-                            Protocol.writeLong(buffer, acc);
-                            acc = 0;
-                            index = 0;
-                        }
-                    }
+            for (int by = 0; by < chunkSectionBlockCount; by++) {
+                int blockIndex = chunkSectionY * chunkSectionBlockCount + by;
+                var block = (long) blockArray[blockIndex];
+                if (block != 0) {
+                    count++;
+                }
+                acc |= block << (index * bitsPerBlock);
+                index += 1;
+                if (index >= blocksPerLong) {
+                    Protocol.writeLong(buffer, acc);
+                    acc = 0;
+                    index = 0;
                 }
             }
             Protocol.writeShort(chunkData, count); // blocks in chunk section
@@ -136,12 +145,8 @@ public class Chunk {
     byte[] encodeBlob() throws IOException {
         var inner = new ByteArrayOutputStream();
         var stream = new DeflaterOutputStream(inner);
-        for (int y = 0; y < 256; y++) {
-            for (int z = 0; z < 16; z++) {
-                for (int x = 0; x < 16; x++) {
-                    Protocol.writeShort(stream, blockMap.getOrDefault(new Location(x, y, z), (short)0));
-                }
-            }
+        for (int b = 0; b < chunkBlockCount; b++) {
+            Protocol.writeShort(stream, blockArray[b]);
         }
         stream.finish();
         return inner.toByteArray();
@@ -151,12 +156,8 @@ public class Chunk {
         try {
             var stream = new InflaterInputStream(new ByteArrayInputStream(data));
             var c = new Chunk();
-            for (int y = 0; y < 256; y++) {
-                for (int z = 0; z < 16; z++) {
-                    for (int x = 0; x < 16; x++) {
-                        c.setBlock(new Location(x, y, z), Protocol.readShort(stream));
-                    }
-                }
+            for (int b = 0; b < chunkBlockCount; b++) {
+                c.setBlock(b, Protocol.readShort(stream));
             }
             return c;
         } catch (EOFException e) {

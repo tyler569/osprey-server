@@ -45,4 +45,24 @@ public class Slot {
             data.encode(os);
         }
     }
+
+    static Slot from(Packet packet) throws IOException {
+        var p = new Slot();
+        p.empty = !packet.readBoolean();
+        if (!p.empty) {
+            p.itemId = packet.readVarInt();
+            p.count = packet.readShort();
+            // TODO: p.data = packet.readNBT();
+        }
+        return p;
+    }
+
+    @Override
+    public String toString() {
+        return "Slot{" +
+            "empty=" + empty +
+            ", itemId=" + itemId +
+            ", count=" + count +
+            '}';
+    }
 }

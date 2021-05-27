@@ -100,6 +100,24 @@ public class World {
         }
     }
 
+    void preloadFromDisk(ChunkLocation minus, ChunkLocation plus) throws SQLException, IOException {
+        String sql = """
+            SELECT x, z, data FROM chunks
+            WHERE x > ? AND x < ? AND z > ? AND z < ?
+            """;
+        var statement = db.prepareStatement(sql);
+        statement.setInt(1, minus.x());
+        statement.setInt(2, plus.x());
+        statement.setInt(3, minus.z());
+        statement.setInt(4, plus.z());
+        var results = statement.executeQuery();
+        while (results.next()) {
+            byte[] blob = results.getBytes(3);
+            var location = new ChunkLocation(results.getInt(1), results.getInt(2));
+            loadedChunks.put(location, Chunk.fromBlob(blob));
+        }
+    }
+
     private void migrationStep(int id, String sql) throws SQLException {
         var statement = db.prepareStatement(sql);
         try {

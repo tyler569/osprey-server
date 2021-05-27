@@ -1,9 +1,11 @@
 package io.philbrick.minecraft;
 
 import io.philbrick.minecraft.nbt.*;
+import org.json.*;
 
 import java.io.*;
 import java.net.*;
+import java.nio.file.*;
 import java.security.*;
 import java.sql.*;
 import java.util.*;
@@ -108,16 +110,49 @@ public class Main {
     static Map<String, Position> playerLocations = new HashMap<>();
     static World world;
 
-    // static ArrayList<World> worlds = new ArrayList<>();
-    // etc
-    static final Reaper reaper = new Reaper();
     static int nextEntityId = 1;
+    static boolean preload = false;
+
+    static Map<Integer, Integer> itemToBlock = new HashMap<>();
+
+    static void populateItemToBlock() throws IOException {
+        var registryFile = Files.readString(Path.of("generated/reports/registries.json"));
+        var registry = new JSONObject(registryFile);
+        var items = registry.getJSONObject("minecraft:item").getJSONObject("entries");
+        Iterator<String> itemsKeys = items.keys();
+
+        var blockRegistry = Files.readString(Path.of("generated/reports/blocks.json"));
+        var blocks = new JSONObject(blockRegistry);
+
+        while (itemsKeys.hasNext()) {
+            String key = itemsKeys.next();
+            var itemId = items.getJSONObject(key).getInt("protocol_id");
+            var blockEntry = blocks.optJSONObject(key);
+            if (blockEntry != null) {
+                var blockId = blockEntry.getJSONArray("states").getJSONObject(0).getInt("id");
+                itemToBlock.put(itemId, blockId);
+            }
+        }
+    }
 
     public static void main(String[] args) throws IOException {
         try {
             world = World.open("world.db");
         } catch (SQLException e) {
             e.printStackTrace();
+        }
+
+        populateItemToBlock();
+
+        if (preload) {
+            try {
+                world.preloadFromDisk(
+                    new ChunkLocation(-20, -20),
+                    new ChunkLocation(20, 20)
+                );
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
         }
 
         try {
@@ -129,6 +164,7 @@ public class Main {
         }
 
         final var socket = new ServerSocket(25565);
+        System.out.println("Ready");
         while (!socket.isClosed()) {
             var connection = socket.accept();
             Player.runThread(nextEntityId, connection);

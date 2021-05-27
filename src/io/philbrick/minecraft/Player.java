@@ -17,7 +17,7 @@ public class Player {
     }
 
     static final byte[] encryptionToken = "Hello World".getBytes();
-    static final int maxRenderDistance = 10;
+    static final int maxRenderDistance = 3;
 
     String name;
     Connection connection;
@@ -29,6 +29,7 @@ public class Player {
     Set<Player> nearbyPlayers;
     Position position;
     Inventory inventory;
+    Slot selectedItem;
     Set<ChunkLocation> loadedChunks;
     int renderDistance;
     boolean firstSettings = true;
@@ -72,7 +73,6 @@ public class Player {
             }
         }
         Main.players.remove(this);
-        Main.reaper.appendDeadThread(thread);
     }
 
     void teleport(Location location) throws IOException {
@@ -133,6 +133,8 @@ public class Player {
             case 21 -> handleMovement(packet);
             case 27 -> handlePlayerDigging(packet);
             case 28 -> handleEntityAction(packet);
+            case 37 -> handleHeldItemChange(packet);
+            case 40 -> handleCreativeInventoryAction(packet);
             case 44 -> handleAnimation(packet);
             case 46 -> handlePlayerPlaceBlock(packet);
             default -> unknownPacket(packet);
@@ -252,6 +254,7 @@ public class Player {
         position = Main.playerLocations.getOrDefault(name, new Position());
         sendUpdateChunkPosition();
         inventory = new Inventory();
+        selectedItem = inventory.get(36);
         loadedChunks = new HashSet<>();
         sendInventory();
         for (var player : Main.players) {
@@ -713,10 +716,31 @@ public class Player {
                 return;
             }
         }
-        Main.world.setBlock(location, 1);
-        for (var player : Main.players) {
-            player.sendBlockChange(location, 1);
+        if (Main.itemToBlock.containsKey(selectedItem.itemId)) {
+            var blockId = Main.itemToBlock.get(selectedItem.itemId);
+            Main.world.setBlock(location, blockId);
+            for (var player : Main.players) {
+                player.sendBlockChange(location, blockId);
+            }
+        } else {
+            System.out.printf("Attempt to place %d is invalid%n", selectedItem.itemId);
+            sendBlockChange(location, 0);
         }
     }
 
+    // inventory
+
+    void handleCreativeInventoryAction(Packet packet) throws IOException {
+        var slotNumber = Protocol.readShort(packet);
+        var slot = Slot.from(packet);
+        inventory.put(slotNumber, slot);
+        System.out.printf("Inventory %d = %s%n", slotNumber, slot);
+    }
+
+    void handleHeldItemChange(Packet packet) throws IOException {
+        var slotNumber = Protocol.readShort(packet);
+        selectedItem = inventory.get(slotNumber + 36);
+        System.out.printf("Select %d %s%n", slotNumber, selectedItem);
+        // TODO send the item to nearbyPlayers
+    }
 }
