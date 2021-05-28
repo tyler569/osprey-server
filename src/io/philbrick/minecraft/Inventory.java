@@ -1,28 +1,25 @@
 package io.philbrick.minecraft;
 
+import java.util.*;
+
 public class Inventory {
-    Slot[] slots;
-    final int slotCount = 45;
+    Map<Integer, Slot> slots;
 
     Inventory() {
-        slots = new Slot[slotCount];
-        for (int i = 0; i < slotCount; i++) {
-            slots[i] = new Slot();
-        }
-        slots[36].itemId = 1;
-        slots[36].empty = false;
-        slots[36].count = 1;
+        slots = new HashMap<>();
+        slots.put(36, new Slot(1));
+        slots.put(44, new Slot(586));
     }
 
     int size() {
-        return slots.length;
+        return 45;
     }
 
     public void put(short slotNumber, Slot slot) {
-        slots[slotNumber] = slot;
+        slots.put((int)slotNumber, slot);
     }
 
     public Slot get(int slotNumber) {
-        return slots[slotNumber];
+        return slots.getOrDefault(slotNumber, new Slot());
     }
 }
