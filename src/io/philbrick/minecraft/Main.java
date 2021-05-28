@@ -115,6 +115,26 @@ public class Main {
 
     static Map<Integer, Integer> itemToBlock = new HashMap<>();
 
+
+    static JSONObject blocks;
+
+    static Integer blockDefaultId(String name) {
+        var blockEntry = blocks.optJSONObject(name);
+        if (blockEntry == null) {
+            return null;
+        }
+        var blockStates = blockEntry.getJSONArray("states");
+
+        for (var maybeState : blockStates) {
+            if (maybeState instanceof JSONObject state) {
+                if (state.optBoolean("default", false)) {
+                    return state.getInt("id");
+                }
+            }
+        }
+        return null;
+    }
+
     static void populateItemToBlock() throws IOException {
         var registryFile = Files.readString(Path.of("generated/reports/registries.json"));
         var registry = new JSONObject(registryFile);
@@ -122,17 +142,25 @@ public class Main {
         Iterator<String> itemsKeys = items.keys();
 
         var blockRegistry = Files.readString(Path.of("generated/reports/blocks.json"));
-        var blocks = new JSONObject(blockRegistry);
+        blocks = new JSONObject(blockRegistry);
 
         while (itemsKeys.hasNext()) {
             String key = itemsKeys.next();
             var itemId = items.getJSONObject(key).getInt("protocol_id");
-            var blockEntry = blocks.optJSONObject(key);
-            if (blockEntry != null) {
-                var blockId = blockEntry.getJSONArray("states").getJSONObject(0).getInt("id");
+            var blockId = blockDefaultId(key);
+            if (blockId != null) {
                 itemToBlock.put(itemId, blockId);
             }
         }
+    }
+
+    static Player playerByName(String name) {
+        for (var player : players) {
+            if (player.name.equals(name)) {
+                return player;
+            }
+        }
+        return null;
     }
 
     public static void main(String[] args) throws IOException {
