@@ -65,6 +65,7 @@ public class World {
             statement.setInt(2, location.z());
             statement.setBytes(3, chunkBlob);
             statement.execute();
+            connection.commit();
         }
     }
 
