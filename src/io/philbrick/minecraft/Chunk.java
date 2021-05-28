@@ -3,6 +3,7 @@ package io.philbrick.minecraft;
 import io.philbrick.minecraft.nbt.*;
 
 import java.io.*;
+import java.nio.*;
 import java.util.*;
 import java.util.zip.*;
 
@@ -20,12 +21,19 @@ public class Chunk {
         heightMap = new short[256];
     }
 
+    static int diamond = Main.blockDefaultId("minecraft:diamond_ore");
+
     static Chunk defaultGeneration() {
+        var random = new Random();
         var c = new Chunk();
         for (int y = 0; y < 32; y++) {
             for (int z = 0; z < 16; z += 1) {
                 for (int x = 0; x < 16; x += 1) {
-                    c.setBlock(x, y, z, 1);
+                    if (random.nextFloat() < 0.0001) {
+                        c.setBlock(x, y, z, diamond);
+                    } else {
+                        c.setBlock(x, y, z, 1);
+                    }
                 }
             }
         }
@@ -55,6 +63,10 @@ public class Chunk {
 
     void setBlock(Location location, int id) {
         setBlock(location, (short) id);
+    }
+
+    short block(Location location) {
+        return blockArray[location.blockIndex()];
     }
 
     void encodeMap(OutputStream chunkData) throws IOException {
@@ -155,9 +167,14 @@ public class Chunk {
     static Chunk fromBlob(byte[] data) throws IOException {
         try {
             var stream = new InflaterInputStream(new ByteArrayInputStream(data));
+            var inflated  = stream.readAllBytes();
             var c = new Chunk();
+
+            var buffer = ByteBuffer.wrap(inflated);
+            buffer.order(ByteOrder.BIG_ENDIAN);
+
             for (int b = 0; b < chunkBlockCount; b++) {
-                c.setBlock(b, Protocol.readShort(stream));
+                c.setBlock(b, buffer.getShort());
             }
             return c;
         } catch (EOFException e) {
