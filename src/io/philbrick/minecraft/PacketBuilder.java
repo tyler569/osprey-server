@@ -1,6 +1,7 @@
 package io.philbrick.minecraft;
 
 import java.io.*;
+import java.util.*;
 
 public class PacketBuilder extends ByteArrayOutputStream {
     void writeString(String s) throws IOException {
@@ -45,5 +46,10 @@ public class PacketBuilder extends ByteArrayOutputStream {
 
     void writePosition(Location l) throws IOException {
         Protocol.writeLong(this, l.encode());
+    }
+
+    void writeUUID(UUID uuid) throws IOException {
+        Protocol.writeLong(this, uuid.getMostSignificantBits());
+        Protocol.writeLong(this, uuid.getLeastSignificantBits());
     }
 }
