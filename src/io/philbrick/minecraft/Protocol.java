@@ -53,6 +53,11 @@ public class Protocol {
         os.write(str.getBytes());
     }
 
+    public static void writeString0(OutputStream os, String str) throws IOException {
+        os.write(str.getBytes());
+        os.write(0);
+    }
+
     public static void writeVarInt(OutputStream os, int number) throws IOException {
         VarInt.write(os, number);
     }
