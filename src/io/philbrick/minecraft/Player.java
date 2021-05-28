@@ -143,18 +143,18 @@ public class Player {
 
 
     void writeHandshakeResponse() throws IOException {
-        connection.sendPacket(0, (m) -> {
-            VarInt.write(m, Main.handshake_json.length());
-            m.write(Main.handshake_json.getBytes());
+        connection.sendPacket(0, (p) -> {
+            p.writeVarInt(Main.handshake_json.length());
+            p.write(Main.handshake_json.getBytes());
         });
     }
 
     void writePingResponse(long number) throws IOException {
-        connection.sendPacket(1, (m) -> {
+        connection.sendPacket(1, (p) -> {
             var b = ByteBuffer.allocate(Long.BYTES);
             b.order(ByteOrder.BIG_ENDIAN);
             b.putLong(number);
-            m.write(b.array());
+            p.write(b.array());
         });
     }
 
@@ -185,13 +185,13 @@ public class Player {
     // handle login packets
 
     void sendEncryptionRequest() throws IOException {
-        connection.sendPacket(1, (m) -> { // encryption request
-            Protocol.writeString(m, "server id not short");
+        connection.sendPacket(1, (p) -> { // encryption request
+            p.writeString("server id not short");
             var encodedKey = Main.encryptionKey.getPublic().getEncoded();
-            Protocol.writeVarInt(m, encodedKey.length);
-            Protocol.writeBytes(m, encodedKey);
-            Protocol.writeVarInt(m, encryptionToken.length);
-            Protocol.writeBytes(m, encryptionToken);
+            p.writeVarInt(encodedKey.length);
+            p.writeBytes(encodedKey);
+            p.writeVarInt(encryptionToken.length);
+            p.writeBytes(encryptionToken);
         });
     }
 
@@ -204,45 +204,45 @@ public class Player {
     }
 
     void setCompression(int maxLen) throws IOException {
-        connection.sendPacket(3, (m) -> {
-            Protocol.writeVarInt(m, maxLen);
+        connection.sendPacket(3, (p) -> {
+            p.writeVarInt(maxLen);
         });
         connection.setCompression(maxLen);
     }
 
     void sendLoginSuccess() throws IOException {
-        connection.sendPacket(2, (m) -> { // login success
-            Protocol.writeLong(m, 0);
-            Protocol.writeLong(m, 0);
-            Protocol.writeString(m, name);
+        connection.sendPacket(2, (p) -> { // login success
+            p.writeLong(0);
+            p.writeLong(0);
+            p.writeString(name);
         });
     }
 
     void sendBrand(String brand) throws IOException {
-        connection.sendPacket(0x17, (m) -> {
-            Protocol.writeString(m, "minecraft:brand");
-            Protocol.writeBytes(m, brand.getBytes());
+        connection.sendPacket(0x17, (p) -> {
+            p.writeString("minecraft:brand");
+            p.writeBytes(brand.getBytes());
         });
     }
 
     void sendJoinGame() throws IOException {
-        connection.sendPacket(0x24, (m) -> { // Join Game
-            Protocol.writeInt(m, entityId);
-            Protocol.writeBoolean(m, false); // is hardcore
-            Protocol.writeByte(m, (byte)1); // gamemode creative
-            Protocol.writeByte(m, (byte)-1); // previous gamemode
-            Protocol.writeVarInt(m, 1); // world count
-            Protocol.writeString(m, "minecraft:overworld"); // list of worlds (# count)
-            Main.dimensionCodec.encode(m);
-            Main.dimension.encode(m);
-            Protocol.writeString(m, "minecraft:overworld"); // world name
-            Protocol.writeLong(m, 1); // hashed seed
-            Protocol.writeVarInt(m, 100); // max players
-            Protocol.writeVarInt(m, 10); // view distance
-            Protocol.writeBoolean(m, false); // reduce debug info
-            Protocol.writeBoolean(m, true); // enable respawn screen
-            Protocol.writeBoolean(m, false); // world is debug (never)
-            Protocol.writeBoolean(m, true); // world is superflat
+        connection.sendPacket(0x24, (p) -> { // Join Game
+            p.writeInt(entityId);
+            p.writeBoolean(false); // is hardcore
+            p.writeByte((byte)1); // gamemode creative
+            p.writeByte((byte)-1); // previous gamemode
+            p.writeVarInt(1); // world count
+            p.writeString("minecraft:overworld"); // list of worlds (# count)
+            Main.dimensionCodec.encode(p);
+            Main.dimension.encode(p);
+            p.writeString("minecraft:overworld"); // world name
+            p.writeLong(1); // hashed seed
+            p.writeVarInt(100); // max players
+            p.writeVarInt(10); // view distance
+            p.writeBoolean(false); // reduce debug info
+            p.writeBoolean(true); // enable respawn screen
+            p.writeBoolean(false); // world is debug (never)
+            p.writeBoolean(true); // world is superflat
         });
     }
 
@@ -269,14 +269,14 @@ public class Player {
     }
 
     void sendEntityTeleport(int entityId, Position position) throws IOException {
-        connection.sendPacket(0x56, (m) -> {
-            Protocol.writeVarInt(m, entityId);
-            Protocol.writeDouble(m, position.x);
-            Protocol.writeDouble(m, position.y);
-            Protocol.writeDouble(m, position.z);
-            Protocol.writeByte(m, position.yawAngle());
-            Protocol.writeByte(m, position.pitchAngle());
-            Protocol.writeBoolean(m, position.onGround);
+        connection.sendPacket(0x56, (p) -> {
+            p.writeVarInt(entityId);
+            p.writeDouble(position.x);
+            p.writeDouble(position.y);
+            p.writeDouble(position.z);
+            p.writeByte(position.yawAngle());
+            p.writeByte(position.pitchAngle());
+            p.writeBoolean(position.onGround);
         });
     }
 
@@ -325,49 +325,49 @@ public class Player {
     // handle play packets
 
     void sendChunk(ChunkLocation chunkLocation) throws IOException {
-        connection.sendPacket(0x20, (m) -> {
-            Protocol.writeInt(m, chunkLocation.x());
-            Protocol.writeInt(m, chunkLocation.z());
-            Main.world.load(chunkLocation).encodePacket(m);
+        connection.sendPacket(0x20, (p) -> {
+            p.writeInt(chunkLocation.x());
+            p.writeInt(chunkLocation.z());
+            Main.world.load(chunkLocation).encodePacket(p);
         });
         loadedChunks.add(chunkLocation);
     }
 
     void unloadChunk(ChunkLocation chunkLocation) throws IOException {
-        connection.sendPacket(0x1c, (m) -> {
-            Protocol.writeInt(m, chunkLocation.x());
-            Protocol.writeInt(m, chunkLocation.z());
+        connection.sendPacket(0x1c, (p) -> {
+            p.writeInt(chunkLocation.x());
+            p.writeInt(chunkLocation.z());
         });
         loadedChunks.remove(chunkLocation);
         Main.world.saveChunkSafe(chunkLocation);
     }
 
     void sendInventory() throws IOException {
-        connection.sendPacket(0x13, (m) -> {
-            Protocol.writeByte(m, 0);
-            Protocol.writeShort(m, inventory.size());
+        connection.sendPacket(0x13, (p) -> {
+            p.writeByte((byte) 0);
+            p.writeShort((short) inventory.size());
             for (var slot : inventory.slots) {
-                slot.encode(m);
+                slot.encode(p);
             }
         });
     }
 
     void sendPositionLook() throws IOException {
-        connection.sendPacket(0x34, (m) -> {
-            Protocol.writeDouble(m, position.x);
-            Protocol.writeDouble(m, position.y);
-            Protocol.writeDouble(m, position.z);
-            Protocol.writeFloat(m, position.yaw);
-            Protocol.writeFloat(m, position.pitch);
-            Protocol.writeByte(m, 0);
-            Protocol.writeVarInt(m, 0);
+        connection.sendPacket(0x34, (p) -> {
+            p.writeDouble(position.x);
+            p.writeDouble(position.y);
+            p.writeDouble(position.z);
+            p.writeFloat(position.yaw);
+            p.writeFloat(position.pitch);
+            p.writeByte((byte) 0);
+            p.writeVarInt(0);
         });
     }
 
     void sendUpdateChunkPosition(int x, int z) throws IOException {
-        connection.sendPacket(0x40, (m) -> {
-            Protocol.writeVarInt(m, x);
-            Protocol.writeVarInt(m, z);
+        connection.sendPacket(0x40, (p) -> {
+            p.writeVarInt(x);
+            p.writeVarInt(z);
         });
     }
 
@@ -376,8 +376,8 @@ public class Player {
     }
 
     void sendSpawnPosition() throws IOException {
-        connection.sendPacket(0x42, (m) -> {
-            Protocol.writePosition(m, 0, 32, 0);
+        connection.sendPacket(0x42, (p) -> {
+            p.writePosition(0, 32, 0);
         });
     }
 
@@ -417,72 +417,72 @@ public class Player {
         if (players.size() == 0) {
             return;
         }
-        connection.sendPacket(0x32, (m) -> {
-            Protocol.writeVarInt(m, 0);
-            Protocol.writeVarInt(m, players.size());
+        connection.sendPacket(0x32, (p) -> {
+            p.writeVarInt(0);
+            p.writeVarInt(players.size());
             for (var player : players) {
-                Protocol.writeLong(m, player.uuid.getMostSignificantBits());
-                Protocol.writeLong(m, player.uuid.getLeastSignificantBits());
-                Protocol.writeString(m, player.name);
-                Protocol.writeVarInt(m, 0); // number of properties
-                Protocol.writeVarInt(m, 1); // gamemode
-                Protocol.writeVarInt(m, 0); // ping
-                Protocol.writeBoolean(m, false); // has display name
+                p.writeLong(player.uuid.getMostSignificantBits());
+                p.writeLong(player.uuid.getLeastSignificantBits());
+                p.writeString(player.name);
+                p.writeVarInt(0); // number of properties
+                p.writeVarInt(1); // gamemode
+                p.writeVarInt(0); // ping
+                p.writeBoolean(false); // has display name
             }
         });
     }
 
     void sendAddPlayer(Player player) throws IOException {
-        connection.sendPacket(0x32, (m) -> {
-            Protocol.writeVarInt(m, 0);
-            Protocol.writeVarInt(m, 1);
-            Protocol.writeLong(m, player.uuid.getMostSignificantBits());
-            Protocol.writeLong(m, player.uuid.getLeastSignificantBits());
-            Protocol.writeString(m, player.name);
-            Protocol.writeVarInt(m, 0); // number of properties
-            Protocol.writeVarInt(m, 1); // gamemode
-            Protocol.writeVarInt(m, 0); // ping
-            Protocol.writeBoolean(m, false); // has display name
+        connection.sendPacket(0x32, (p) -> {
+            p.writeVarInt(0);
+            p.writeVarInt(1);
+            p.writeLong(player.uuid.getMostSignificantBits());
+            p.writeLong(player.uuid.getLeastSignificantBits());
+            p.writeString(player.name);
+            p.writeVarInt(0); // number of properties
+            p.writeVarInt(1); // gamemode
+            p.writeVarInt(0); // ping
+            p.writeBoolean(false); // has display name
         });
     }
 
     void sendSpawnPlayer(Player player) throws IOException {
-        connection.sendPacket(4, (m) -> {
-            Protocol.writeVarInt(m, player.entityId);
-            Protocol.writeLong(m, player.uuid.getMostSignificantBits());
-            Protocol.writeLong(m, player.uuid.getLeastSignificantBits());
-            Protocol.writeDouble(m, player.position.x);
-            Protocol.writeDouble(m, player.position.y);
-            Protocol.writeDouble(m, player.position.z);
-            Protocol.writeByte(m, player.position.yawAngle());
-            Protocol.writeByte(m, player.position.pitchAngle());
+        connection.sendPacket(4, (p) -> {
+            p.writeVarInt(player.entityId);
+            p.writeLong(player.uuid.getMostSignificantBits());
+            p.writeLong(player.uuid.getLeastSignificantBits());
+            p.writeDouble(player.position.x);
+            p.writeDouble(player.position.y);
+            p.writeDouble(player.position.z);
+            p.writeByte(player.position.yawAngle());
+            p.writeByte(player.position.pitchAngle());
         });
     }
 
     void sendRemovePlayer(Player player) throws IOException {
-        connection.sendPacket(0x32, (m) -> {
-            Protocol.writeVarInt(m, 4);
-            Protocol.writeVarInt(m, 1);
-            Protocol.writeLong(m, player.uuid.getMostSignificantBits());
-            Protocol.writeLong(m, player.uuid.getLeastSignificantBits());
+        connection.sendPacket(0x32, (p) -> {
+            p.writeVarInt(4);
+            p.writeVarInt(1);
+            p.writeLong(player.uuid.getMostSignificantBits());
+            p.writeLong(player.uuid.getLeastSignificantBits());
         });
     }
 
     void sendDespawnPlayer(Player player) throws IOException {
-        connection.sendPacket(0x36, (m) -> {
-            Protocol.writeVarInt(m, 1);
-            Protocol.writeVarInt(m, player.entityId);
+        connection.sendPacket(0x36, (p) -> {
+            p.writeVarInt(1);
+            p.writeVarInt(player.entityId);
         });
     }
 
     void sendChat(Player sender, String message) throws IOException {
         var chat = new JSONObject();
         chat.put("text", String.format("<%s> %s", sender.name, message));
-        connection.sendPacket(0x0E, (m) -> {
-            Protocol.writeString(m, chat.toString());
-            Protocol.writeByte(m, 0);
-            Protocol.writeLong(m, sender.uuid.getMostSignificantBits());
-            Protocol.writeLong(m, sender.uuid.getLeastSignificantBits());
+        connection.sendPacket(0x0E, (p) -> {
+            p.writeString(chat.toString());
+            p.writeByte((byte) 0);
+            p.writeLong(sender.uuid.getMostSignificantBits());
+            p.writeLong(sender.uuid.getLeastSignificantBits());
         });
     }
 
@@ -490,11 +490,11 @@ public class Player {
         var chat = new JSONObject();
         chat.put("text", message);
         chat.put("color", color);
-        connection.sendPacket(0x0E, (m) -> {
-            Protocol.writeString(m, chat.toString());
-            Protocol.writeByte(m, 0);
-            Protocol.writeLong(m, 0);
-            Protocol.writeLong(m, 0);
+        connection.sendPacket(0x0E, (p) -> {
+            p.writeString(chat.toString());
+            p.writeByte((byte) 0);
+            p.writeLong(0);
+            p.writeLong(0);
         });
     }
 
@@ -538,18 +538,18 @@ public class Player {
         short protocol_dx = (short)(dx * 4096);
         short protocol_dy = (short)(dy * 4096);
         short protocol_dz = (short)(dz * 4096);
-        connection.sendPacket(0x28, (m) -> {
-            Protocol.writeVarInt(m, entityId);
-            Protocol.writeShort(m, protocol_dx);
-            Protocol.writeShort(m, protocol_dy);
-            Protocol.writeShort(m, protocol_dz);
-            Protocol.writeByte(m, position.yawAngle());
-            Protocol.writeByte(m, position.pitchAngle());
-            Protocol.writeBoolean(m, position.onGround);
+        connection.sendPacket(0x28, (p) -> {
+            p.writeVarInt(entityId);
+            p.writeShort(protocol_dx);
+            p.writeShort(protocol_dy);
+            p.writeShort(protocol_dz);
+            p.writeByte(position.yawAngle());
+            p.writeByte(position.pitchAngle());
+            p.writeBoolean(position.onGround);
         });
-        connection.sendPacket(0x3A, (m) -> {
-            Protocol.writeVarInt(m, entityId);
-            Protocol.writeByte(m, position.yawAngle());
+        connection.sendPacket(0x3A, (p) -> {
+            p.writeVarInt(entityId);
+            p.writeByte(position.yawAngle());
         });
     }
 
@@ -657,9 +657,9 @@ public class Player {
     // animation
 
     void sendEntityAnimation(int entityId, int animation) throws IOException {
-        connection.sendPacket(5, (m) -> {
-            Protocol.writeVarInt(m, entityId);
-            Protocol.writeByte(m, animation);
+        connection.sendPacket(5, (p) -> {
+            p.writeVarInt(entityId);
+            p.writeByte((byte) animation);
         });
     }
 
@@ -675,9 +675,9 @@ public class Player {
     // block place & remove
 
     void sendBlockChange(Location location, int blockId) throws IOException {
-        connection.sendPacket(0xB, (m) -> {
-            Protocol.writeLong(m, location.encode());
-            Protocol.writeVarInt(m, blockId);
+        connection.sendPacket(0xB, (p) -> {
+            p.writeLong(location.encode());
+            p.writeVarInt(blockId);
         });
     }
 
@@ -731,14 +731,14 @@ public class Player {
     // inventory
 
     void handleCreativeInventoryAction(Packet packet) throws IOException {
-        var slotNumber = Protocol.readShort(packet);
+        var slotNumber = packet.readShort();
         var slot = Slot.from(packet);
         inventory.put(slotNumber, slot);
         System.out.printf("Inventory %d = %s%n", slotNumber, slot);
     }
 
     void handleHeldItemChange(Packet packet) throws IOException {
-        var slotNumber = Protocol.readShort(packet);
+        var slotNumber = packet.readShort();
         selectedItem = inventory.get(slotNumber + 36);
         System.out.printf("Select %d %s%n", slotNumber, selectedItem);
         // TODO send the item to nearbyPlayers

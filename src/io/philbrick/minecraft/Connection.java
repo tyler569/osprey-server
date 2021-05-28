@@ -69,9 +69,9 @@ public class Connection {
         return packet;
     }
 
-    void sendPacket(int type, PacketBuilder closure) throws IOException {
-        var m = new ByteArrayOutputStream();
-        Protocol.writeVarInt(m, type);
+    void sendPacket(int type, PacketBuilderLambda closure) throws IOException {
+        var m = new PacketBuilder();
+        m.writeVarInt(type);
         closure.apply(m);
         if (!compressionEnabled) {
             var data = m.toByteArray();
@@ -131,8 +131,8 @@ public class Connection {
 
     void sendKeepAlive() throws IOException {
         lastKeepAlive = rng.nextLong();
-        sendPacket(0x1F, (m) -> {
-            Protocol.writeLong(m, lastKeepAlive);
+        sendPacket(0x1F, (p) -> {
+            p.writeLong(lastKeepAlive);
         });
         lastKeepAliveTime = Instant.now();
     }
