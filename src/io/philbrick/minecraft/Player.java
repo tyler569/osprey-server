@@ -17,7 +17,7 @@ public class Player {
     }
 
     static final byte[] encryptionToken = "Hello World".getBytes();
-    static final int maxRenderDistance = 3;
+    static final int maxRenderDistance = 10;
 
     String name;
     Connection connection;
@@ -29,10 +29,13 @@ public class Player {
     Set<Player> nearbyPlayers;
     Position position;
     Inventory inventory;
-    Slot selectedItem;
+    int selectedHotbarSlot;
     Set<ChunkLocation> loadedChunks;
     int renderDistance;
     boolean firstSettings = true;
+
+    Location editorLocation1;
+    Location editorLocation2;
 
     Player(int entity, Socket sock) throws IOException {
         connection = new Connection(sock);
@@ -50,7 +53,7 @@ public class Player {
         try {
             handleConnection();
         } catch (EOFException e) {
-            System.out.println("EOF");
+            println("EOF");
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -58,6 +61,10 @@ public class Player {
     }
 
     void disconnect() {
+        try {
+            connection.close();
+        } catch (Exception ignored) {}
+        Main.players.remove(this);
         if (connection.isEstablished()) {
             for (var player : Main.players) {
                 try {
@@ -68,11 +75,7 @@ public class Player {
                 }
             }
             Main.playerLocations.put(name, position);
-            for (var chunk : loadedChunks) {
-                Main.world.saveChunkSafe(chunk);
-            }
         }
-        Main.players.remove(this);
     }
 
     void teleport(Location location) throws IOException {
@@ -88,10 +91,14 @@ public class Player {
 
     void handleConnection() throws IOException {
         while (!connection.isClosed()) {
-            Packet p = connection.readPacket();
-            handlePacket(p);
+            try {
+                Packet p = connection.readPacket();
+                handlePacket(p);
+            } catch (SocketException e) {
+                System.err.printf("%s Exception: %s%n", name, e.getMessage());
+            }
         }
-        System.out.println("Leaving handleConnection");
+        println("Leaving handleConnection");
     }
 
     void handlePacket(Packet packet) throws IOException {
@@ -103,7 +110,7 @@ public class Player {
     }
 
     void unknownPacket(Packet packet) {
-        System.out.format("Unknown packet type %d %#x in state %s%n", packet.type, packet.type, state);
+        printf("Unknown packet type %d %#x in state %s%n", packet.type, packet.type, state);
     }
 
     void handleStatusPacket(Packet packet) throws IOException {
@@ -126,6 +133,7 @@ public class Player {
         switch (packet.type) {
             case 3 -> handleChat(packet);
             case 5 -> handleSettings(packet);
+            case 11 -> handlePluginMessage(packet);
             case 16 -> handleKeepAlive(packet);
             case 18 -> handlePosition(packet);
             case 19 -> handlePositionAndRotation(packet);
@@ -167,7 +175,7 @@ public class Player {
             short port = packet.readShort();
             int next = packet.readVarInt();
 
-            System.out.format("handshake: version: %d address: '%s' port: %d next: %d%n",
+            printf("handshake: version: %d address: '%s' port: %d next: %d%n",
                 protocolVersion, address, port, next);
             if (next == 2) {
                 state = State.Login;
@@ -197,9 +205,12 @@ public class Player {
 
     void handleLoginStart(Packet packet) throws IOException {
         name = packet.readString();
+        if (name.equals("StackDoubleFlow")) {
+            connection.debug = true;
+        }
         uuid = UUID.nameUUIDFromBytes(String.format("OfflinePlayer:%s", name).getBytes());
-        // uuid = UUID.randomUUID();
-        System.out.format("login: '%s'%n", name);
+        printf("UUID: %s%n", uuid);
+        printf("login: '%s'%n", name);
         sendEncryptionRequest();
     }
 
@@ -218,10 +229,16 @@ public class Player {
         });
     }
 
-    void sendBrand(String brand) throws IOException {
+    void sendPluginMessage(String plugin, PacketBuilderLambda inner) throws IOException {
         connection.sendPacket(0x17, (p) -> {
-            p.writeString("minecraft:brand");
-            p.writeBytes(brand.getBytes());
+            p.writeString(plugin);
+            inner.apply(p);
+        });
+    }
+
+    void sendBrand(String brand) throws IOException {
+        sendPluginMessage("minecraft:brand", (p) -> {
+            p.writeString(brand);
         });
     }
 
@@ -250,11 +267,11 @@ public class Player {
         sendJoinGame();
         sendAddPlayers(Main.players);
         sendAddPlayer(this);
-        sendBrand("BeforeBrand");
+        sendBrand("idk lol");
         position = Main.playerLocations.getOrDefault(name, new Position());
         sendUpdateChunkPosition();
         inventory = new Inventory();
-        selectedItem = inventory.get(36);
+        selectedHotbarSlot = 0;
         loadedChunks = new HashSet<>();
         sendInventory();
         for (var player : Main.players) {
@@ -294,12 +311,12 @@ public class Player {
             var cipher = Cipher.getInstance("RSA");
             cipher.init(Cipher.DECRYPT_MODE, Main.encryptionKey.getPrivate());
             decryptedToken = cipher.doFinal(token);
-            System.out.format("  decrypted token: %s%n",
+            printf("  decrypted token: %s%n",
                 Arrays.toString(decryptedToken));
 
             cipher.init(Cipher.DECRYPT_MODE, Main.encryptionKey.getPrivate());
             decryptedSecret = cipher.doFinal(secret);
-            System.out.format("  decrypted secret key: %s%n",
+            printf("  decrypted secret key: %s%n",
                 Arrays.toString(decryptedSecret));
         } catch (Exception e) {
             e.printStackTrace();
@@ -311,12 +328,12 @@ public class Player {
             connection.setEncryption(decryptedSecret);
         } catch (Exception e) {
             // send Login Failure
-            System.out.println("Encryption failure!");
+            println("Encryption failure!");
             return;
         }
 
         setCompression(128);
-        System.out.println("Writing Login Success!");
+        println("Writing Login Success!");
         sendLoginSuccess();
         state = State.Play;
         doPreJoin();
@@ -339,15 +356,14 @@ public class Player {
             p.writeInt(chunkLocation.z());
         });
         loadedChunks.remove(chunkLocation);
-        Main.world.saveChunkSafe(chunkLocation);
     }
 
     void sendInventory() throws IOException {
         connection.sendPacket(0x13, (p) -> {
             p.writeByte((byte) 0);
             p.writeShort((short) inventory.size());
-            for (var slot : inventory.slots) {
-                slot.encode(p);
+            for (int i = 0; i < 45; i++) {
+                inventory.get(i).encode(p);
             }
         });
     }
@@ -386,7 +402,6 @@ public class Player {
         loadCorrectChunks();
         sendUpdateChunkPosition();
         sendPositionLook();
-        sendBrand("AfterBrand");
     }
 
     void handleSettings(Packet packet) throws IOException {
@@ -405,10 +420,23 @@ public class Player {
         }
     }
 
+    void handlePluginMessage(Packet packet) throws IOException {
+        String channel = packet.readString();
+        switch (channel) {
+            case "minecraft:brand" -> printf("client brand: %s%n", packet.readString());
+            case "worldedit:cui" -> {
+                println("Got Worldedit Hello");
+                sendPluginMessage("worldedit:cui", (p) -> {
+                    p.writeBytes("s|cuboid".getBytes());
+                });
+            }
+        }
+    }
+
     void handleKeepAlive(Packet packet) throws IOException {
         long keepAlive = packet.readLong();
         if (!connection.validateKeepAlive(keepAlive)) {
-            System.out.println("Keepalives did not match!");
+            println("Keepalives did not match!");
         }
         ping = connection.pingTime();
     }
@@ -421,8 +449,7 @@ public class Player {
             p.writeVarInt(0);
             p.writeVarInt(players.size());
             for (var player : players) {
-                p.writeLong(player.uuid.getMostSignificantBits());
-                p.writeLong(player.uuid.getLeastSignificantBits());
+                p.writeUUID(player.uuid);
                 p.writeString(player.name);
                 p.writeVarInt(0); // number of properties
                 p.writeVarInt(1); // gamemode
@@ -436,8 +463,7 @@ public class Player {
         connection.sendPacket(0x32, (p) -> {
             p.writeVarInt(0);
             p.writeVarInt(1);
-            p.writeLong(player.uuid.getMostSignificantBits());
-            p.writeLong(player.uuid.getLeastSignificantBits());
+            p.writeUUID(player.uuid);
             p.writeString(player.name);
             p.writeVarInt(0); // number of properties
             p.writeVarInt(1); // gamemode
@@ -449,8 +475,7 @@ public class Player {
     void sendSpawnPlayer(Player player) throws IOException {
         connection.sendPacket(4, (p) -> {
             p.writeVarInt(player.entityId);
-            p.writeLong(player.uuid.getMostSignificantBits());
-            p.writeLong(player.uuid.getLeastSignificantBits());
+            p.writeUUID(player.uuid);
             p.writeDouble(player.position.x);
             p.writeDouble(player.position.y);
             p.writeDouble(player.position.z);
@@ -463,8 +488,7 @@ public class Player {
         connection.sendPacket(0x32, (p) -> {
             p.writeVarInt(4);
             p.writeVarInt(1);
-            p.writeLong(player.uuid.getMostSignificantBits());
-            p.writeLong(player.uuid.getLeastSignificantBits());
+            p.writeUUID(player.uuid);
         });
     }
 
@@ -481,8 +505,7 @@ public class Player {
         connection.sendPacket(0x0E, (p) -> {
             p.writeString(chat.toString());
             p.writeByte((byte) 0);
-            p.writeLong(sender.uuid.getMostSignificantBits());
-            p.writeLong(sender.uuid.getLeastSignificantBits());
+            p.writeUUID(sender.uuid);
         });
     }
 
@@ -506,22 +529,76 @@ public class Player {
         sendSystemMessage(message, "red");
     }
 
+    void sendEditorNotification(String message) throws IOException {
+        sendSystemMessage(message, "light_purple");
+    }
+
     void handleChat(Packet packet) throws IOException {
         String message = packet.readString();
-        System.out.format("[chat] %s: %s%n", name, message);
+        printf("[chat] %s%n", message);
         if (message.startsWith("/")) {
             var parts = message.split(" ");
             switch (parts[0]) {
                 case "/tp" -> {
-                    try {
-                        teleport(new Location(
-                            Integer.parseInt(parts[1]),
-                            Integer.parseInt(parts[2]),
-                            Integer.parseInt(parts[3]))
-                        );
-                    } catch (NumberFormatException e) {
-                        sendError(String.format("Invalid teleport command \"%s\"", message));
+                    if (parts.length > 3) {
+                        try {
+                            teleport(new Location(
+                                Integer.parseInt(parts[1]),
+                                Integer.parseInt(parts[2]),
+                                Integer.parseInt(parts[3]))
+                            );
+                        } catch (NumberFormatException e) {
+                            sendError(String.format("Invalid teleport command \"%s\"", message));
+                        }
+                    } else {
+                        Player p = Main.playerByName(parts[1]);
+                        if (p != null) {
+                            teleport(p.position.location());
+                        }
                     }
+                }
+                case "//pos1" -> setEditorLocation1(position.location());
+                case "//pos2" -> setEditorLocation2(position.location());
+                case "//set" -> {
+                    var l1 = editorLocation1;
+                    var l2 = editorLocation2;
+                    int blockId;
+                    try {
+                        blockId = Integer.parseInt(parts[1]);
+                    } catch (Exception ignored) {
+                        blockId = Main.blockDefaultId(parts[1]);
+                    }
+                    int count = 0;
+                    for (int y = Integer.min(l1.y(), l2.y()); y <= Integer.max(l1.y(), l2.y()); y++) {
+                        for (int z = Integer.min(l1.z(), l2.z()); z <= Integer.max(l1.z(), l2.z()); z++) {
+                            for (int x = Integer.min(l1.x(), l2.x()); x <= Integer.max(l1.x(), l2.x()); x++) {
+                                var location = new Location(x, y, z);
+                                Main.world.setBlock(location, blockId);
+                                count++;
+                                for (var player : Main.players) {
+                                    player.sendBlockChange(location, blockId);
+                                }
+                            }
+                        }
+                    }
+                    sendEditorNotification(String.format("Set %s blocks", count));
+                }
+                case "/stop" -> {
+                    connection.close();
+                }
+                case "/lag" -> {
+                    for (var player : Main.players) {
+                        sendNotification(String.format("%s thought there was some lag", name));
+                    }
+                    connection.close();
+                }
+                case "/speed" -> {
+                    var speed = Float.parseFloat(parts[1]);
+                    connection.sendPacket(0x30, (p) -> {
+                        p.writeByte((byte) 0x0F);
+                        p.writeFloat(speed);
+                        p.writeFloat(0.1f);
+                    });
                 }
                 default -> sendError(String.format("Invalid command \"%s\"", parts[0]));
             }
@@ -580,7 +657,7 @@ public class Player {
         int chunkZ = (int)z >> 4;
         if (chunkX != position.chunkX() || chunkZ != position.chunkZ()) {
             sendUpdateChunkPosition(chunkX, chunkZ);
-            System.out.format("new chunk %d %d%n", chunkX, chunkZ);
+            printf("new chunk %d %d%n", chunkX, chunkZ);
             loadCorrectChunks(chunkX, chunkZ);
         }
     }
@@ -643,6 +720,9 @@ public class Player {
 
     void handleMovement(Packet packet) throws IOException {
         boolean onGround = packet.readBoolean();
+        for (var player : Main.players) {
+            player.sendEntityTeleport(entityId, position);
+        }
         updatePosition(onGround);
     }
 
@@ -681,14 +761,30 @@ public class Player {
         });
     }
 
+    void sendBlockBreakParticles(Location location, short blockId) throws  IOException {
+        connection.sendPacket(0x21, (p) -> {
+            p.writeInt(2001);
+            p.writePosition(location);
+            p.writeInt(blockId);
+            p.writeBoolean(false);
+        });
+    }
+
     void handlePlayerDigging(Packet packet) throws IOException {
         var status = packet.readVarInt();
         var location = packet.readLocation();
         var face = packet.read();
-        System.out.format("%s Dig %s : %d%n", name, location, status);
+        printf("Dig %s : %d%n", location, status);
+        var blockId = Main.world.block(location);
+        if (selectedItem().itemId == 586) {
+            sendBlockChange(location, blockId);
+            setEditorLocation1(location);
+            return;
+        }
         Main.world.setBlock(location, 0);
         for (var player : Main.players) {
             if (player == this) continue;
+            player.sendBlockBreakParticles(location, blockId);
             player.sendBlockChange(location, 0);
         }
     }
@@ -696,6 +792,10 @@ public class Player {
     void handlePlayerPlaceBlock(Packet packet) throws IOException {
         var hand = packet.readVarInt();
         var location = packet.readLocation();
+        if (selectedItem().itemId == 586 && hand == 0) {
+            setEditorLocation2(location);
+            return;
+        }
         var face = packet.readVarInt();
         switch (face) {
             case 0 -> location = location.offset(0, -1, 0);
@@ -709,21 +809,22 @@ public class Player {
         float cursorY = packet.readFloat();
         float cursorZ = packet.readFloat();
         boolean insideBlock = packet.readBoolean();
-        System.out.printf("Place %d %s %s %f %f %f %b%n", hand, location, face, cursorX, cursorY, cursorZ, insideBlock);
+        printf("Place %d %s %s %f %f %f %b%n", hand, location, face, cursorX, cursorY, cursorZ, insideBlock);
         for (var player : Main.players) {
             if (player.intersectsLocation(location)) {
                 sendBlockChange(location, 0);
                 return;
             }
         }
-        if (Main.itemToBlock.containsKey(selectedItem.itemId)) {
-            var blockId = Main.itemToBlock.get(selectedItem.itemId);
+        Slot item = selectedItem();
+        if (Main.itemToBlock.containsKey(item.itemId)) {
+            var blockId = Main.itemToBlock.get(item.itemId);
             Main.world.setBlock(location, blockId);
             for (var player : Main.players) {
                 player.sendBlockChange(location, blockId);
             }
         } else {
-            System.out.printf("Attempt to place %d is invalid%n", selectedItem.itemId);
+            printf("Attempt to place %d is invalid%n", item.itemId);
             sendBlockChange(location, 0);
         }
     }
@@ -734,13 +835,46 @@ public class Player {
         var slotNumber = packet.readShort();
         var slot = Slot.from(packet);
         inventory.put(slotNumber, slot);
-        System.out.printf("Inventory %d = %s%n", slotNumber, slot);
+        printf("Inventory %d = %s%n", slotNumber, slot);
     }
 
     void handleHeldItemChange(Packet packet) throws IOException {
-        var slotNumber = packet.readShort();
-        selectedItem = inventory.get(slotNumber + 36);
-        System.out.printf("Select %d %s%n", slotNumber, selectedItem);
+        selectedHotbarSlot = packet.readShort();
+        printf("Select %d %s%n", selectedHotbarSlot,selectedItem());
         // TODO send the item to nearbyPlayers
+    }
+
+    Slot selectedItem() {
+        return inventory.get(selectedHotbarSlot + 36);
+    }
+
+    // log
+
+    void println(Object o) {
+        System.out.printf("%s: %s%n", name, o);
+    }
+
+    void printf(String s, Object... o) {
+        System.out.printf("%s: %s", name, String.format(s, o));
+    }
+
+    // worldedit
+
+    void setEditorLocation1(Location location) throws IOException {
+        editorLocation1 = location;
+        sendEditorNotification(String.format("Position 1 set to %s", editorLocation1));
+        sendPluginMessage("worldedit:cui", (p) -> {
+            p.writeBytes(String.format(
+                "p|0|%d|%d|%d|0", location.x(), location.y(), location.z()).getBytes());
+        });
+    }
+
+    void setEditorLocation2(Location location) throws IOException {
+        editorLocation2 = location;
+        sendEditorNotification(String.format("Position 2 set to %s", editorLocation2));
+        sendPluginMessage("worldedit:cui", (p) -> {
+            p.writeBytes(String.format(
+                "p|1|%d|%d|%d|0", location.x(), location.y(), location.z()).getBytes());
+        });
     }
 }
