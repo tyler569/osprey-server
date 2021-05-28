@@ -176,4 +176,10 @@ public class World {
         var affectedChunk = load(affectedChunkLocation);
         affectedChunk.setBlock(location.positionInChunk(), blockId);
     }
+
+    short block(Location location) throws IOException {
+        var affectedChunkLocation = location.chunkLocation();
+        var affectedChunk = load(affectedChunkLocation);
+        return affectedChunk.block(location.positionInChunk());
+    }
 }
