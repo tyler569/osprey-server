@@ -21,6 +21,7 @@ public class Connection {
     private Instant lastKeepAliveTime = Instant.now();
     private final static Duration keepAliveInterval = Duration.ofSeconds(5);
     private final static Random rng = new Random();
+    boolean debug;
 
     Connection(Socket s) throws IOException {
         socket = s;
@@ -125,6 +126,10 @@ public class Connection {
     void setCompression(int maxPacket) {
         maxUncompressedPacket = maxPacket;
         compressionEnabled = true;
+    }
+
+    void close() throws IOException {
+        socket.close();
     }
 
     // ================ persistence
