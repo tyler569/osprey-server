@@ -15,6 +15,7 @@ public class Chunk {
 
     byte[] cachedPacket;
     boolean cacheValid;
+    boolean modified;
 
     Chunk() {
         blockArray = new short[chunkBlockCount];
@@ -43,6 +44,7 @@ public class Chunk {
     void setBlock(int b, short id) {
         blockArray[b] = id;
         cacheValid = false;
+        modified = true;
     }
 
     void setBlock(int b, int id) {
@@ -157,8 +159,8 @@ public class Chunk {
     byte[] encodeBlob() throws IOException {
         var inner = new ByteArrayOutputStream();
         var stream = new DeflaterOutputStream(inner);
-        for (int b = 0; b < chunkBlockCount; b++) {
-            Protocol.writeShort(stream, blockArray[b]);
+        for (var b : blockArray) {
+            Protocol.writeShort(stream, b);
         }
         stream.finish();
         return inner.toByteArray();
@@ -176,6 +178,7 @@ public class Chunk {
             for (int b = 0; b < chunkBlockCount; b++) {
                 c.setBlock(b, buffer.getShort());
             }
+            c.modified = false;
             return c;
         } catch (EOFException e) {
             System.out.println("Problem decoding chunk from disk!");
