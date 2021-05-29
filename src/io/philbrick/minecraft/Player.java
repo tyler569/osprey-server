@@ -66,7 +66,9 @@ public class Player {
         try {
             connection.close();
         } catch (Exception ignored) {}
-        Main.players.remove(this);
+        synchronized (Main.players) {
+            Main.players.remove(this);
+        }
         if (connection.isEstablished()) {
             for (var player : Main.players) {
                 try {
@@ -76,7 +78,6 @@ public class Player {
                 } catch (IOException ignored) {
                 }
             }
-            Main.playerLocations.put(name, position);
             try {
                 saveState();
             } catch (SQLException e) {
@@ -279,7 +280,6 @@ public class Player {
         sendAddPlayers(Main.players);
         sendAddPlayer(this);
         sendBrand("idk lol");
-        position = Main.playerLocations.getOrDefault(name, new Position());
         sendUpdateChunkPosition();
         loadedChunks = new HashSet<>();
         sendInventory();
@@ -287,9 +287,12 @@ public class Player {
         for (var player : Main.players) {
             player.sendAddPlayer(this);
             player.sendSpawnPlayer(this);
+            player.sendEquipment(this);
             sendSpawnPlayer(player);
         }
-        Main.players.add(this);
+        synchronized (Main.players) {
+            Main.players.add(this);
+        }
         for (var player : Main.players) {
             player.sendNotification(String.format("%s has joined the game (id %d)", name, entityId));
         }
@@ -612,14 +615,15 @@ public class Player {
                 }
                 case "/save" -> {
                     var now = Instant.now();
+                    if (isAdmin())
                     Main.world.save();
                     var then = Instant.now();
                     var took = Duration.between(now, then);
                     sendNotification(String.format("Saved world! (%fms)", (double) took.getNano() / 1000000));
                 }
                 case "/gm" -> {
-                    var value = Float.parseFloat(parts[1]);
-                    sendChangeGameState(3, value);
+                    var value = Integer.parseInt(parts[1]);
+                    changeGamemode(value);
                 }
                 case "/gs" -> {
                     var reason = Byte.parseByte(parts[1]);
@@ -627,6 +631,30 @@ public class Player {
                     for (var player : Main.players) {
                         player.sendChangeGameState(reason, value);
                     }
+                }
+                case "/lightning" -> {
+                    for (Player player : Main.players) {
+                        player.sendSpawnEntity(41, position);
+                    }
+                }
+                case "/lightning2" -> {
+                    new Thread(() -> {
+                        Position position = Main.playerByName(parts[1]).position;
+                        while (true) {
+                            for (Player player : Main.players) {
+                                try {
+                                    player.sendSpawnEntity(41, position);
+                                } catch (IOException e) {
+                                    e.printStackTrace();
+                                }
+                                try {
+                                    Thread.sleep(100);
+                                } catch (InterruptedException e) {
+                                    e.printStackTrace();
+                                }
+                            }
+                        }
+                    }).start();
                 }
                 default -> sendError(String.format("Invalid command \"%s\"", parts[0]));
             }
@@ -674,6 +702,10 @@ public class Player {
         for (var chunk : shouldLoad) {
             sendChunk(chunk);
         }
+    }
+
+    boolean isAdmin() {
+        return name.equals("tyler569");
     }
 
     void loadCorrectChunks() throws IOException {
@@ -869,7 +901,12 @@ public class Player {
     void handleHeldItemChange(Packet packet) throws IOException {
         selectedHotbarSlot = packet.readShort();
         printf("Select %d %s%n", selectedHotbarSlot,selectedItem());
-        // TODO send the item to nearbyPlayers
+        for (Player player : Main.players) {
+            if (player == this) {
+                continue;
+            }
+            player.sendEquipment(this);
+        }
     }
 
     Slot selectedItem() {
@@ -894,21 +931,39 @@ public class Player {
 
     // worldedit
 
+    long selectionVolume() {
+        if (editorLocation1 == null || editorLocation2 == null) {
+            return 0;
+        }
+        return (long) Math.abs(editorLocation1.x() - editorLocation2.x()) *
+            (long) Math.abs(editorLocation1.y() - editorLocation2.y()) *
+            (long) Math.abs(editorLocation1.z() - editorLocation2.z());
+    }
+
     void setEditorLocation1(Location location) throws IOException {
         editorLocation1 = location;
         sendEditorNotification(String.format("Position 1 set to %s", editorLocation1));
-        sendPluginMessage("worldedit:cui", (p) -> {
-            p.writeBytes(String.format(
-                "p|0|%d|%d|%d|0", location.x(), location.y(), location.z()).getBytes());
-        });
+        sendCUIEvent(0, location, selectionVolume());
     }
 
     void setEditorLocation2(Location location) throws IOException {
         editorLocation2 = location;
         sendEditorNotification(String.format("Position 2 set to %s", editorLocation2));
+        sendCUIEvent(1, location, selectionVolume());
+    }
+
+    void sendCUIEvent(int selection, Location location, long volume) throws IOException {
         sendPluginMessage("worldedit:cui", (p) -> {
-            p.writeBytes(String.format(
-                "p|1|%d|%d|%d|0", location.x(), location.y(), location.z()).getBytes());
+            p.writeBytes(
+                String.format(
+                    "p|%d|%d|%d|%d|%d",
+                    selection,
+                    location.x(),
+                    location.y(),
+                    location.z(),
+                    volume
+                ).getBytes()
+            );
         });
     }
 
@@ -916,7 +971,7 @@ public class Player {
 
     void loadFromDb() throws IOException {
         String sql = """
-            SELECT id, selected_slot FROM players WHERE name = ?;
+            SELECT id, selected_slot, x, y, z, pitch, yaw FROM players WHERE name = ?;
             """;
         try (var connection = Main.world.connect();
              var statement = connection.prepareStatement(sql)) {
@@ -925,6 +980,16 @@ public class Player {
             if (!results.isClosed()) {
                 playerId = results.getInt(1);
                 selectedHotbarSlot = results.getInt(2);
+                position = new Position();
+                position.x = results.getDouble(3);
+                if (results.wasNull()) {
+                    position.x = 0.5;
+                } else {
+                    position.y = results.getDouble(4);
+                    position.z = results.getDouble(5);
+                    position.pitch = results.getFloat(6);
+                    position.yaw = results.getFloat(7);
+                }
             }
         } catch (SQLException e) {
             println("Error retrieving player data");
@@ -964,13 +1029,24 @@ public class Player {
     void saveState() throws SQLException {
         String sql = """
             UPDATE players
-            SET selected_slot = ?
+            SET
+                selected_slot = ?,
+                x = ?,
+                y = ?,
+                z = ?,
+                pitch = ?,
+                yaw = ?
             WHERE id = ?;
             """;
         try (var connection = Main.world.connect();
              var statement = connection.prepareStatement(sql)) {
             statement.setInt(1, selectedHotbarSlot);
-            statement.setInt(2, playerId);
+            statement.setDouble(2, position.x);
+            statement.setDouble(3, position.y);
+            statement.setDouble(4, position.z);
+            statement.setDouble(5, position.pitch);
+            statement.setDouble(6, position.yaw);
+            statement.setInt(7, playerId);
             statement.execute();
             connection.commit();
         }
@@ -984,5 +1060,67 @@ public class Player {
             p.writeByte((byte) reason);
             p.writeFloat(value);
         });
+    }
+
+    void sendChangeGamemode(Player player, int mode) throws IOException {
+        connection.sendPacket(0x32, (p) -> {
+            p.writeVarInt(1);
+            p.writeVarInt(1);
+            p.writeUUID(player.uuid);
+            p.writeVarInt(mode);
+        });
+    }
+    
+    void changeGamemode(int mode) throws IOException {
+        sendChangeGameState(3, mode);
+        for (Player player : Main.players) {
+            player.sendChangeGamemode(this, mode);
+        }
+    }
+
+    // spawn entity
+
+    void sendSpawnEntity(int type, Position position) throws IOException {
+        connection.sendPacket(0, (p) -> {
+            p.writeVarInt(Main.nextEntityId++);
+            p.writeUUID(UUID.randomUUID());
+            p.writeVarInt(type);
+            p.writePosition(position);
+            p.writeInt(0);
+            p.writeShort((short) 0);
+            p.writeShort((short) 0);
+            p.writeShort((short) 0);
+        });
+    }
+
+    // equipment
+
+    void sendEquipment(Player player) throws IOException {
+        connection.sendPacket(0x47, (p) -> {
+            p.writeVarInt(player.entityId);
+            p.writeByte((byte) 0);
+            player.selectedItem().encode(p);
+        });
+    }
+
+    //
+
+    Direction facing() {
+        if (position.pitch > 45) {
+            return Direction.Down;
+        } else if (position.pitch < -45) {
+            return Direction.Up;
+        }
+        var yaw = (position.yaw + 45.0) % 360.0;
+        if (yaw < 0) yaw += 360;
+        if (yaw < 90) {
+            return Direction.South;
+        } else if (yaw < 180) {
+            return Direction.West;
+        } else if (yaw < 270) {
+            return Direction.North;
+        } else {
+            return Direction.East;
+        }
     }
 }

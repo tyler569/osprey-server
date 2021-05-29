@@ -194,14 +194,20 @@ public class World {
                     ALTER TABLE players
                     ADD COLUMN selected_slot INTEGER;
                     """);
+            case 3:
+                migrationStep(4,
+                    "ALTER TABLE players ADD COLUMN x REAL;",
+                    "ALTER TABLE players ADD COLUMN y REAL;",
+                    "ALTER TABLE players ADD COLUMN z REAL;",
+                    "ALTER TABLE players ADD COLUMN pitch REAL;",
+                    "ALTER TABLE players ADD COLUMN yaw REAL;"
+                    );
             default:
         }
     }
 
     void save() {
-        Iterator<ChunkLocation> chunks = loadedChunks.keySet().iterator();
-        while (chunks.hasNext()) {
-            ChunkLocation location = chunks.next();
+        for (ChunkLocation location : loadedChunks.keySet()) {
             if (loadedChunks.get(location).modified) {
                 saveChunkSafe(location);
                 loadedChunks.get(location).modified = false;

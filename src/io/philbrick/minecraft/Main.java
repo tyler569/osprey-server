@@ -106,8 +106,7 @@ public class Main {
     );
 
     static KeyPair encryptionKey;
-    static Set<Player> players = new HashSet<>();
-    static Map<String, Position> playerLocations = new HashMap<>();
+    static final Set<Player> players = new HashSet<>();
     static World world;
 
     static int nextEntityId = 1;
