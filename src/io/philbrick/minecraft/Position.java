@@ -35,7 +35,11 @@ public class Position {
     }
 
     Location location() {
-        return new Location((int)x, (int)y, (int)z);
+        return new Location(
+            (int)Math.floor(x),
+            (int)Math.floor(y),
+            (int)Math.floor(z)
+        );
     }
 
     ChunkLocation chunkLocation() {
