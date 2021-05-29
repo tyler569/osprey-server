@@ -29,6 +29,17 @@ public record Location(int x, int y, int z) {
         return new Location(x + dx, y + dy, z + dz);
     }
 
+    Location offset(Direction direction, int delta) {
+        return switch (direction) {
+            case North -> new Location(x, y, z - delta);
+            case South -> new Location(x, y, z + delta);
+            case West -> new Location(x - delta, y, z);
+            case East -> new Location(x + delta, y, z);
+            case Up -> new Location(x, y + delta, z);
+            case Down -> new Location(x, y - delta, z);
+        };
+    }
+
     Location positionInChunk() {
         return new Location(x & 0xF, y, z & 0xF);
     }
