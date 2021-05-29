@@ -52,4 +52,12 @@ public class PacketBuilder extends ByteArrayOutputStream {
         Protocol.writeLong(this, uuid.getMostSignificantBits());
         Protocol.writeLong(this, uuid.getLeastSignificantBits());
     }
+
+    void writePosition(Position position) throws IOException {
+        Protocol.writeDouble(this, position.x);
+        Protocol.writeDouble(this, position.y);
+        Protocol.writeDouble(this, position.z);
+        Protocol.writeByte(this, position.pitchAngle());
+        Protocol.writeByte(this, position.yawAngle());
+    }
 }
