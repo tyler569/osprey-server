@@ -6,6 +6,7 @@ import javax.crypto.*;
 import java.io.*;
 import java.net.*;
 import java.nio.*;
+import java.sql.*;
 import java.time.*;
 import java.util.*;
 
@@ -25,6 +26,7 @@ public class Player {
     Thread thread;
     State state;
     int entityId;
+    Integer playerId;
     UUID uuid;
     Set<Player> nearbyPlayers;
     Position position;
@@ -75,6 +77,12 @@ public class Player {
                 }
             }
             Main.playerLocations.put(name, position);
+            try {
+                saveState();
+            } catch (SQLException e) {
+                println("Error saving player data");
+                e.printStackTrace();
+            }
         }
     }
 
@@ -95,7 +103,9 @@ public class Player {
                 Packet p = connection.readPacket();
                 handlePacket(p);
             } catch (SocketException e) {
-                System.err.printf("%s Exception: %s%n", name, e.getMessage());
+                printf("Exception");
+                e.printStackTrace();
+                connection.close();
             }
         }
         println("Leaving handleConnection");
@@ -264,16 +274,16 @@ public class Player {
     }
 
     void doPreJoin() throws IOException {
+        loadFromDb();
         sendJoinGame();
         sendAddPlayers(Main.players);
         sendAddPlayer(this);
         sendBrand("idk lol");
         position = Main.playerLocations.getOrDefault(name, new Position());
         sendUpdateChunkPosition();
-        inventory = new Inventory();
-        selectedHotbarSlot = 0;
         loadedChunks = new HashSet<>();
         sendInventory();
+        sendHeldItemChange((byte) selectedHotbarSlot);
         for (var player : Main.players) {
             player.sendAddPlayer(this);
             player.sendSpawnPlayer(this);
@@ -600,6 +610,24 @@ public class Player {
                         p.writeFloat(0.1f);
                     });
                 }
+                case "/save" -> {
+                    var now = Instant.now();
+                    Main.world.save();
+                    var then = Instant.now();
+                    var took = Duration.between(now, then);
+                    sendNotification(String.format("Saved world! (%fms)", (double) took.getNano() / 1000000));
+                }
+                case "/gm" -> {
+                    var value = Float.parseFloat(parts[1]);
+                    sendChangeGameState(3, value);
+                }
+                case "/gs" -> {
+                    var reason = Byte.parseByte(parts[1]);
+                    var value = Float.parseFloat(parts[2]);
+                    for (var player : Main.players) {
+                        player.sendChangeGameState(reason, value);
+                    }
+                }
                 default -> sendError(String.format("Invalid command \"%s\"", parts[0]));
             }
             return;
@@ -848,14 +876,20 @@ public class Player {
         return inventory.get(selectedHotbarSlot + 36);
     }
 
+    void sendHeldItemChange(byte slot) throws IOException {
+        connection.sendPacket(0x3F, (p) -> {
+            p.writeByte(slot);
+        });
+    }
+
     // log
 
     void println(Object o) {
-        System.out.printf("%s: %s%n", name, o);
+        System.out.printf("[%d %s] %s%n", entityId, name, o);
     }
 
     void printf(String s, Object... o) {
-        System.out.printf("%s: %s", name, String.format(s, o));
+        System.out.printf("[%d %s] %s", entityId, name, String.format(s, o));
     }
 
     // worldedit
@@ -875,6 +909,80 @@ public class Player {
         sendPluginMessage("worldedit:cui", (p) -> {
             p.writeBytes(String.format(
                 "p|1|%d|%d|%d|0", location.x(), location.y(), location.z()).getBytes());
+        });
+    }
+
+    // persistence
+
+    void loadFromDb() throws IOException {
+        String sql = """
+            SELECT id, selected_slot FROM players WHERE name = ?;
+            """;
+        try (var connection = Main.world.connect();
+             var statement = connection.prepareStatement(sql)) {
+            statement.setString(1, name);
+            var results = statement.executeQuery();
+            if (!results.isClosed()) {
+                playerId = results.getInt(1);
+                selectedHotbarSlot = results.getInt(2);
+            }
+        } catch (SQLException e) {
+            println("Error retrieving player data");
+            e.printStackTrace();
+            connection.close();
+            return;
+        }
+        if (playerId == null) {
+            saveFirstTime();
+            loadFromDb();
+        }
+        try {
+            inventory = Inventory.loadFromDb(playerId);
+        } catch (SQLException e) {
+            println("Error loading inventory");
+            e.printStackTrace();
+        }
+    }
+
+    void saveFirstTime() {
+        String sql = """
+            INSERT INTO players (uuid, name)
+            VALUES (?, ?);
+            """;
+        try (var connection = Main.world.connect();
+             var statement = connection.prepareStatement(sql)) {
+            statement.setString(1, uuid.toString());
+            statement.setString(2, name);
+            statement.execute();
+            connection.commit();
+        } catch (SQLException e) {
+            println("Error saving player record");
+            e.printStackTrace();
+        }
+    }
+
+    void saveState() throws SQLException {
+        String sql = """
+            UPDATE players
+            SET selected_slot = ?
+            WHERE id = ?;
+            """;
+        try (var connection = Main.world.connect();
+             var statement = connection.prepareStatement(sql)) {
+            statement.setInt(1, selectedHotbarSlot);
+            statement.setInt(2, playerId);
+            statement.execute();
+            connection.commit();
+        }
+        inventory.save(playerId);
+    }
+
+    // change game state
+
+    void sendChangeGameState(int reason, float value) throws IOException {
+        connection.sendPacket(0x1D, (p) -> {
+            p.writeByte((byte) reason);
+            p.writeFloat(value);
         });
     }
 }

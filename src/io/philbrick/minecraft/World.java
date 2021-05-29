@@ -13,7 +13,7 @@ public class World {
         loadedChunks = new HashMap<>();
     }
 
-    private Connection connect() throws SQLException {
+    Connection connect() throws SQLException {
         var connection = DriverManager.getConnection(databaseURL);
         connection.setAutoCommit(false);
         return connection;
@@ -119,10 +119,13 @@ public class World {
         }
     }
 
-    private void migrationStep(int id, String sql) throws SQLException {
+    private void migrationStep(int id, String... sqls) throws SQLException {
         try (var connection = connect()) {
-            var statement = connection.prepareStatement(sql);
-            statement.execute();
+            PreparedStatement statement;
+            for (var sql : sqls) {
+                statement = connection.prepareStatement(sql);
+                statement.execute();
+            }
             statement = connection.prepareStatement("""
                 INSERT INTO schema_migrations VALUES (?);
                 """);
@@ -167,7 +170,42 @@ public class World {
                     );
                     """
                 );
+            case 1:
+                migrationStep(2, """
+                    CREATE TABLE players (
+                        id INTEGER NOT NULL PRIMARY KEY,
+                        uuid STRING,
+                        name STRING
+                    );
+                    """,
+                    """
+                    CREATE TABLE inventory_slots (
+                        id INTEGER NOT NULL PRIMARY KEY,
+                        player_id INTEGER NOT NULL,
+                        slot_number INTEGER NOT NULL,
+                        item_id INTEGER NOT NULL,
+                        stack_count INTEGER NOT NULL,
+                        extra_data BLOB,
+                        FOREIGN KEY(player_id) REFERENCES players(id)
+                    );
+                    """);
+            case 2:
+                migrationStep(3, """
+                    ALTER TABLE players
+                    ADD COLUMN selected_slot INTEGER;
+                    """);
             default:
+        }
+    }
+
+    void save() {
+        Iterator<ChunkLocation> chunks = loadedChunks.keySet().iterator();
+        while (chunks.hasNext()) {
+            ChunkLocation location = chunks.next();
+            if (loadedChunks.get(location).modified) {
+                saveChunkSafe(location);
+                loadedChunks.get(location).modified = false;
+            }
         }
     }
 

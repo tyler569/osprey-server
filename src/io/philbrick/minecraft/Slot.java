@@ -41,7 +41,11 @@ public class Slot {
         } else {
             Protocol.writeBoolean(os, true);
             Protocol.writeVarInt(os, itemId);
-            Protocol.writeByte(os, count);
+            if (count > 255) {
+                Protocol.writeByte(os, 1);
+            } else {
+                Protocol.writeByte(os, count);
+            }
             data.encode(os);
         }
     }
