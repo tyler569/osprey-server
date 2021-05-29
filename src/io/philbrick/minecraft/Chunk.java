@@ -158,27 +158,22 @@ public class Chunk {
 
     byte[] encodeBlob() throws IOException {
         var inner = new ByteArrayOutputStream();
-        var stream = new DeflaterOutputStream(inner);
-        for (var b : blockArray) {
-            Protocol.writeShort(stream, b);
-        }
-        stream.finish();
+        var deflater = new DeflaterOutputStream(inner);
+        var buffer = ByteBuffer.allocate(chunkBlockCount * Short.BYTES);
+        buffer.asShortBuffer().put(blockArray);
+        deflater.write(buffer.array());
+        deflater.finish();
         return inner.toByteArray();
     }
 
     static Chunk fromBlob(byte[] data) throws IOException {
         try {
             var stream = new InflaterInputStream(new ByteArrayInputStream(data));
-            var inflated  = stream.readAllBytes();
+            var inflated = stream.readAllBytes();
             var c = new Chunk();
 
             var buffer = ByteBuffer.wrap(inflated);
-            buffer.order(ByteOrder.BIG_ENDIAN);
-
-            for (int b = 0; b < chunkBlockCount; b++) {
-                c.setBlock(b, buffer.getShort());
-            }
-            c.modified = false;
+            buffer.asShortBuffer().get(c.blockArray);
             return c;
         } catch (EOFException e) {
             System.out.println("Problem decoding chunk from disk!");
