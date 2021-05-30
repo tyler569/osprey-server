@@ -13,7 +13,7 @@ public class Inventory {
     }
 
     int size() {
-        return 45;
+        return 46;
     }
 
     public void put(short slotNumber, Slot slot) {

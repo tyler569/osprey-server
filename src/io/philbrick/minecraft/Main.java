@@ -162,6 +162,15 @@ public class Main {
         return null;
     }
 
+    static Player playerByEntityId(int entityId) {
+        for (var player : players) {
+            if (player.entityId == entityId) {
+                return player;
+            }
+        }
+        return null;
+    }
+
     public static void main(String[] args) throws IOException {
         try {
             world = World.open("world.db");
