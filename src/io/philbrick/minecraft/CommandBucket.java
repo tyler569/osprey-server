@@ -5,24 +5,25 @@ import jdk.jshell.spi.*;
 import java.io.*;
 import java.lang.reflect.*;
 import java.util.*;
+import java.util.stream.*;
 
 public class CommandBucket {
     static class FlatCommand {
-        Object[] parameters;
+        List<CommandParameter> parameters;
         Method method;
 
-        FlatCommand(String name, Object[] args, Method method) {
+        FlatCommand(String name, List<CommandParameter> args, Method method) {
             this.method = method;
-            parameters = new Object[args.length + 1];
-            parameters[0] = name;
-            System.arraycopy(args, 0, parameters, 1, args.length);
+            parameters = args;
+            parameters.add(0, new CommandParameter(name));
         }
     }
 
     ArrayList<FlatCommand> flatCommands = new ArrayList<>();
 
     static class CommandElement {
-        Object parameter;        // if String, literal. if ParameterType, argument
+        CommandParameter parameter;
+        boolean isRedirect;
         boolean isTerminal;
         boolean isRoot;
         CommandElement redirect; // if is redirect
@@ -30,11 +31,10 @@ public class CommandBucket {
 
         // tree
         ArrayList<CommandElement> children = new ArrayList<>();
-        CommandElement parent;
 
         static CommandElement rootNode() {
             var ce = new CommandElement();
-            ce.parameter = "";
+            ce.parameter = new CommandParameter("");
             ce.isRoot = true;
             return ce;
         }
@@ -45,13 +45,15 @@ public class CommandBucket {
         }
     }
 
-    CommandElement rootNode = CommandElement.rootNode();
+    CommandElement rootNode;
 
     CommandBucket() {
+        rootNode = CommandElement.rootNode();
         for (Method method : CommandBucket.class.getDeclaredMethods()) {
             if (method.isAnnotationPresent(Command.class)) {
                 Command commandInfo = method.getAnnotation(Command.class);
-                var flatCommand = new FlatCommand(commandInfo.name(), commandInfo.args(), method);
+                var args = Arrays.stream(commandInfo.args()).map(CommandParameter::fromArg).collect(Collectors.toList());
+                var flatCommand = new FlatCommand(commandInfo.name(), args, method);
                 flatCommands.add(flatCommand);
             }
         }
@@ -65,10 +67,10 @@ public class CommandBucket {
         }
     }
 
-    void insertBrigadier(CommandElement root, Object[] parameters, int offset, Method method) {
+    void insertBrigadier(CommandElement root, List<CommandParameter> parameters, int offset, Method method) {
         for (var child : root.children) {
-            if (child.parameter.equals(parameters[offset])) {
-                if (parameters.length == offset + 1) {
+            if (child.parameter.matches(parameters.get(offset))) {
+                if (parameters.size() == offset + 1) {
                     child.isTerminal = true;
                     return;
                 }
@@ -77,13 +79,12 @@ public class CommandBucket {
             }
         }
         var last = root;
-        for (int i = offset; i < parameters.length; i++) {
+        for (int i = offset; i < parameters.size(); i++) {
             var ce = new CommandElement();
-            ce.parameter = parameters[i];
-            ce.isTerminal = i == parameters.length - 1;
+            ce.parameter = parameters.get(i);
+            ce.isTerminal = i == parameters.size() - 1;
             ce.method = ce.isTerminal ? method : null;
-            ce.parent = last;
-            ce.parent.children.add(ce);
+            last.children.add(ce);
             last = ce;
         }
     }
@@ -100,7 +101,7 @@ public class CommandBucket {
     // todo: move to a subclass or something
 
 
-    @Command(name = "tp", args = {Command.ParameterType.Vec3})
+    @Command(name = "tp", args = {"destination: vec3"})
     void teleport(Player sender, String[] args) throws IOException {
         if (args.length < 4) {
             sender.sendError("Not enough arguments");
@@ -113,7 +114,7 @@ public class CommandBucket {
         sender.teleport(destination);
     }
 
-    @Command(name = "tp", args = {Command.ParameterType.Player})
+    @Command(name = "tp", args = {"destination: player"})
     void teleportPlayer(Player sender, String[] args) throws IOException {
         if (args.length < 2) {
             sender.sendError("Not enough arguments");
