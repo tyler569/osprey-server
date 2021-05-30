@@ -51,4 +51,24 @@ public record Location(int x, int y, int z) {
     int blockIndex() {
         return y * 256 + z * 16 + x;
     }
+
+    static Location relativeLocation(Location base, String[] args) {
+        int x, y, z;
+        if (args[0].startsWith("~")) {
+            x = base.x() + Integer.parseInt(args[0].substring(1));
+        } else {
+            x = Integer.parseInt(args[0]);
+        }
+        if (args[0].startsWith("~")) {
+            y = base.y() + Integer.parseInt(args[0].substring(1));
+        } else {
+            y = Integer.parseInt(args[0]);
+        }
+        if (args[0].startsWith("~")) {
+            z = base.z() + Integer.parseInt(args[0].substring(1));
+        } else {
+            z = Integer.parseInt(args[0]);
+        }
+        return new Location(x, y, z);
+    }
 }
