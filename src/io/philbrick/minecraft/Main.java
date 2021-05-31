@@ -3,6 +3,7 @@ package io.philbrick.minecraft;
 import io.philbrick.minecraft.nbt.*;
 import org.json.*;
 
+import javax.security.auth.login.*;
 import java.io.*;
 import java.lang.annotation.*;
 import java.lang.reflect.*;
@@ -173,6 +174,14 @@ public class Main {
             }
         }
         return null;
+    }
+
+    static void forEachPlayer(PlayerIOLambda lambda) throws IOException {
+        synchronized (Main.players) {
+            for (var player : Main.players) {
+                lambda.apply(player);
+            }
+        }
     }
 
     public static void main(String[] args) throws IOException {

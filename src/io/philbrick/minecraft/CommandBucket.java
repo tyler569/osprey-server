@@ -115,7 +115,7 @@ public class CommandBucket {
     }
 
     CommandElement findMatch(CommandElement node, String[] args, int offset, boolean override) {
-        System.out.println("match " + node + " " + Arrays.toString(args) + " " + offset);
+        // System.out.println("match " + node + " " + Arrays.toString(args) + " " + offset);
         if (offset == args.length && node.isTerminal) {
             return node;
         }
@@ -342,7 +342,7 @@ public class CommandBucket {
     @Command("lag")
     void lag(Player sender, String[] args) throws IOException {
         for (var player : Main.players) {
-            sender.sendNotification(String.format("%s thought there was some lag", sender.name));
+            player.sendNotification(String.format("%s thought there was some lag", sender.name));
         }
         sender.connection.close();
     }

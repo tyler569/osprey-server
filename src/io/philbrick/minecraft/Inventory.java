@@ -8,8 +8,6 @@ public class Inventory {
 
     Inventory() {
         slots = new HashMap<>();
-        slots.put(36, new Slot(1));
-        slots.put(44, new Slot(586));
     }
 
     int size() {

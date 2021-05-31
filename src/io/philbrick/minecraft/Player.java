@@ -9,6 +9,7 @@ import java.nio.*;
 import java.sql.*;
 import java.time.*;
 import java.util.*;
+import java.util.concurrent.atomic.*;
 import java.util.stream.*;
 
 public class Player extends Entity {
@@ -70,13 +71,15 @@ public class Player extends Entity {
             Main.players.remove(this);
         }
         if (connection.isEstablished()) {
-            for (var player : Main.players) {
-                try {
+            try {
+                Main.forEachPlayer((player) -> {
                     player.sendDespawnPlayer(this);
                     player.sendRemovePlayer(this);
                     player.sendNotification(String.format("%s has left the game.", name));
-                } catch (IOException ignored) {
-                }
+                });
+            } catch (IOException e) {
+                println("Error telling other players about disconnect");
+                e.printStackTrace();
             }
             try {
                 saveState();
@@ -93,10 +96,10 @@ public class Player extends Entity {
         position.z = location.z();
         sendPositionLook();
         sendUpdateChunkPosition();
-        for (var player : Main.players) {
-            if (player == this) continue;
+        Main.forEachPlayer((player) -> {
+            if (player == this) return;
             player.sendEntityTeleport(entityId, position);
-        }
+        });
         loadCorrectChunks();
     }
 
@@ -291,19 +294,19 @@ public class Player extends Entity {
         editorLocations = new Location[2];
         sendInventory();
         sendHeldItemChange((byte) selectedHotbarSlot);
-        for (var player : Main.players) {
+        Main.forEachPlayer((player) -> {
             player.sendAddPlayer(this);
             player.sendSpawnPlayer(this);
             player.sendEquipment(this);
             sendSpawnPlayer(player);
             sendEquipment(player);
-        }
+        });
         synchronized (Main.players) {
             Main.players.add(this);
         }
-        for (var player : Main.players) {
+        Main.forEachPlayer((player) -> {
             player.sendNotification(String.format("%s has joined the game (id %d)", name, entityId));
-        }
+        });
     }
 
     void sendEntityTeleport(int entityId, Position position) throws IOException {
@@ -555,9 +558,9 @@ public class Player extends Entity {
             Main.commands.dispatch(this, message.substring(1).split(" +"));
         }
         else {
-            for (var player : Main.players) {
+            Main.forEachPlayer((player) -> {
                 player.sendChat(this, message);
-            }
+            });
         }
     }
 
@@ -633,17 +636,15 @@ public class Player extends Entity {
         position.pitch = pitch;
         position.yaw = yaw;
         position.onGround = onGround;
-        for (var player : Main.players) {
-            if (player == this) {
-                continue;
-            }
+        Main.forEachPlayer((player) -> {
+            if (player == this) return;
             player.sendEntityPositionAndRotation(entityId, delta_x, delta_y, delta_z, position);
-        }
+        });
         if (isElytraFlying && onGround) {
             isElytraFlying = false;
-            for (Player player : Main.players) {
+            Main.forEachPlayer((player) -> {
                 player.sendEntityMetadata(this);
-            }
+            });
         }
     }
 
@@ -686,9 +687,10 @@ public class Player extends Entity {
 
     void handleMovement(Packet packet) throws IOException {
         boolean onGround = packet.readBoolean();
-        for (var player : Main.players) {
+        Main.forEachPlayer((player) -> {
+            if (player == this) return;
             player.sendEntityTeleport(entityId, position);
-        }
+        });
         updatePosition(onGround);
     }
 
@@ -743,18 +745,18 @@ public class Player extends Entity {
             case 8 -> isElytraFlying = true;
         }
 
-        for (Player player : Main.players) {
-            if (player == this) continue;
+        Main.forEachPlayer((player) -> {
+            if (player == this) return;
             player.sendEntityMetadata(this);
-        }
+        });
     }
 
     void handleAnimation(Packet packet) throws IOException {
         var hand = packet.readVarInt();
-        for (var player : Main.players) {
-            if (player == this) continue;
+        Main.forEachPlayer((player) -> {
+            if (player == this) return;
             player.sendEntityAnimation(this.entityId, 0);
-        }
+        });
     }
 
     void sendEntityMetadata(Player player) throws IOException {
@@ -821,11 +823,11 @@ public class Player extends Entity {
                     return;
                 }
                 Main.world.setBlock(location, 0);
-                for (var player : Main.players) {
-                    if (player == this) continue;
+                Main.forEachPlayer((player) -> {
+                    if (player == this) return;
                     player.sendBlockBreakParticles(location, blockId);
                     player.sendBlockChange(location, 0);
-                }
+                });
             }
             case 1 -> {
                 // cancel digging
@@ -842,56 +844,64 @@ public class Player extends Entity {
             case 5 -> {
                 // finish interacting
                 isShielding = false;
-                for (Player player : Main.players) {
+                Main.forEachPlayer((player) -> {
                     player.sendEntityMetadata(this);
-                }
+                });
             }
             case 6 -> {
                 var held = selectedItem();
                 inventory.put((short) (selectedHotbarSlot + 36), offhandItem());
                 inventory.put((short) 45, held);
-                for (Player player : Main.players) {
+                Main.forEachPlayer((player) -> {
                     // explicitly including this player, this updates the client
                     player.sendEquipment(this);
-                }
+                });
             }
         }
     }
 
     void handlePlayerPlaceBlock(Packet packet) throws IOException {
         var hand = packet.readVarInt();
-        var location = packet.readLocation();
+        var originalLocation = packet.readLocation();
         if (selectedItem().itemId == 586 && hand == 0) {
-            setEditorLocation(1, location);
+            setEditorLocation(1, originalLocation);
             return;
         }
         var face = packet.readVarInt();
-        switch (face) {
-            case 0 -> location = location.offset(0, -1, 0);
-            case 1 -> location = location.offset(0, 1, 0);
-            case 2 -> location = location.offset(0, 0, -1);
-            case 3 -> location = location.offset(0, 0, 1);
-            case 4 -> location = location.offset(-1, 0, 0);
-            case 5 -> location = location.offset(1, 0, 0);
-        }
+        var current = Main.world.block(originalLocation);
+        final var location = switch (face) {
+            case 0 -> originalLocation.offset(0, -1, 0);
+            case 1 -> originalLocation.offset(0, 1, 0);
+            case 2 -> originalLocation.offset(0, 0, -1);
+            case 3 -> originalLocation.offset(0, 0, 1);
+            case 4 -> originalLocation.offset(-1, 0, 0);
+            case 5 -> originalLocation.offset(1, 0, 0);
+            default -> throw new IllegalStateException("Invalid face value");
+        };
         float cursorX = packet.readFloat();
         float cursorY = packet.readFloat();
         float cursorZ = packet.readFloat();
         boolean insideBlock = packet.readBoolean();
         printf("Place %d %s %s %f %f %f %b%n", hand, location, face, cursorX, cursorY, cursorZ, insideBlock);
-        for (var player : Main.players) {
+
+        AtomicBoolean blockPlacement = new AtomicBoolean(false);
+        Main.forEachPlayer((player) -> {
             if (player.intersectsLocation(location)) {
-                sendBlockChange(location, 0);
-                return;
+                blockPlacement.set(true);
             }
+        });
+        if (blockPlacement.get()) {
+            sendBlockChange(location, current);
+            return;
         }
+
         Slot item = selectedItem();
         if (Main.itemToBlock.containsKey(item.itemId)) {
             var blockId = Main.itemToBlock.get(item.itemId);
             Main.world.setBlock(location, blockId);
-            for (var player : Main.players) {
+            Main.forEachPlayer((player) -> {
                 player.sendBlockChange(location, blockId);
-            }
+            });
         } else {
             printf("Attempt to place %d is invalid%n", item.itemId);
             sendBlockChange(location, 0);
@@ -921,9 +931,9 @@ public class Player extends Entity {
 
         if (hand == 1 && isHoldingShield()) {
             isShielding = true;
-            for (Player player : Main.players) {
+            Main.forEachPlayer((player) -> {
                 player.sendEntityMetadata(this);
-            }
+            });
         }
     }
 
@@ -938,21 +948,19 @@ public class Player extends Entity {
             slotNumber == 45 ||
             slotNumber >= 5 && slotNumber <= 8
         ) {
-            for (Player player : Main.players) {
+            Main.forEachPlayer((player) -> {
                 player.sendEquipment(this);
-            }
+            });
         }
     }
 
     void handleHeldItemChange(Packet packet) throws IOException {
         selectedHotbarSlot = packet.readShort();
         printf("Select %d %s%n", selectedHotbarSlot,selectedItem());
-        for (Player player : Main.players) {
-            if (player == this) {
-                continue;
-            }
+        Main.forEachPlayer((player) -> {
+            if (player == this) return;
             player.sendEquipment(this);
-        }
+        });
     }
 
     Slot selectedItem() {
@@ -1142,9 +1150,9 @@ public class Player extends Entity {
     
     void changeGamemode(int mode) throws IOException {
         sendChangeGameState(3, mode);
-        for (Player player : Main.players) {
+        Main.forEachPlayer((player) -> {
             player.sendChangeGamemode(this, mode);
-        }
+        });
     }
 
     // spawn entity
@@ -1206,10 +1214,7 @@ public class Player extends Entity {
     //
 
     Set<Player> nearbyPlayers() {
-        return Main.players
-            .stream()
-            .filter((p) -> loadedChunks.contains(p.position.chunkLocation()))
-            .collect(Collectors.toSet());
+        return null;
     }
 
     //
@@ -1227,16 +1232,6 @@ public class Player extends Entity {
         }
         var sneak = packet.readBoolean();
         printf("Interact %d entity %d%n", type, entityId);
-
-        if (false && type == 1) {
-            var enemy = Main.playerByEntityId(entityId);
-            assert enemy != null;
-            for (Player player : Main.players) {
-                player.sendEntityAnimation(enemy.entityId, 1);
-                player.sendEntityStatus(enemy.entityId, (byte) 54);
-            }
-            enemy.sendGameOver(this);
-        }
     }
 
     void sendGameOver(Player killer) throws IOException {
@@ -1260,8 +1255,8 @@ public class Player extends Entity {
         var status = packet.read();
         isCreativeFlying = (status & 0x02) != 0;
         isElytraFlying = false;
-        for (Player player : Main.players) {
+        Main.forEachPlayer((player) -> {
             player.sendEntityMetadata(this);
-        }
+        });
     }
 }
