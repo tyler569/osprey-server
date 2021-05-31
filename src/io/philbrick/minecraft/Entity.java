@@ -6,6 +6,4 @@ public class Entity {
     int entityId;
     UUID uuid;
     Position position;
-
-
 }

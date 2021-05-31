@@ -107,9 +107,9 @@ public class Main {
             )
         )
     );
-
-    static KeyPair encryptionKey;
     static final Set<Player> players = new HashSet<>();
+    static ChunkDispatcher chunkDispatcher;
+    static KeyPair encryptionKey;
     static World world;
     static CommandBucket commands;
     static byte[] commandPacket;
@@ -224,6 +224,9 @@ public class Main {
 
             commandPacket = p.toByteArray();
         }
+
+        chunkDispatcher = new ChunkDispatcher();
+        new Thread(chunkDispatcher).start();
 
         final var socket = new ServerSocket(25565);
         System.out.println("Ready");

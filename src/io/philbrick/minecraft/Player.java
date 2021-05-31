@@ -10,7 +10,6 @@ import java.sql.*;
 import java.time.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
-import java.util.stream.*;
 
 public class Player extends Entity {
     enum State {
@@ -58,6 +57,7 @@ public class Player extends Entity {
         } catch (EOFException e) {
             println("EOF");
         } catch (Exception e) {
+            println("Error");
             e.printStackTrace();
         }
         disconnect();
@@ -90,19 +90,6 @@ public class Player extends Entity {
         }
     }
 
-    void teleport(Location location) throws IOException {
-        position.x = location.x();
-        position.y = location.y();
-        position.z = location.z();
-        sendPositionLook();
-        sendUpdateChunkPosition();
-        Main.forEachPlayer((player) -> {
-            if (player == this) return;
-            player.sendEntityTeleport(entityId, position);
-        });
-        loadCorrectChunks();
-    }
-
     void handleConnection() throws IOException {
         while (!connection.isClosed()) {
             try {
@@ -115,6 +102,19 @@ public class Player extends Entity {
             }
         }
         println("Leaving handleConnection");
+    }
+
+    void teleport(Location location) throws IOException {
+        position.x = location.x() + 0.5;
+        position.y = location.y();
+        position.z = location.z() + 0.5;
+        sendPositionLook();
+        sendUpdateChunkPosition();
+        Main.forEachPlayer((player) -> {
+            if (player == this) return;
+            player.sendEntityTeleport(entityId, position);
+        });
+        loadCorrectChunks();
     }
 
     void handlePacket(Packet packet) throws IOException {
@@ -224,9 +224,6 @@ public class Player extends Entity {
 
     void handleLoginStart(Packet packet) throws IOException {
         name = packet.readString();
-        if (name.equals("StackDoubleFlow")) {
-            connection.debug = true;
-        }
         uuid = UUID.nameUUIDFromBytes(String.format("OfflinePlayer:%s", name).getBytes());
         printf("UUID: %s%n", uuid);
         printf("login: '%s'%n", name);
@@ -602,9 +599,8 @@ public class Player extends Entity {
             unloadChunk(chunk);
         }
         shouldLoad.removeAll(loadedChunks);
-        for (var chunk : shouldLoad) {
-            sendChunk(chunk);
-        }
+        Main.chunkDispatcher.dispatch(this, shouldLoad.stream()
+                .sorted(Comparator.comparingDouble(a -> a.distanceFrom(position.chunkLocation()))));
     }
 
     boolean isAdmin() {
@@ -923,11 +919,7 @@ public class Player extends Entity {
 
     void handlePlayerUseItem(Packet packet) throws IOException {
         int hand = packet.readVarInt();
-        if (hand == 0) {
-            printf("Use %d %s%n", hand, selectedItem());
-        } else {
-            printf("Use %d %s%n", hand, selectedItem());
-        }
+        printf("Use %d %s%n", hand, selectedItem());
 
         if (hand == 1 && isHoldingShield()) {
             isShielding = true;

@@ -1,7 +1,6 @@
 package io.philbrick.minecraft;
 
 import java.io.*;
-import java.util.ArrayList;
 
 public class VarInt {
     public static int read(InputStream is) throws IOException {

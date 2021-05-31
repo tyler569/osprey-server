@@ -236,15 +236,9 @@ public class CommandBucket {
                         p.write(0);
                     }
                 }
-                case String -> {
-                    p.writeVarInt(0); // SINGLE_WORD
-                }
-                case Player -> {
-                    p.write(0x03); // single entity + player
-                }
-                case Entity -> {
-                    p.write(0x01); // single entity
-                }
+                case String -> p.writeVarInt(0); // SINGLE_WORD
+                case Player -> p.write(0x03); // single entity + player
+                case Entity -> p.write(0x01); // single entity
             }
         }
         node.index = index;
