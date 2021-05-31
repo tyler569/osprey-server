@@ -11,7 +11,7 @@ import java.time.*;
 import java.util.*;
 import java.util.stream.*;
 
-public class Player {
+public class Player extends Entity {
     enum State {
         Status,
         Login,
@@ -26,14 +26,10 @@ public class Player {
     Duration ping;
     Thread thread;
     State state;
-    int entityId;
     Integer playerId;
-    UUID uuid;
-    Position position;
     Inventory inventory;
     int selectedHotbarSlot;
     Set<ChunkLocation> loadedChunks;
-    Set<Integer> loadedEntities;
     int renderDistance;
     boolean firstSettings = true;
     Location[] editorLocations;
@@ -43,10 +39,10 @@ public class Player {
     boolean isSprinting;
     boolean isShielding;
 
-    Player(int entity, Socket sock) throws IOException {
+    Player(int entityId, Socket sock) throws IOException {
         connection = new Connection(sock);
         state = State.Status;
-        entityId = entity;
+        this.entityId = entityId;
         thread = new Thread(this::connectionWrapper);
         thread.start();
     }
@@ -92,7 +88,9 @@ public class Player {
     }
 
     void teleport(Location location) throws IOException {
-        position = new Position(location);
+        position.x = location.x();
+        position.y = location.y();
+        position.z = location.z();
         sendPositionLook();
         sendUpdateChunkPosition();
         for (var player : Main.players) {
@@ -284,6 +282,7 @@ public class Player {
     void doPreJoin() throws IOException {
         loadFromDb();
         sendJoinGame();
+        sendCommandData();
         sendAddPlayers(Main.players);
         sendAddPlayer(this);
         sendBrand("Pygostylia");
@@ -319,7 +318,6 @@ public class Player {
         });
     }
 
-    // TODO: break this up
     void handleEncryptionResponse(Packet packet) throws IOException {
         int secretLength = packet.readVarInt();
         byte[] secret = packet.readNBytes(secretLength);
