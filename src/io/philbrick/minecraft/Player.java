@@ -554,126 +554,17 @@ public class Player {
         String message = packet.readString();
         printf("[chat] %s%n", message);
         if (message.startsWith("/")) {
-            try {
-                var parts = message.split(" ");
-                switch (parts[0]) {
-                    case "/tp" -> {
-                        if (parts.length > 3) {
-                            try {
-                                teleport(new Location(
-                                    Integer.parseInt(parts[1]),
-                                    Integer.parseInt(parts[2]),
-                                    Integer.parseInt(parts[3]))
-                                );
-                            } catch (NumberFormatException e) {
-                                sendError(String.format("Invalid teleport command \"%s\"", message));
-                            }
-                        } else {
-                            Player p = Main.playerByName(parts[1]);
-                            if (p != null) {
-                                teleport(p.position.location());
-                            }
-                        }
-                    }
-                    case "//pos1", "//1" -> setEditorLocation(0, position.location());
-                    case "//pos2", "//2" -> setEditorLocation(1, position.location());
-                    case "//sel" -> unsetEditorSelection();
-                    case "//set" -> {
-                        var l1 = editorLocations[0];
-                        var l2 = editorLocations[1];
-                        int blockId;
-                        try {
-                            blockId = Integer.parseInt(parts[1]);
-                        } catch (Exception ignored) {
-                            blockId = Main.blockDefaultId(parts[1]);
-                        }
-                        int count = 0;
-                        for (int y = Integer.min(l1.y(), l2.y()); y <= Integer.max(l1.y(), l2.y()); y++) {
-                            for (int z = Integer.min(l1.z(), l2.z()); z <= Integer.max(l1.z(), l2.z()); z++) {
-                                for (int x = Integer.min(l1.x(), l2.x()); x <= Integer.max(l1.x(), l2.x()); x++) {
-                                    var location = new Location(x, y, z);
-                                    Main.world.setBlock(location, blockId);
-                                    count++;
-                                    for (var player : Main.players) {
-                                        player.sendBlockChange(location, blockId);
-                                    }
-                                }
-                            }
-                        }
-                        sendEditorNotification(String.format("Set %s blocks", count));
-                    }
-                    case "/stop" -> {
-                        connection.close();
-                    }
-                    case "/lag" -> {
-                        for (var player : Main.players) {
-                            sendNotification(String.format("%s thought there was some lag", name));
-                        }
-                        connection.close();
-                    }
-                    case "/speed" -> {
-                        var speed = Float.parseFloat(parts[1]);
-                        connection.sendPacket(0x30, (p) -> {
-                            p.writeByte((byte) 0x0F);
-                            p.writeFloat(speed);
-                            p.writeFloat(0.1f);
-                        });
-                    }
-                    case "/save" -> {
-                        var now = Instant.now();
-                        if (isAdmin())
-                            Main.world.save();
-                        var then = Instant.now();
-                        var took = Duration.between(now, then);
-                        sendNotification(String.format("Saved world! (%fms)", (double) took.getNano() / 1000000));
-                    }
-                    case "/gm" -> {
-                        var value = Integer.parseInt(parts[1]);
-                        changeGamemode(value);
-                    }
-                    case "/gs" -> {
-                        var reason = Byte.parseByte(parts[1]);
-                        var value = Float.parseFloat(parts[2]);
-                        for (var player : Main.players) {
-                            player.sendChangeGameState(reason, value);
-                        }
-                    }
-                    case "/lightning" -> {
-                        for (Player player : Main.players) {
-                            player.sendSpawnEntity(41, position);
-                        }
-                    }
-                    case "/lightning2" -> {
-                        new Thread(() -> {
-                            Position position = Main.playerByName(parts[1]).position;
-                            while (true) {
-                                for (Player player : Main.players) {
-                                    try {
-                                        player.sendSpawnEntity(41, position);
-                                    } catch (IOException e) {
-                                        e.printStackTrace();
-                                    }
-                                    try {
-                                        Thread.sleep(100);
-                                    } catch (InterruptedException e) {
-                                        e.printStackTrace();
-                                    }
-                                }
-                            }
-                        }).start();
-                    }
-                    default -> sendError(String.format("Invalid command \"%s\"", parts[0]));
-                }
-            } catch (Exception e) {
-                var error = String.format("Error: %s", e);
-                println(error);
-                sendError(error);
+            Main.commands.dispatch(this, message.substring(1).split(" +"));
+        }
+        else {
+            for (var player : Main.players) {
+                player.sendChat(this, message);
             }
-            return;
         }
-        for (var player : Main.players) {
-            player.sendChat(this, message);
-        }
+    }
+
+    void sendCommandData() throws IOException {
+        connection.sendPacket(0x10, (p) -> p.write(Main.commandPacket));
     }
 
     // movement

@@ -4,6 +4,8 @@ import io.philbrick.minecraft.nbt.*;
 import org.json.*;
 
 import java.io.*;
+import java.lang.annotation.*;
+import java.lang.reflect.*;
 import java.net.*;
 import java.nio.file.*;
 import java.security.*;
@@ -108,6 +110,8 @@ public class Main {
     static KeyPair encryptionKey;
     static final Set<Player> players = new HashSet<>();
     static World world;
+    static CommandBucket commands;
+    static byte[] commandPacket;
 
     static int nextEntityId = 1;
     static boolean preload = false;
@@ -197,6 +201,19 @@ public class Main {
             encryptionKey = kpg.generateKeyPair();
         } catch (NoSuchAlgorithmException e) {
             e.printStackTrace();
+        }
+
+        commands = new CommandBucket();
+        {
+            PacketBuilder p = new PacketBuilder();
+            var tmp = new PacketBuilder();
+            var length = Main.commands.encodeBrigadier(tmp);
+
+            p.writeVarInt(length);
+            p.write(tmp.toByteArray());
+            p.writeVarInt(length - 1);
+
+            commandPacket = p.toByteArray();
         }
 
         final var socket = new ServerSocket(25565);

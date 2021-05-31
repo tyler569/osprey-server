@@ -52,23 +52,23 @@ public record Location(int x, int y, int z) {
         return y * 256 + z * 16 + x;
     }
 
+    private static int parseRelative(int current, String str) {
+        if (str.startsWith("~")) {
+            if (str.length() == 1) {
+                return current;
+            } else {
+                return (int) (current + Float.parseFloat(str.substring(1)));
+            }
+        } else {
+            return (int) Float.parseFloat(str);
+        }
+    }
+
     static Location relativeLocation(Location base, String[] args) {
         int x, y, z;
-        if (args[0].startsWith("~")) {
-            x = base.x() + Integer.parseInt(args[0].substring(1));
-        } else {
-            x = Integer.parseInt(args[0]);
-        }
-        if (args[0].startsWith("~")) {
-            y = base.y() + Integer.parseInt(args[0].substring(1));
-        } else {
-            y = Integer.parseInt(args[0]);
-        }
-        if (args[0].startsWith("~")) {
-            z = base.z() + Integer.parseInt(args[0].substring(1));
-        } else {
-            z = Integer.parseInt(args[0]);
-        }
+        x = parseRelative(base.x(), args[0]);
+        y = parseRelative(base.y(), args[1]);
+        z = parseRelative(base.z(), args[2]);
         return new Location(x, y, z);
     }
 }

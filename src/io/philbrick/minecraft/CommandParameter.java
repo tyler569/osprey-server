@@ -63,9 +63,9 @@ public class CommandParameter {
         }
 
         CommandParameter pt = new CommandParameter(Type.Literal);
+        pt.literalValue = name;
 
         if (type == null) {
-            pt.literalValue = name;
             return pt;
         }
 
@@ -96,7 +96,7 @@ public class CommandParameter {
         return pt;
     }
 
-    public boolean matches(CommandParameter other) {
+    public boolean equals(CommandParameter other) {
         if (type == other.type) {
             if (type == Type.Literal) {
                 return literalValue.equals(other.literalValue);
@@ -108,6 +108,93 @@ public class CommandParameter {
         } else {
             return false;
         }
+    }
+
+    private static boolean isInteger(String s, Integer min, Integer max) {
+        try {
+            var value = Integer.parseInt(s);
+            if (min == null || max == null) return true;
+            return value >= min && value <= max;
+        } catch (NumberFormatException e) {
+            return false;
+        }
+    }
+
+    private static boolean isFloat(String s, Integer min, Integer max) {
+        try {
+            var value = Float.parseFloat(s);
+            if (min == null || max == null) return true;
+            return value >= min && value <= max;
+        } catch (NumberFormatException e) {
+            return false;
+        }
+    }
+
+    private static boolean isRelativeInteger(String s) {
+        if (s.startsWith("~")) {
+            s = s.substring(1);
+            if (s.equals("")) {
+                return true;
+            }
+        }
+        try {
+            Float.parseFloat(s);
+            return true;
+        } catch (NumberFormatException e) {
+            return false;
+        }
+    }
+
+    public int matches(String[] args, int offset) {
+        if (args.length == offset) {
+            return 0;
+        }
+
+        switch (type) {
+            case Boolean -> {
+                if (
+                    args[offset].equalsIgnoreCase("true") ||
+                    args[offset].equalsIgnoreCase("false")
+                ) {
+                    return 1;
+                } else {
+                    return 0;
+                }
+            }
+            case Integer -> {
+                return isInteger(args[offset], min, max) ? 1 : 0;
+            }
+            case Float -> {
+                return isFloat(args[offset], min, max) ? 1 : 0;
+            }
+            case String, Player, Entity, NBT -> {
+                return 1;
+            }
+            case Vec2 -> {
+                if (offset + 2 > args.length) {
+                    return 0;
+                }
+                return isRelativeInteger(args[offset]) &&
+                    isRelativeInteger(args[offset + 1]) ? 2 : 0;
+            }
+            case Vec3 -> {
+                if (offset + 3 > args.length) {
+                    return 0;
+                }
+                return isRelativeInteger(args[offset]) &&
+                    isRelativeInteger(args[offset + 1]) &&
+                    isRelativeInteger(args[offset + 2]) ? 3 : 0;
+            }
+            case Literal -> {
+                if (args[offset].equals(literalValue)) {
+                    return 1;
+                } else {
+                    return 0;
+                }
+            }
+        }
+
+        throw new IllegalStateException("Shouldn't be possible to be here");
     }
 
     @Override
