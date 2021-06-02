@@ -5,23 +5,17 @@ import java.util.*;
 
 public class NBTList<T extends NBTValue> extends NBTValue {
     public static int ID = 9;
-    List<T> value;
+    ArrayList<T> value;
 
-    NBTList(String n, ArrayList<T> v) {
-        super(n);
-        value = v;
-    }
-
-    public NBTList(String n, T... vs) {
-        super(n);
-        value = Arrays.asList(vs);
+    public NBTList() {
+        value = new ArrayList<>();
     }
 
     public int id() {
         return ID;
     }
 
-    public void innerEncode(OutputStream os) throws IOException {
+    void encode(OutputStream os) throws IOException {
         if (value.isEmpty()) {
             os.write(0);
         } else {
@@ -29,11 +23,15 @@ public class NBTList<T extends NBTValue> extends NBTValue {
         }
         Conversion.outputInteger(os, value.size());
         if (value.size() == 0) {
-            (new NBTEnd()).innerEncode(os);
+            (new NBTEnd()).encode(os);
             return;
         }
         for (T v : value) {
-            v.innerEncode(os);
+            v.encode(os);
         }
+    }
+
+    public boolean add(T v) {
+        return value.add(v);
     }
 }

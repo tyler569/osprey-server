@@ -6,8 +6,7 @@ public class NBTLong extends NBTValue {
     public static int ID = 4;
     long value;
 
-    NBTLong(String n, long v) {
-        super(n);
+    NBTLong(long v) {
         value = v;
     }
 
@@ -15,7 +14,7 @@ public class NBTLong extends NBTValue {
         return ID;
     }
 
-    public void innerEncode(OutputStream os) throws IOException {
+    void encode(OutputStream os) throws IOException {
         Conversion.outputLong(os, value);
     }
 }

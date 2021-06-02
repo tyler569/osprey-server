@@ -24,7 +24,6 @@ public class Player extends Entity {
     String name;
     Connection connection;
     Duration ping;
-    Thread thread;
     State state;
     Integer playerId;
     Inventory inventory;
@@ -39,16 +38,17 @@ public class Player extends Entity {
     boolean isSprinting;
     boolean isShielding;
 
-    Player(int entityId, Socket sock) throws IOException {
+    Player(Socket sock) throws IOException {
+        super(106 /* "minecraft:player" */);
         connection = new Connection(sock);
         state = State.Status;
-        this.entityId = entityId;
-        thread = new Thread(this::connectionWrapper);
-        thread.start();
     }
 
-    static void runThread(int entityId, Socket sock) throws IOException {
-        new Player(entityId, sock);
+    void update() {}
+
+    static void runThread(Socket sock) throws IOException {
+        var player = new Player(sock);
+        new Thread(player::connectionWrapper).start();
     }
 
     void connectionWrapper() {
@@ -105,9 +105,7 @@ public class Player extends Entity {
     }
 
     void teleport(Location location) throws IOException {
-        position.x = location.x() + 0.5;
-        position.y = location.y();
-        position.z = location.z() + 0.5;
+        position.moveTo(location);
         sendPositionLook();
         sendUpdateChunkPosition();
         Main.forEachPlayer((player) -> {
@@ -115,6 +113,10 @@ public class Player extends Entity {
             player.sendEntityTeleport(entityId, position);
         });
         loadCorrectChunks();
+    }
+
+    Location location() {
+        return position.location();
     }
 
     void handlePacket(Packet packet) throws IOException {
@@ -170,9 +172,10 @@ public class Player extends Entity {
     }
 
     void writeHandshakeResponse() throws IOException {
+        final String handshakeInfo = Main.handshakeJson();
         connection.sendPacket(0, (p) -> {
-            p.writeVarInt(Main.handshake_json.length());
-            p.write(Main.handshake_json.getBytes());
+            p.writeVarInt(handshakeInfo.length());
+            p.write(handshakeInfo.getBytes());
         });
     }
 
@@ -266,8 +269,8 @@ public class Player extends Entity {
             p.writeByte((byte)-1); // previous gamemode
             p.writeVarInt(1); // world count
             p.writeString("minecraft:overworld"); // list of worlds (# count)
-            Main.dimensionCodec.encode(p);
-            Main.dimension.encode(p);
+            Main.dimensionCodec.write(p);
+            Main.overworldDimension.write(p);
             p.writeString("minecraft:overworld"); // world name
             p.writeLong(1); // hashed seed
             p.writeVarInt(100); // max players
@@ -878,6 +881,16 @@ public class Player extends Entity {
         float cursorY = packet.readFloat();
         float cursorZ = packet.readFloat();
         boolean insideBlock = packet.readBoolean();
+
+        if (selectedItem().itemId == 846 && hand == 0) {
+            Position target = new Position(originalLocation);
+            target.x += cursorX;
+            target.y += cursorY;
+            target.z += cursorZ;
+            sendSpawnEntity(27, target);
+            return;
+        }
+
         printf("Place %d %s %s %f %f %f %b%n", hand, location, face, cursorX, cursorY, cursorZ, insideBlock);
 
         AtomicBoolean blockPlacement = new AtomicBoolean(false);
@@ -1050,10 +1063,9 @@ public class Player extends Entity {
                 playerId = results.getInt(1);
                 selectedHotbarSlot = results.getInt(2);
                 position = new Position();
-                position.x = results.getDouble(3);
-                if (results.wasNull()) {
-                    position.x = 0.5;
-                } else {
+                var xTmp = results.getDouble(3);
+                if (!results.wasNull()) {
+                    position.x = xTmp;
                     position.y = results.getDouble(4);
                     position.z = results.getDouble(5);
                     position.pitch = results.getFloat(6);

@@ -7,8 +7,7 @@ public class NBTString extends NBTValue {
     public static int ID = 8;
     String value;
 
-    public NBTString(String n, String v) {
-        super(n);
+    public NBTString(String v) {
         value = v;
     }
 
@@ -16,8 +15,7 @@ public class NBTString extends NBTValue {
         return ID;
     }
 
-    public void innerEncode(OutputStream os) throws IOException {
-        // Conversion.outputShort(os, (short)value.length());
+    void encode(OutputStream os) throws IOException {
         Conversion.putModifiedString(os, value);
     }
 }

@@ -12,10 +12,24 @@ public class Position {
         y = 32;
     }
 
-    Position(Location p) {
-        x = p.x() + 0.5;
-        y = p.y();
-        z = p.z() + 0.5;
+    Position(Location location) {
+        x = location.x();
+        y = location.y();
+        z = location.z();
+    }
+
+    static Position middle(Location location) {
+        Position p = new Position();
+        p.x = location.x() + 0.5;
+        p.y = location.y();
+        p.z = location.z() + 0.5;
+        return p;
+    }
+
+    void moveTo(Location location) {
+        x = location.x() + 0.5;
+        y = location.y();
+        z = location.z() + 0.5;
     }
 
     byte yawAngle() {

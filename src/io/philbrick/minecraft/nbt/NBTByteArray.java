@@ -6,8 +6,7 @@ public class NBTByteArray extends NBTValue {
     public static int ID = 7;
     byte[] value;
 
-    public NBTByteArray(String n, byte[] v) {
-        super(n);
+    public NBTByteArray(byte[] v) {
         value = v;
     }
 
@@ -15,7 +14,7 @@ public class NBTByteArray extends NBTValue {
         return ID;
     }
 
-    public void innerEncode(OutputStream os) throws IOException {
+    void encode(OutputStream os) throws IOException {
         Conversion.outputInteger(os, value.length);
         os.write(value);
     }

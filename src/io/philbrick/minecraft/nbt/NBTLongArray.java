@@ -7,16 +7,19 @@ public class NBTLongArray extends NBTValue {
     public static int ID = 12;
     List<Long> value;
 
-    public NBTLongArray(String n, Long... vs) {
-        super(n);
+    public NBTLongArray(Long... vs) {
         value = Arrays.asList(vs);
+    }
+
+    public NBTLongArray(Collection<Long> vs) {
+        value = vs.stream().toList();
     }
 
     public int id() {
         return ID;
     }
 
-    public void innerEncode(OutputStream os) throws IOException {
+    void encode(OutputStream os) throws IOException {
         Conversion.outputInteger(os, value.size());
         for (var v : value) {
             Conversion.outputLong(os, v);

@@ -6,8 +6,7 @@ public class NBTInteger extends NBTValue {
     public static int ID = 3;
     int value;
 
-    public NBTInteger(String n, int v) {
-        super(n);
+    public NBTInteger(int v) {
         value = v;
     }
 
@@ -15,7 +14,7 @@ public class NBTInteger extends NBTValue {
         return ID;
     }
 
-    public void innerEncode(OutputStream os) throws IOException {
+    void encode(OutputStream os) throws IOException {
         Conversion.outputInteger(os, value);
     }
 }

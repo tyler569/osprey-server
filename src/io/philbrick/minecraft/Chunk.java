@@ -101,7 +101,7 @@ public class Chunk {
         }
     }
 
-    NBTValue heightMapNBT() {
+    NBTCompound heightMapNBT() {
         var data = new Long[37];
         Arrays.fill(data, 0L);
         int index = 0;
@@ -116,11 +116,9 @@ public class Chunk {
                 }
             }
         }
-        return new NBTCompound(null,
-            new NBTLongArray("MOTION_BLOCKING",
-               data
-            )
-        );
+        var compound = new NBTCompound();
+        compound.put("MOTION_BLOCKING", data);
+        return compound;
     }
 
     byte[] encodeChunkData() throws IOException {
@@ -137,11 +135,11 @@ public class Chunk {
         var buffer = new ByteArrayOutputStream();
 
         byte[] chunkData = encodeChunkData();
-        NBTValue heightmap = heightMapNBT();
+        var heightmap = heightMapNBT();
 
         Protocol.writeBoolean(buffer, true);
         Protocol.writeVarInt(buffer, 0xFFFF); // primary bitmask
-        heightmap.encode(buffer);
+        heightmap.write(buffer);
         Protocol.writeVarInt(buffer, 1024);
         for (int i = 0; i < 1024; i++) {
             Protocol.writeVarInt(buffer, 0);

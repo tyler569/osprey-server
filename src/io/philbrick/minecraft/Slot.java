@@ -8,26 +8,10 @@ public class Slot {
     boolean empty;
     int itemId;
     int count;
-    NBTValue data;
+    NBTCompound data;
 
     Slot() {
         empty = true;
-        data = new NBTEnd();
-    }
-
-    Slot(int item) {
-        empty = false;
-        itemId = item;
-        count = 1;
-        data = new NBTEnd();
-    }
-
-    // todo
-    Slot(String itemName) {
-        empty = false;
-        itemId = 1;
-        count = 1;
-        data = new NBTEnd();
     }
 
     void setItem(int item) {
@@ -46,7 +30,7 @@ public class Slot {
             } else {
                 Protocol.writeByte(os, count);
             }
-            data.encode(os);
+            os.write(0); // NBTEnd, no NBT
         }
     }
 

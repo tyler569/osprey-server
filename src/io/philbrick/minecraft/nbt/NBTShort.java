@@ -6,8 +6,7 @@ public class NBTShort extends NBTValue {
     public static int ID = 2;
     short value;
 
-    NBTShort(String n, short v) {
-        super(n);
+    NBTShort(short v) {
         value = v;
     }
 
@@ -15,7 +14,7 @@ public class NBTShort extends NBTValue {
         return ID;
     }
 
-    public void innerEncode(OutputStream os) throws IOException {
+    void encode(OutputStream os) throws IOException {
         Conversion.outputShort(os, value);
     }
 }

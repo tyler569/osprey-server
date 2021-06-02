@@ -6,8 +6,7 @@ public class NBTDouble extends NBTValue {
     public static int ID = 6;
     double value;
 
-    public NBTDouble(String n, double v) {
-        super(n);
+    public NBTDouble(double v) {
         value = v;
     }
 
@@ -15,7 +14,7 @@ public class NBTDouble extends NBTValue {
         return ID;
     }
 
-    public void innerEncode(OutputStream os) throws IOException {
+    void encode(OutputStream os) throws IOException {
         Conversion.outputDouble(os, value);
     }
 }

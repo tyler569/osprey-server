@@ -3,10 +3,7 @@ package io.philbrick.minecraft;
 import io.philbrick.minecraft.nbt.*;
 import org.json.*;
 
-import javax.security.auth.login.*;
 import java.io.*;
-import java.lang.annotation.*;
-import java.lang.reflect.*;
 import java.net.*;
 import java.nio.file.*;
 import java.security.*;
@@ -14,112 +11,87 @@ import java.sql.*;
 import java.util.*;
 
 public class Main {
-    static final String handshake_json = """
-        {
-          "version": {
-            "name": "1.16.5",
-            "protocol": 754
-          },
-          "players": {
-            "max": 10,
-            "online": 1,
-            "sample": [
-              {
-                "name": "tyler569",
-                "id": "492c1496-f590-4a6f-a899-37f9b87a8238"
-              }
-            ]
-          },
-          "description": {
-            "text": "Hello World!"
-          }
-        }
-        """;
+    // TODO: read these in from configuration
+    static NBTCompound overworldDimension = new NBTCompound();
+    static {
+        overworldDimension.put("piglin_safe", (byte) 0);
+        overworldDimension.put("natural", (byte) 1);
+        overworldDimension.put("ambient_light", 1.0f);
+        overworldDimension.put("infiniburn", "minecraft:infiniburn_overworld");
+        overworldDimension.put("respawn_anchor_works", (byte) 0);
+        overworldDimension.put("has_skylight", (byte) 1);
+        overworldDimension.put("bed_works", (byte) 1);
+        overworldDimension.put("effects", "minecraft:overworld");
+        overworldDimension.put("has_raids", (byte) 1);
+        overworldDimension.put("logical_height", 256);
+        overworldDimension.put("coordinate_scale", 1.0);
+        overworldDimension.put("ultrawarm", (byte) 0);
+        overworldDimension.put("has_ceiling", (byte) 0);
+    }
 
-    static final NBTValue dimension = new NBTCompound(null,
-        new NBTByte("piglin_safe", 0),
-        new NBTByte("natural", 1),
-        new NBTFloat("ambient_light", 1.0f),
-        new NBTString("infiniburn", "minecraft:infiniburn_overworld"),
-        new NBTByte("respawn_anchor_works", 0),
-        new NBTByte("has_skylight", 1),
-        new NBTByte("bed_works", 1),
-        new NBTString("effects", "minecraft:overworld"),
-        new NBTByte("has_raids", 1),
-        new NBTInteger("logical_height", 256),
-        new NBTDouble("coordinate_scale", 1.0),
-        new NBTByte("ultrawarm", 0),
-        new NBTByte("has_ceiling", 0)
-    );
+    static NBTCompound dimensionCodec = new NBTCompound(null);
+    static {
+        var dimensionType = new NBTCompound();
+        dimensionType.put("type", "minecraft:dimension_type");
 
-    static final NBTValue dimensionCodec = new NBTCompound(null,
-        new NBTCompound("minecraft:dimension_type",
-            new NBTString("type", "minecraft:dimension_type"),
-            new NBTList<>("value",
-                new NBTCompound(null,
-                    new NBTString("name", "minecraft:overworld"),
-                    new NBTInteger("id", 0),
-                    new NBTCompound("element",
-                        new NBTByte("piglin_safe", 0),
-                        new NBTByte("natural", 1),
-                        new NBTFloat("ambient_light", 1.0f),
-                        new NBTString("infiniburn", "minecraft:infiniburn_overworld"),
-                        new NBTByte("respawn_anchor_works", 0),
-                        new NBTByte("has_skylight", 1),
-                        new NBTByte("bed_works", 1),
-                        new NBTString("effects", "minecraft:overworld"),
-                        new NBTByte("has_raids", 1),
-                        new NBTInteger("logical_height", 256),
-                        new NBTDouble("coordinate_scale", 1.0),
-                        new NBTByte("ultrawarm", 0),
-                        new NBTByte("has_ceiling", 0)
-                    )
-                )
-            )
-        ),
-        new NBTCompound("minecraft:worldgen/biome",
-            new NBTString("type", "minecraft:worldgen/biome"),
-            new NBTList<>("value",
-                new NBTCompound(null,
-                    new NBTString("name", "minecraft:plains"),
-                    new NBTInteger("id", 0),
-                    new NBTCompound("element",
-                        new NBTString("precipitation", "rain"),
-                        new NBTCompound("effects",
-                            new NBTInteger("sky_color", 7907327),
-                            new NBTInteger("water_fog_color", 329011),
-                            new NBTInteger("fog_color", 12638463),
-                            new NBTInteger("water_color", 4159204),
-                            new NBTCompound("mood_sound",
-                                new NBTInteger("tick_delay", 6000),
-                                new NBTDouble("offset", 2.0),
-                                new NBTString("sound", "minecraft:ambient_cave"),
-                                new NBTInteger("block_search_extent", 0)
-                            )
-                        ),
-                        new NBTFloat("depth", 0.125f),
-                        new NBTFloat("temperature", 0.8f),
-                        new NBTFloat("scale", 0.05f),
-                        new NBTFloat("downfall", 0.4f),
-                        new NBTString("category", "plains")
-                    )
-                )
-            )
-        )
-    );
+        var dimensionValues = new NBTList<NBTCompound>();
+
+        var overworld = new NBTCompound();
+        overworld.put("name", "minecraft:overworld");
+        overworld.put("id", 0);
+        overworld.put("element", overworldDimension);
+
+        dimensionValues.add(overworld);
+        dimensionType.put("value", dimensionValues);
+        dimensionCodec.put("minecraft:dimension_type", dimensionType);
+
+        var biomes = new NBTCompound();
+        biomes.put("type", "minecraft:worldgen/biome");
+
+        var biomeValues = new NBTList<NBTCompound>();
+
+        var plains = new NBTCompound();
+        plains.put("name", "minecraft:plains");
+        plains.put("id", 0);
+
+        var plainsElement = new NBTCompound();
+        plainsElement.put("precipitation", "rain");
+        plainsElement.put("depth", 0.125f);
+        plainsElement.put("temperature", 0.8f);
+        plainsElement.put("scale", 0.05f);
+        plainsElement.put("downfall", 0.4f);
+        plainsElement.put("category", "plains");
+
+        var plainsEffects = new NBTCompound();
+        plainsEffects.put("sky_color", 7907327);
+        plainsEffects.put("water_fog_color", 329011);
+        plainsEffects.put("fog_color", 12638463);
+        plainsEffects.put("water_color", 4159204);
+
+        var plainsMoodSounds = new NBTCompound();
+        plainsMoodSounds.put("tick_delay", 6000);
+        plainsMoodSounds.put("offset", 2.0);
+        plainsMoodSounds.put("sound", "minecraft:ambient_cave");
+        plainsMoodSounds.put("block_search_extent", 0);
+
+        plainsEffects.put("mood", plainsMoodSounds);
+        plainsElement.put("effects", plainsEffects);
+        plains.put("element", plainsElement);
+        biomeValues.add(plains);
+        biomes.put("value", biomeValues);
+
+        dimensionCodec.put("minecraft:worldgen/biome", biomes);
+    }
+
     static final Set<Player> players = new HashSet<>();
     static ChunkDispatcher chunkDispatcher;
     static KeyPair encryptionKey;
     static World world;
     static CommandBucket commands;
     static byte[] commandPacket;
-
     static int nextEntityId = 1;
-    static boolean preload = false;
-
     static Map<Integer, Integer> itemToBlock = new HashMap<>();
-
-
+    static JSONObject registry;
     static JSONObject blocks;
 
     static Integer blockDefaultId(String name) {
@@ -140,8 +112,6 @@ public class Main {
     }
 
     static void populateItemToBlock() throws IOException {
-        var registryFile = Files.readString(Path.of("generated/reports/registries.json"));
-        var registry = new JSONObject(registryFile);
         var items = registry.getJSONObject("minecraft:item").getJSONObject("entries");
         Iterator<String> itemsKeys = items.keys();
 
@@ -184,24 +154,47 @@ public class Main {
         }
     }
 
+    static String handshakeJson() throws IOException {
+        var result = new JSONObject();
+        var version = new JSONObject();
+        var players = new JSONObject();
+        var description = new JSONObject();
+        var playerSample = new JSONArray();
+
+        version.put("name", "1.16.5");
+        version.put("protocol", 754);
+
+        forEachPlayer((player) -> {
+            var playerJson = new JSONObject();
+            playerJson.put("name", player.name);
+            playerJson.put("id", player.uuid);
+            playerSample.put(playerJson);
+        });
+
+        players.put("max", 10);
+        players.put("online", Main.players.size());
+        players.put("sample", playerSample);
+
+        description.put("text", "Hello World!");
+
+        result.put("version", version);
+        result.put("players", players);
+        result.put("description", description);
+
+        return result.toString();
+    }
+
     public static void main(String[] args) throws IOException {
+        final var registryFile = Files.readString(Path.of("generated/reports/registries.json"));
+        registry = new JSONObject(registryFile);
+
+        populateItemToBlock();
+
         try {
             world = World.open("world.db");
         } catch (SQLException e) {
             e.printStackTrace();
-        }
-
-        populateItemToBlock();
-
-        if (preload) {
-            try {
-                world.preloadFromDisk(
-                    new ChunkLocation(-20, -20),
-                    new ChunkLocation(20, 20)
-                );
-            } catch (SQLException e) {
-                e.printStackTrace();
-            }
+            return;
         }
 
         try {
@@ -213,17 +206,7 @@ public class Main {
         }
 
         commands = new CommandBucket();
-        {
-            PacketBuilder p = new PacketBuilder();
-            var tmp = new PacketBuilder();
-            var length = Main.commands.encodeBrigadier(tmp);
-
-            p.writeVarInt(length);
-            p.write(tmp.toByteArray());
-            p.writeVarInt(length - 1);
-
-            commandPacket = p.toByteArray();
-        }
+        commandPacket = commands.brigadierPacket();
 
         chunkDispatcher = new ChunkDispatcher();
         new Thread(chunkDispatcher).start();
@@ -232,8 +215,7 @@ public class Main {
         System.out.println("Ready");
         while (!socket.isClosed()) {
             var connection = socket.accept();
-            Player.runThread(nextEntityId, connection);
-            nextEntityId += 1;
+            Player.runThread(connection);
         }
     }
 }

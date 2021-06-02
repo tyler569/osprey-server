@@ -6,8 +6,7 @@ public class NBTFloat extends NBTValue {
     public static int ID = 5;
     float value;
 
-    public NBTFloat(String n, float v) {
-        super(n);
+    public NBTFloat(float v) {
         value = v;
     }
 
@@ -15,7 +14,7 @@ public class NBTFloat extends NBTValue {
         return ID;
     }
 
-    public void innerEncode(OutputStream os) throws IOException {
+    void encode(OutputStream os) throws IOException {
         Conversion.outputFloat(os, value);
     }
 }

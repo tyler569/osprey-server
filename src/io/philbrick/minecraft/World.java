@@ -75,7 +75,7 @@ public class World {
         } catch (Exception e) {
             System.out.printf("Failed to save %s%n", location);
             System.out.println(e.getMessage());
-            // e.printStackTrace(System.out);
+            e.printStackTrace();
         }
     }
 
@@ -95,26 +95,6 @@ public class World {
                 return Chunk.fromBlob(blob);
             } else {
                 return null;
-            }
-        }
-    }
-
-    void preloadFromDisk(ChunkLocation minus, ChunkLocation plus) throws SQLException, IOException {
-        String sql = """
-            SELECT x, z, data FROM chunks
-            WHERE x > ? AND x < ? AND z > ? AND z < ?
-            """;
-        try (var connection = connect();
-             var statement = connection.prepareStatement(sql)) {
-            statement.setInt(1, minus.x());
-            statement.setInt(2, plus.x());
-            statement.setInt(3, minus.z());
-            statement.setInt(4, plus.z());
-            var results = statement.executeQuery();
-            while (results.next()) {
-                byte[] blob = results.getBytes(3);
-                var location = new ChunkLocation(results.getInt(1), results.getInt(2));
-                loadedChunks.put(location, Chunk.fromBlob(blob));
             }
         }
     }
