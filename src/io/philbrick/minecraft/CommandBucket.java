@@ -257,6 +257,17 @@ public class CommandBucket {
         return encodeBrigadier(0, 0, rootNode, p);
     }
 
+    byte[] brigadierPacket() throws IOException {
+        PacketBuilder p = new PacketBuilder();
+        var tmp = new PacketBuilder();
+        var length = Main.commands.encodeBrigadier(tmp);
+
+        p.writeVarInt(length);
+        p.write(tmp.toByteArray());
+        p.writeVarInt(length - 1);
+        return p.toByteArray();
+    }
+
 
 
     // todo: move to a subclass or something
