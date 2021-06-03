@@ -78,14 +78,11 @@ public class NBTTest {
         byte[] expected;
 
         {
-            var file = new File("src/io/philbrick/minecraft/nbt/bigtest.nbt");
+            var file = new File("src/main/java/com/pygostylia/osprey/nbt/bigtest.nbt");
             var fs = new FileInputStream(file);
             expected = fs.readAllBytes();
             fs.close();
         }
-
-        System.out.println(Arrays.toString(encoded));
-        System.out.println(Arrays.toString(expected));
 
         Assertions.assertArrayEquals(encoded, expected);
     }
