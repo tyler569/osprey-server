@@ -71,4 +71,8 @@ public record Location(int x, int y, int z) {
         z = parseRelative(base.z(), args[2]);
         return new Location(x, y, z);
     }
+
+    boolean withinRadiusOf(int radius, Location location) {
+        return Math.abs(location.x - x) < radius && Math.abs(location.z - z) < radius;
+    }
 }

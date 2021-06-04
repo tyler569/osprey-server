@@ -873,7 +873,6 @@ public class Player extends Entity {
             return;
         }
         var face = packet.readVarInt();
-        var current = Main.world.block(originalLocation);
         final var location = switch (face) {
             case 0 -> originalLocation.offset(0, -1, 0);
             case 1 -> originalLocation.offset(0, 1, 0);
@@ -883,6 +882,7 @@ public class Player extends Entity {
             case 5 -> originalLocation.offset(1, 0, 0);
             default -> throw new IllegalStateException("Invalid face value");
         };
+        var current = Main.world.block(location);
         float cursorX = packet.readFloat();
         float cursorY = packet.readFloat();
         float cursorZ = packet.readFloat();
@@ -894,13 +894,7 @@ public class Player extends Entity {
             target.y += cursorY;
             target.z += cursorZ;
             FireworkEntity firework = new FireworkEntity(target, new Velocity(0, 0, 0));
-            firework.spawnForPlayer(this);
-            try {
-                Thread.sleep(500);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-            sendDestroyEntity(firework);
+            firework.spawn();
             return;
         }
 

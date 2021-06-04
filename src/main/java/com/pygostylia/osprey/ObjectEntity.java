@@ -14,4 +14,15 @@ abstract public class ObjectEntity extends Entity {
         super.spawnForPlayer(player);
         player.sendSpawnEntity(this);
     }
+
+    public void spawn() {
+        Main.playersWithin(64, position.location())
+                .forEach((player) -> {
+                    try {
+                        spawnForPlayer(player);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                });
+    }
 }

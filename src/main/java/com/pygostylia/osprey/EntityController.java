@@ -1,18 +1,23 @@
 package com.pygostylia.osprey;
 
-import java.util.concurrent.DelayQueue;
-import java.util.concurrent.RunnableScheduledFuture;
+import java.util.concurrent.*;
 
 public class EntityController implements Runnable {
-    DelayQueue<RunnableScheduledFuture<Void>> events;
+    DelayQueue<ScheduledFuture<?>> events = new DelayQueue<>();
+    ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
+
+    public void submit(Runnable event, int time, TimeUnit unit) {
+        ScheduledFuture<?> future = executor.schedule(event, time, unit);
+        events.add(future);
+    }
 
     public void run() {
         for (var event : events) {
-            event.run();
+            try {
+                event.get();
+            } catch (InterruptedException | ExecutionException e) {
+                e.printStackTrace();
+            }
         }
-    }
-
-    public void submit(RunnableScheduledFuture<Void> event) {
-        events.add(event);
     }
 }

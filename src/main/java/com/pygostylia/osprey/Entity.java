@@ -27,4 +27,24 @@ abstract public class Entity {
     void spawnForPlayer(Player player) throws IOException {
         playersWithLoaded.add(player);
     }
+
+    void destroyForPlayer(Player player) throws IOException {
+        player.sendDestroyEntity(this);
+        playersWithLoaded.remove(player);
+    }
+
+    void destroy() {
+        playersWithLoaded.forEach((player) -> {
+            try {
+                player.sendDestroyEntity(this);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        });
+        playersWithLoaded.clear();
+    }
+
+    Location location() {
+        return position.location();
+    }
 }

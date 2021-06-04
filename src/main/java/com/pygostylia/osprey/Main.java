@@ -14,6 +14,7 @@ import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
 import java.sql.SQLException;
 import java.util.*;
+import java.util.stream.Stream;
 
 public class Main {
     // TODO: read these in from configuration
@@ -90,7 +91,7 @@ public class Main {
 
     static final String brand = "Osprey";
     static final Set<Player> players = new HashSet<>();
-    static ChunkDispatcher chunkDispatcher;
+    static ChunkDispatcher chunkDispatcher = new ChunkDispatcher();
     static KeyPair encryptionKey;
     static World world;
     static CommandBucket commands;
@@ -161,6 +162,10 @@ public class Main {
         }
     }
 
+    static Stream<Player> playersWithin(int radius, Location location) {
+        return players.stream().filter((player) -> player.location().withinRadiusOf(radius, location));
+    }
+
     static String handshakeJson() throws IOException {
         var result = new JSONObject();
         var version = new JSONObject();
@@ -215,8 +220,8 @@ public class Main {
         commands = new CommandBucket();
         commandPacket = commands.brigadierPacket();
 
-        chunkDispatcher = new ChunkDispatcher();
         new Thread(chunkDispatcher).start();
+        new Thread(entityController).start();
 
         final var socket = new ServerSocket(25565);
         System.out.println("Ready");
