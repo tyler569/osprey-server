@@ -96,6 +96,7 @@ public class Main {
     static CommandBucket commands;
     static byte[] commandPacket;
     static int nextEntityId = 1;
+    static EntityController entityController = new EntityController();
     static Map<Integer, Integer> itemToBlock = new HashMap<>();
     static JSONObject registry;
     static JSONObject blocks;
@@ -145,7 +146,7 @@ public class Main {
 
     static Player playerByEntityId(int entityId) {
         for (var player : players) {
-            if (player.entityId == entityId) {
+            if (player.id == entityId) {
                 return player;
             }
         }
