@@ -26,6 +26,13 @@ public class Position {
         return p;
     }
 
+    static Position orientation(float yaw, float pitch) {
+        var position = new Position();
+        position.yaw = yaw;
+        position.pitch = pitch;
+        return position;
+    }
+
     void moveTo(Location location) {
         x = location.x() + 0.5;
         y = location.y();
@@ -62,5 +69,13 @@ public class Position {
 
     public String toString() {
         return String.format("Position{%f, %f, %f, %f, %f}", x, y, z, pitch, yaw);
+    }
+
+    public float pitchRadians() {
+        return (float) Math.toRadians(pitch);
+    }
+
+    public float yawRadians() {
+        return (float) Math.toRadians(yaw);
     }
 }
