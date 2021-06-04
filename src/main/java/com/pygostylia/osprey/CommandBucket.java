@@ -321,6 +321,11 @@ public class CommandBucket {
         sender.setEditorLocation(1, sender.position.location());
     }
 
+    @Command("/sel")
+    void editorClear(Player sender, String[] args) throws IOException {
+        sender.unsetEditorSelection();
+    }
+
     @Command(value = "/set", args = {"block: string"})
     void editorSet(Player sender, String[] args) throws IOException {
         var l1 = sender.editorLocations[0];
@@ -397,39 +402,4 @@ public class CommandBucket {
         }
     }
 
-    @Command("lightning")
-    void lightning(Player sender, String[] args) throws IOException {
-        for (Player player : Main.players) {
-            player.sendSpawnEntity(41, sender.position);
-        }
-    }
-
-    @Command(value = "followlightning", args = {"player: player"})
-    void followLightning(Player sender, String[] args) throws IOException {
-        new Thread(() -> {
-            Player target = Main.playerByName(args[1]);
-            if (target == null) {
-                try {
-                    sender.sendError("Player " + args[1] + " is not online");
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-            Position position = target.position;
-            while (true) {
-                for (Player player : Main.players) {
-                    try {
-                        player.sendSpawnEntity(41, position);
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-                    try {
-                        Thread.sleep(100);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-                }
-            }
-        }).start();
-    }
 }
