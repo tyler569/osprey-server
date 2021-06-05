@@ -10,6 +10,10 @@ representing velocity along the three axes in units of
 1/8000 block / 50ms
  */
 public record Velocity(float x, float y, float z) {
+    public static Velocity zero() {
+        return new Velocity(0, 0, 0);
+    }
+
     void write(PacketBuilder os) throws IOException {
         os.writeShort((short) x);
         os.writeShort((short) y);
