@@ -1,6 +1,5 @@
 package com.pygostylia.osprey;
 
-import jdk.jshell.spi.ExecutionControl;
 import org.json.JSONObject;
 
 import javax.crypto.Cipher;
@@ -41,6 +40,7 @@ public class Player extends Entity {
     boolean isSneaking;
     boolean isSprinting;
     boolean isShielding;
+    Entity ridingEntity;
 
     Player(Socket sock) throws IOException {
         super();
@@ -78,9 +78,7 @@ public class Player extends Entity {
         try {
             connection.close();
         } catch (Exception ignored) {}
-        synchronized (Main.players) {
-            Main.players.remove(this);
-        }
+        Main.removePlayer(this);
         if (connection.isEstablished()) {
             try {
                 Main.forEachPlayer((player) -> {
@@ -101,6 +99,13 @@ public class Player extends Entity {
         }
     }
 
+    private void otherPlayers(PlayerIOLambda lambda) throws IOException {
+        Main.forEachPlayer((player) -> {
+            if (player == this) return;
+            lambda.apply(player);
+        });
+    }
+
     private void handleConnection() throws IOException {
         while (!connection.isClosed()) {
             try {
@@ -117,12 +122,13 @@ public class Player extends Entity {
 
     void teleport(Location location) throws IOException {
         position.moveTo(location);
+        teleport();
+    }
+
+    void teleport() throws IOException {
         sendPositionLook();
         sendUpdateChunkPosition();
-        Main.forEachPlayer((player) -> {
-            if (player == this) return;
-            player.sendEntityTeleport(id, position);
-        });
+        otherPlayers((player) -> player.sendEntityTeleport(id, position));
         loadCorrectChunks();
     }
 
@@ -169,6 +175,7 @@ public class Player extends Entity {
             case 26 -> handleIsFlying(packet);
             case 27 -> handlePlayerDigging(packet);
             case 28 -> handleEntityAction(packet);
+            case 29 -> handleSteerVehicle(packet);
             case 37 -> handleHeldItemChange(packet);
             case 40 -> handleCreativeInventoryAction(packet);
             case 44 -> handleAnimation(packet);
@@ -289,7 +296,7 @@ public class Player extends Entity {
         loadFromDb();
         sendJoinGame();
         sendCommandData();
-        sendAddPlayers(Main.players);
+        sendAddPlayers(Main.allPlayers());
         sendAddPlayer(this);
         sendBrand(Main.brand);
         sendUpdateChunkPosition();
@@ -304,9 +311,7 @@ public class Player extends Entity {
             sendSpawnPlayer(player);
             sendEquipment(player);
         });
-        synchronized (Main.players) {
-            Main.players.add(this);
-        }
+        Main.addPlayer(this);
         Main.forEachPlayer((player) -> player.sendNotification(String.format("%s has joined the game (id %d)", name, id)));
     }
 
@@ -596,6 +601,16 @@ public class Player extends Entity {
         });
     }
 
+    public void sendEntityVelocity(Entity entity, Velocity velocity) throws IOException {
+        connection.sendPacket(0x46, (p) -> {
+            p.writeVarInt(entity.id);
+            velocity.write(p); // TODO: should this be a subclass and/or Entity.velocity
+            // ObjectEntity implements MovableEntity
+            // LivingEntity implements MovableEntity
+            // Player implements MovableEntity
+        });
+    }
+
     void loadCorrectChunks(int chunkX, int chunkZ) throws IOException {
         Set<ChunkLocation> shouldLoad = new HashSet<>();
         for (int cx = chunkX - renderDistance; cx <= chunkX + renderDistance; cx++) {
@@ -642,15 +657,10 @@ public class Player extends Entity {
         position.pitch = pitch;
         position.yaw = yaw;
         position.onGround = onGround;
-        Main.forEachPlayer((player) -> {
-            if (player == this) return;
-            player.sendEntityPositionAndRotation(id, delta_x, delta_y, delta_z, position);
-        });
+        otherPlayers((player) -> player.sendEntityPositionAndRotation(id, delta_x, delta_y, delta_z, position));
         if (isElytraFlying && onGround) {
             isElytraFlying = false;
-            Main.forEachPlayer((player) -> {
-                player.sendPlayerEntityMetadata(this);
-            });
+            Main.forEachPlayer((player) -> player.sendPlayerEntityMetadata(this));
         }
     }
 
@@ -693,10 +703,7 @@ public class Player extends Entity {
 
     private void handleMovement(Packet packet) throws IOException {
         boolean onGround = packet.readBoolean();
-        Main.forEachPlayer((player) -> {
-            if (player == this) return;
-            player.sendEntityTeleport(id, position);
-        });
+        otherPlayers(player -> player.sendEntityTeleport(id, position));
         updatePosition(onGround);
     }
 
@@ -751,18 +758,12 @@ public class Player extends Entity {
             case 8 -> isElytraFlying = true;
         }
 
-        Main.forEachPlayer((player) -> {
-            if (player == this) return;
-            player.sendPlayerEntityMetadata(this);
-        });
+        otherPlayers(player -> player.sendPlayerEntityMetadata(this));
     }
 
     private void handleAnimation(Packet packet) throws IOException {
         var hand = packet.readVarInt();
-        Main.forEachPlayer((player) -> {
-            if (player == this) return;
-            player.sendEntityAnimation(this.id, 0);
-        });
+        otherPlayers(player -> player.sendEntityAnimation(this.id, 0));
     }
 
     public void sendPlayerEntityMetadata(Player player) throws IOException {
@@ -837,6 +838,20 @@ public class Player extends Entity {
         });
     }
 
+    private void handleSteerVehicle(Packet packet) throws IOException {
+        float sideways = packet.readFloat();
+        float forward = packet.readFloat();
+        int flags = packet.read();
+
+        if ((flags & 0x02) != 0) {
+            if (ridingEntity instanceof BoatEntity boat) {
+                boat.removePassenger(this);
+                position.moveBy(0, 1, 0);
+                teleport();
+            }
+        }
+    }
+
     // block place & remove
 
     public void sendBlockChange(Location location, int blockId) throws IOException {
@@ -871,8 +886,7 @@ public class Player extends Entity {
                     return;
                 }
                 Main.world.setBlock(location, 0);
-                Main.forEachPlayer((player) -> {
-                    if (player == this) return;
+                otherPlayers((player) -> {
                     player.sendBlockBreakParticles(location, blockId);
                     player.sendBlockChange(location, 0);
                 });
@@ -941,6 +955,17 @@ public class Player extends Entity {
             return;
         }
 
+        if (isHoldingBoat(hand)) {
+            Position target = new Position(originalLocation);
+            target.x += cursorX;
+            target.y += cursorY;
+            target.z += cursorZ;
+            target.yaw = position.yaw;
+            BoatEntity boat = new BoatEntity(target);
+            boat.spawn();
+            return;
+        }
+
         printf("Place %d %s %s %f %f %f %b%n", hand, location, face, cursorX, cursorY, cursorZ, insideBlock);
 
         AtomicBoolean blockPlacement = new AtomicBoolean(false);
@@ -985,6 +1010,11 @@ public class Player extends Entity {
         return isHoldingItem(fireworkRocket, hand);
     }
 
+    boolean isHoldingBoat(int hand) {
+        final int boat = 667;
+        return isHoldingItem(boat, hand);
+    }
+
     private void handlePlayerUseItem(Packet packet) throws IOException {
         int hand = packet.readVarInt();
         printf("Use %d %s%n", hand, selectedItem());
@@ -997,7 +1027,7 @@ public class Player extends Entity {
         }
 
         if (isHoldingFirework(hand)) {
-            FireworkEntity firework = new FireworkEntity(position, Velocity.directionMagnitude(position, 10));
+            FireworkEntity firework = new FireworkEntity(position, Velocity.zero());
             firework.spawnWithRider(id);
         }
     }
@@ -1013,19 +1043,14 @@ public class Player extends Entity {
             slotNumber == 45 ||
             slotNumber >= 5 && slotNumber <= 8
         ) {
-            Main.forEachPlayer((player) -> {
-                player.sendEquipment(this);
-            });
+            otherPlayers((player) -> player.sendEquipment(this));
         }
     }
 
     private void handleHeldItemChange(Packet packet) throws IOException {
         selectedHotbarSlot = packet.readShort();
         printf("Select %d %s%n", selectedHotbarSlot,selectedItem());
-        Main.forEachPlayer((player) -> {
-            if (player == this) return;
-            player.sendEquipment(this);
-        });
+        otherPlayers(player -> player.sendEquipment(this));
     }
 
     Slot selectedItem() {
@@ -1301,6 +1326,36 @@ public class Player extends Entity {
         }
         var sneak = packet.readBoolean();
         printf("Interact %d entity %d%n", type, entityId);
+
+        Entity target = Main.entityById(entityId);
+        if (target == null) {
+            return;
+        }
+        if (target instanceof BoatEntity boat) {
+            if (type == 1) {
+                boat.destroy();
+            } else if (type == 0) {
+                boat.addPassenger(this);
+            }
+        }
+    }
+
+    public void setRidingEntity(Entity ridingEntity) {
+        this.ridingEntity = ridingEntity;
+    }
+
+    public void setNotRidingEntity() {
+        this.ridingEntity = null;
+    }
+
+    public void sendSetPassengers(Entity entity, Collection<Entity> passengers) throws IOException {
+        connection.sendPacket(0x4B, (p) -> {
+            p.writeVarInt(entity.id);
+            p.writeVarInt(passengers.size());
+            for (Entity passenger : passengers) {
+                p.writeVarInt(passenger.id);
+            }
+        });
     }
 
     public void sendGameOver(Player killer) throws IOException {

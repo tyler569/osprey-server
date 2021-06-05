@@ -15,6 +15,7 @@ abstract public class Entity {
         id = Main.nextEntityId++;
         uuid = UUID.randomUUID();
         playersWithLoaded = new ArrayList<>();
+        Main.addEntity(this);
     }
 
     Entity(Position position) {
@@ -42,9 +43,14 @@ abstract public class Entity {
             }
         });
         playersWithLoaded.clear();
+        Main.removeEntity(this);
     }
 
     Location location() {
         return position.location();
     }
+
+    public int id() {
+        return id;
+    };
 }

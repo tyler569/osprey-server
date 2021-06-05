@@ -5,6 +5,11 @@ import java.io.IOException;
 abstract public class ObjectEntity extends Entity {
     Velocity velocity;
 
+    public ObjectEntity(Position position) {
+        super(position);
+        this.velocity = Velocity.zero();
+    }
+
     public ObjectEntity(Position position, Velocity velocity) {
         super(position);
         this.velocity = velocity;

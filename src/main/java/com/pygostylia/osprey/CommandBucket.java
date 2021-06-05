@@ -343,9 +343,10 @@ public class CommandBucket {
                     var location = new Location(x, y, z);
                     Main.world.setBlock(location, blockId);
                     count++;
-                    for (var player : Main.players) {
-                        player.sendBlockChange(location, blockId);
-                    }
+                    int finalBlockId = blockId;
+                    Main.forEachPlayer((player) -> {
+                        player.sendBlockChange(location, finalBlockId);
+                    });
                 }
             }
         }
@@ -354,9 +355,9 @@ public class CommandBucket {
 
     @Command("lag")
     void lag(Player sender, String[] args) throws IOException {
-        for (var player : Main.players) {
+        Main.forEachPlayer((player) -> {
             player.sendNotification(String.format("%s thought there was some lag", sender.name));
-        }
+        });
         sender.kick();
     }
 
@@ -393,9 +394,9 @@ public class CommandBucket {
     void gameState(Player sender, String[] args) throws IOException {
         var reason = Byte.parseByte(args[1]);
         var value = Float.parseFloat(args[2]);
-        for (var player : Main.players) {
+        Main.forEachPlayer((player) -> {
             player.sendChangeGameState(reason, value);
-        }
+        });
     }
 
 }

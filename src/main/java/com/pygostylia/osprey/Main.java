@@ -14,6 +14,7 @@ import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
 import java.sql.SQLException;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
 
 public class Main {
@@ -90,7 +91,8 @@ public class Main {
     }
 
     static final String brand = "Osprey";
-    static final Set<Player> players = new HashSet<>();
+    private static final Map<Integer, Player> players = new ConcurrentHashMap<>();
+    private static final Map<Integer, Entity> entities = new ConcurrentHashMap<>();
     static ChunkDispatcher chunkDispatcher = new ChunkDispatcher();
     static KeyPair encryptionKey;
     static World world;
@@ -136,34 +138,49 @@ public class Main {
         }
     }
 
+    static void addPlayer(Player player) {
+        players.put(player.id, player);
+    }
+
+    static void removePlayer(Player player) {
+        players.remove(player.id);
+    }
+
+    static void addEntity(Entity entity) {
+        entities.put(entity.id, entity);
+    }
+
+    static void removeEntity(Entity entity) {
+        entities.remove(entity.id);
+    }
+
+    static Collection<Player> allPlayers() {
+        return players.values();
+    }
+
     static Player playerByName(String name) {
-        for (var player : players) {
-            if (player.name.equals(name)) {
-                return player;
-            }
-        }
-        return null;
+        return players.values().stream()
+                .filter((player) -> player.name.equals(name))
+                .findFirst()
+                .orElse(null);
     }
 
     static Player playerByEntityId(int entityId) {
-        for (var player : players) {
-            if (player.id == entityId) {
-                return player;
-            }
-        }
-        return null;
+        return players.get(entityId);
+    }
+
+    static Entity entityById(int entityId) {
+        return entities.get(entityId);
     }
 
     static void forEachPlayer(PlayerIOLambda lambda) throws IOException {
-        synchronized (Main.players) {
-            for (var player : Main.players) {
-                lambda.apply(player);
-            }
+        for (var player : Main.players.values()) {
+            lambda.apply(player);
         }
     }
 
     static Stream<Player> playersWithin(int radius, Location location) {
-        return players.stream().filter((player) -> player.location().withinRadiusOf(radius, location));
+        return players.values().stream().filter((player) -> player.location().withinRadiusOf(radius, location));
     }
 
     static String handshakeJson() throws IOException {
