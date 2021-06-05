@@ -1,5 +1,6 @@
 package com.pygostylia.osprey;
 
+import jdk.jshell.spi.ExecutionControl;
 import org.json.JSONObject;
 
 import javax.crypto.Cipher;
@@ -648,7 +649,7 @@ public class Player extends Entity {
         if (isElytraFlying && onGround) {
             isElytraFlying = false;
             Main.forEachPlayer((player) -> {
-                player.sendEntityMetadata(this);
+                player.sendPlayerEntityMetadata(this);
             });
         }
     }
@@ -752,7 +753,7 @@ public class Player extends Entity {
 
         Main.forEachPlayer((player) -> {
             if (player == this) return;
-            player.sendEntityMetadata(this);
+            player.sendPlayerEntityMetadata(this);
         });
     }
 
@@ -764,7 +765,7 @@ public class Player extends Entity {
         });
     }
 
-    public void sendEntityMetadata(Player player) throws IOException {
+    public void sendPlayerEntityMetadata(Player player) throws IOException {
         connection.sendPacket(0x44, (p) -> {
             byte flags = 0;
             if (player.isElytraFlying) flags |= 0x80;
@@ -773,8 +774,8 @@ public class Player extends Entity {
             int state = 0;
             if (player.isSneaking) state = 5;
             byte hand = 0;
-            if (player.isHoldingShield()) {
-                hand = 0x02; // "hand 2 active"
+            if (player.isHoldingShield(1)) {
+                hand = 0x02; // "offhand active"
             }
             if (player.isShielding) {
                 hand |= 0x01; // "hand active"
@@ -790,6 +791,48 @@ public class Player extends Entity {
             p.writeByte((byte) 7); // hand states
             p.writeVarInt(0); // type: byte
             p.writeByte(hand);
+            p.writeByte((byte) 0xFF); // end
+        });
+    }
+
+    public void sendEntityMetadata(Entity entity, int index, int type, Object value) throws IOException {
+        connection.sendPacket(0x44, (p) -> {
+            p.writeVarInt(entity.id);
+            p.writeByte((byte) index);
+            p.writeVarInt(type);
+
+            switch (type) {
+                case 0 -> p.writeByte((Byte) value);
+                case 1 -> p.writeVarInt((Integer) value);
+                case 2 -> p.writeFloat((Float) value);
+                case 3, 4 -> p.writeString((String) value);
+                case 5 -> {
+                    if (value == null) {
+                        p.write(0);
+                    } else {
+                        p.write(1);
+                        p.write((byte[]) value);
+                    }
+                }
+                case 6 -> p.write((byte[]) value);
+                case 9 -> {
+                    if (value instanceof Position position) {
+                        p.writeLong(position.location().encode());
+                    } else if (value instanceof Location location) {
+                        p.writeLong(location.encode());
+                    } else {
+                        throw new IllegalStateException("Illegal Position");
+                    }
+                }
+                case 17 -> {
+                    if (value == null) {
+                        p.writeVarInt(0);
+                    } else {
+                        p.writeVarInt((Integer) value + 1);
+                    }
+                }
+                default -> throw new UnsupportedOperationException("To Do");
+            }
             p.writeByte((byte) 0xFF); // end
         });
     }
@@ -850,7 +893,7 @@ public class Player extends Entity {
                 // finish interacting
                 isShielding = false;
                 Main.forEachPlayer((player) -> {
-                    player.sendEntityMetadata(this);
+                    player.sendPlayerEntityMetadata(this);
                 });
             }
             case 6 -> {
@@ -924,28 +967,38 @@ public class Player extends Entity {
         }
     }
 
-    boolean isHoldingShield() {
-        return offhandItem().itemId == 897;
+    boolean isHoldingItem(int item, int hand) {
+        if (hand == 0) {
+            return selectedItem().itemId == item;
+        } else {
+            return offhandItem().itemId == item;
+        }
+    }
+
+    boolean isHoldingShield(int hand) {
+        final int shield = 897;
+        return isHoldingItem(shield, hand);
     }
 
     boolean isHoldingFirework(int hand) {
         final int fireworkRocket = 846;
-        if (hand == 0) {
-            return selectedItem().itemId == fireworkRocket;
-        } else {
-            return offhandItem().itemId == fireworkRocket;
-        }
+        return isHoldingItem(fireworkRocket, hand);
     }
 
     private void handlePlayerUseItem(Packet packet) throws IOException {
         int hand = packet.readVarInt();
         printf("Use %d %s%n", hand, selectedItem());
 
-        if (hand == 1 && isHoldingShield()) {
+        if (isHoldingShield(hand)) {
             isShielding = true;
             Main.forEachPlayer((player) -> {
-                player.sendEntityMetadata(this);
+                player.sendPlayerEntityMetadata(this);
             });
+        }
+
+        if (isHoldingFirework(hand)) {
+            FireworkEntity firework = new FireworkEntity(position, Velocity.directionMagnitude(position, 10));
+            firework.spawnWithRider(id);
         }
     }
 
@@ -1272,7 +1325,7 @@ public class Player extends Entity {
         isCreativeFlying = (status & 0x02) != 0;
         isElytraFlying = false;
         Main.forEachPlayer((player) -> {
-            player.sendEntityMetadata(this);
+            player.sendPlayerEntityMetadata(this);
         });
     }
 }
