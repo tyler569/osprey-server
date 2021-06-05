@@ -78,4 +78,10 @@ public class Position {
     public float yawRadians() {
         return (float) Math.toRadians(yaw);
     }
+
+    public void moveBy(double dx, double dy, double dz) {
+        x += dx;
+        y += dy;
+        z += dz;
+    }
 }
