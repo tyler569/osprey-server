@@ -11,6 +11,12 @@ public class EntityController implements Runnable {
         events.add(future);
     }
 
+    public ScheduledFuture<?> submitForEachTick(Runnable event) {
+        ScheduledFuture<?> future = executor.scheduleAtFixedRate(event, 50, 50, TimeUnit.MILLISECONDS);
+        events.add(future);
+        return future;
+    }
+
     public void run() {
         for (var event : events) {
             try {

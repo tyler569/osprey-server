@@ -15,9 +15,9 @@ public record Velocity(float x, float y, float z) {
     }
 
     void write(PacketBuilder os) throws IOException {
-        os.writeShort((short) x);
-        os.writeShort((short) y);
-        os.writeShort((short) z);
+        os.writeShort(blockPerSecondToProtocol(x));
+        os.writeShort(blockPerSecondToProtocol(y));
+        os.writeShort(blockPerSecondToProtocol(z));
     }
 
     static Velocity directionMagnitude(Position position, float speed) {
@@ -28,17 +28,17 @@ public record Velocity(float x, float y, float z) {
         x *= yXZ;
         z *= yXZ;
         return new Velocity(
-                blockPerSecondToProtocol((float) x * speed),
-                blockPerSecondToProtocol((float) yH * speed),
-                blockPerSecondToProtocol((float) z * speed)
+                (float) x * speed,
+                (float) yH * speed,
+                (float) z * speed
         );
     }
 
-    static float protocolToBlockPerSecond(float protocol) {
+    static float protocolToBlockPerSecond(short protocol) {
         return protocol / 400f;
     }
 
-    static float blockPerSecondToProtocol(float blockPerSecond) {
-        return blockPerSecond * 400f;
+    static short blockPerSecondToProtocol(float blockPerSecond) {
+        return (short) (blockPerSecond * 400f);
     }
 }

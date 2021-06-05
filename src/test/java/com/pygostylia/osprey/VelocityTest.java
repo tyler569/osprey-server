@@ -14,14 +14,14 @@ class VelocityTest {
         final float sin45 = (float) Math.sin(Math.toRadians(45));
 
         return Stream.of(
-                Arguments.of(Position.orientation(0, 0), new Velocity(0, 0, 400)),
-                Arguments.of(Position.orientation(90, 0), new Velocity(-400, 0, 0)),
-                Arguments.of(Position.orientation(180, 0), new Velocity(0, 0, -400)),
-                Arguments.of(Position.orientation(270, 0), new Velocity(400, 0, 0)),
-                Arguments.of(Position.orientation(0, -90), new Velocity(0, 400, 0)),
-                Arguments.of(Position.orientation(0, 90), new Velocity(0, -400, 0)),
-                Arguments.of(Position.orientation(45, 0), new Velocity(-400 * sin45, 0, 400 * sin45)),
-                Arguments.of(Position.orientation(45, 45), new Velocity(-200, -400 * sin45, 200))
+                Arguments.of(Position.orientation(0, 0), new Velocity(0, 0, 1)),
+                Arguments.of(Position.orientation(90, 0), new Velocity(-1, 0, 0)),
+                Arguments.of(Position.orientation(180, 0), new Velocity(0, 0, -1)),
+                Arguments.of(Position.orientation(270, 0), new Velocity(1, 0, 0)),
+                Arguments.of(Position.orientation(0, -90), new Velocity(0, 1, 0)),
+                Arguments.of(Position.orientation(0, 90), new Velocity(0, -1, 0)),
+                Arguments.of(Position.orientation(45, 0), new Velocity(-sin45, 0, sin45)),
+                Arguments.of(Position.orientation(45, 45), new Velocity(-0.5f, -sin45, 0.5f))
         );
     }
 

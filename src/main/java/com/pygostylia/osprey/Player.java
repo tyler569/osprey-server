@@ -11,6 +11,7 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.sql.SQLException;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
@@ -42,6 +43,7 @@ public class Player extends Entity {
     boolean isSprinting;
     boolean isShielding;
     int vehicleEntityId;
+    Instant startedUsing;
 
     Player(Socket sock) throws IOException {
         super();
@@ -98,6 +100,16 @@ public class Player extends Entity {
                 e.printStackTrace();
             }
         }
+    }
+
+    @Override
+    float colliderXZ() {
+        return 0.6f;
+    }
+
+    @Override
+    float colliderY() {
+        return 1.8f;
     }
 
     private void otherPlayers(PlayerIOLambda lambda) throws IOException {
@@ -917,6 +929,10 @@ public class Player extends Entity {
                 Main.forEachPlayer((player) -> {
                     player.sendPlayerEntityMetadata(this);
                 });
+                if (isHoldingBow(0)) {
+                    ArrowEntity arrow = new ArrowEntity(this, position.offset(0, 1.6, 0));
+                    arrow.spawn();
+                }
             }
             case 6 -> {
                 var held = selectedItem();
@@ -1023,6 +1039,11 @@ public class Player extends Entity {
         return isHoldingItem(boat, hand);
     }
 
+    boolean isHoldingBow(int hand) {
+        final int bow = 574;
+        return isHoldingItem(bow, hand);
+    }
+
     private void handlePlayerUseItem(Packet packet) throws IOException {
         int hand = packet.readVarInt();
         printf("Use %d %s%n", hand, selectedItem());
@@ -1037,6 +1058,10 @@ public class Player extends Entity {
         if (isHoldingFirework(hand)) {
             FireworkEntity firework = new FireworkEntity(position, Velocity.zero());
             firework.spawnWithRider(id);
+        }
+
+        if (isHoldingBow(hand)) {
+            startedUsing = Instant.now();
         }
     }
 
@@ -1254,15 +1279,19 @@ public class Player extends Entity {
 
     // spawn entity
 
-    public void sendSpawnEntity(ObjectEntity entity) throws IOException {
+    public void sendSpawnEntity(ObjectEntity entity, int data) throws IOException {
         connection.sendPacket(0, (p) -> {
             p.writeVarInt(entity.id);
             p.writeUUID(entity.uuid);
             p.writeVarInt(entity.type());
             p.writePosition(entity.position);
-            p.writeInt(0); // TODO data
+            p.writeInt(data); // TODO data
             entity.velocity.write(p);
         });
+    }
+
+    public void sendSpawnEntity(ObjectEntity entity) throws IOException {
+        sendSpawnEntity(entity, 0);
     }
 
     public void sendDestroyEntity(Entity entity) throws IOException {

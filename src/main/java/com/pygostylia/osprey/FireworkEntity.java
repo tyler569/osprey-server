@@ -8,11 +8,22 @@ public class FireworkEntity extends ObjectEntity {
 
     public FireworkEntity(Position position, Velocity velocity) {
         super(position, velocity);
+        noCollision = true;
     }
 
     @Override
     int type() {
         return 27;
+    }
+
+    @Override
+    float colliderXZ() {
+        return 0.25f;
+    }
+
+    @Override
+    float colliderY() {
+        return 0.25f;
     }
 
     @Override

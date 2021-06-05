@@ -18,6 +18,16 @@ public class BoatEntity extends ObjectEntity {
     }
 
     @Override
+    float colliderXZ() {
+        return 1.375f;
+    }
+
+    @Override
+    float colliderY() {
+        return 0.5625f;
+    }
+
+    @Override
     public void spawnForPlayer(Player player) throws IOException {
         super.spawnForPlayer(player);
         if (!passengers.isEmpty()) {

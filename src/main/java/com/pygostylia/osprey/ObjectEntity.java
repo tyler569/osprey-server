@@ -17,7 +17,7 @@ abstract public class ObjectEntity extends Entity {
 
     public void spawnForPlayer(Player player) throws IOException {
         super.spawnForPlayer(player);
-        player.sendSpawnEntity(this);
+        player.sendSpawnEntity(this, spawnData());
     }
 
     public void spawn() {

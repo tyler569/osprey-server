@@ -10,6 +10,7 @@ abstract public class Entity {
     UUID uuid;
     Position position;
     List<Player> playersWithLoaded;
+    boolean noCollision;
 
     Entity() {
         id = Main.nextEntityId++;
@@ -57,4 +58,21 @@ abstract public class Entity {
     public void interact(Player sender) {}
 
     public void attack(Player sender) {}
+
+    int spawnData() {
+        return 0;
+    }
+
+    abstract float colliderXZ();
+
+    abstract float colliderY();
+
+    boolean collides(Position point) {
+        float ex = colliderXZ() / 2;
+        float ey = colliderY();
+        if (position.x + ex < point.x || point.x < position.x - ex) return false;
+        if (position.z + ex < point.z || point.z < position.z - ex) return false;
+        if (position.y + ey < point.y || point.y <= position.y) return false;
+        return true;
+    }
 }

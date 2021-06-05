@@ -26,6 +26,15 @@ public class Position {
         this.pitch = pitch;
     }
 
+    public Position(Position position) {
+         this.x = position.x;
+         this.y = position.y;
+         this.z = position.z;
+         this.yaw = position.yaw;
+         this.pitch = position.pitch;
+         this.onGround = position.onGround;
+    }
+
     static Position middle(Location location) {
         Position p = new Position();
         p.x = location.x() + 0.5;
@@ -76,7 +85,7 @@ public class Position {
     }
 
     public String toString() {
-        return String.format("Position{%f, %f, %f, %f, %f}", x, y, z, pitch, yaw);
+        return String.format("Position[x=%f, y=%f, z=%f, pitch=%f, yaw=%f]", x, y, z, pitch, yaw);
     }
 
     public float pitchRadians() {
@@ -91,5 +100,16 @@ public class Position {
         x += dx;
         y += dy;
         z += dz;
+    }
+
+    public Position offset(double dx, double dy, double dz) {
+        Position p = new Position(this);
+        p.moveBy(dx, dy, dz);
+        return p;
+    }
+
+    public void updateFacing(double dx, double dy, double dz) {
+        yaw = (float) Math.toDegrees(Math.atan2(dx, dz));
+        pitch = (float) Math.toDegrees(Math.atan2(dy, Math.hypot(dx, dz)));
     }
 }
