@@ -357,17 +357,13 @@ public class CommandBucket {
         for (var player : Main.players) {
             player.sendNotification(String.format("%s thought there was some lag", sender.name));
         }
-        sender.connection.close();
+        sender.kick();
     }
 
     @Command(value = "speed", args = {"speed: float"})
     void speed(Player sender, String[] args) throws IOException {
         var speed = Float.parseFloat(args[1]);
-        sender.connection.sendPacket(0x30, (p) -> {
-            p.write(0x0F);
-            p.writeFloat(speed);
-            p.writeFloat(0.1f);
-        });
+        sender.sendSpeed(speed);
     }
 
     @Command("save")

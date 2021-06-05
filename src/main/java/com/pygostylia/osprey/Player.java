@@ -25,7 +25,7 @@ public class Player extends Entity {
     static final int maxRenderDistance = 10;
 
     String name;
-    com.pygostylia.osprey.Connection connection;
+    private final Connection connection;
     Duration ping;
     State state;
     Integer playerId;
@@ -69,7 +69,11 @@ public class Player extends Entity {
         disconnect();
     }
 
-    void disconnect() {
+    public void kick() throws IOException {
+        connection.close();
+    }
+
+    private void disconnect() {
         try {
             connection.close();
         } catch (Exception ignored) {}
@@ -96,7 +100,7 @@ public class Player extends Entity {
         }
     }
 
-    void handleConnection() throws IOException {
+    private void handleConnection() throws IOException {
         while (!connection.isClosed()) {
             try {
                 Packet p = connection.readPacket();
@@ -121,11 +125,7 @@ public class Player extends Entity {
         loadCorrectChunks();
     }
 
-    Location location() {
-        return position.location();
-    }
-
-    void handlePacket(Packet packet) throws IOException {
+    private void handlePacket(Packet packet) throws IOException {
         switch (state) {
             case Status -> handleStatusPacket(packet);
             case Login -> handleLoginPacket(packet);
@@ -137,7 +137,7 @@ public class Player extends Entity {
         printf("Unknown packet type %d %#x in state %s%n", packet.type, packet.type, state);
     }
 
-    void handleStatusPacket(Packet packet) throws IOException {
+    private void handleStatusPacket(Packet packet) throws IOException {
         switch (packet.type) {
             case 0 -> handleHandshake(packet);
             case 1 -> handlePing(packet);
@@ -145,7 +145,7 @@ public class Player extends Entity {
         }
     }
 
-    void handleLoginPacket(Packet packet) throws IOException {
+    private void handleLoginPacket(Packet packet) throws IOException {
         switch (packet.type) {
             case 0 -> handleLoginStart(packet);
             case 1 -> handleEncryptionResponse(packet);
@@ -153,7 +153,7 @@ public class Player extends Entity {
         }
     }
 
-    void handlePlayPacket(Packet packet) throws IOException {
+    private void handlePlayPacket(Packet packet) throws IOException {
         switch (packet.type) {
             case 3 -> handleChat(packet);
             case 4 -> handleClientStatus(packet);
@@ -196,7 +196,7 @@ public class Player extends Entity {
 
     // handle Status packets
 
-    void handleHandshake(Packet packet) throws IOException {
+    private void handleHandshake(Packet packet) throws IOException {
         if (packet.originalLen > 2) {
             int protocolVersion = packet.readVarInt();
             String address = packet.readString();
@@ -213,14 +213,14 @@ public class Player extends Entity {
         }
     }
 
-    void handlePing(Packet packet) throws IOException {
+    private void handlePing(Packet packet) throws IOException {
         long number = packet.readLong();
         writePingResponse(number);
     }
 
     // handle login packets
 
-    void sendEncryptionRequest() throws IOException {
+    public void sendEncryptionRequest() throws IOException {
         connection.sendPacket(1, (p) -> { // encryption request
             p.writeString("server id not short");
             var encodedKey = Main.encryptionKey.getPublic().getEncoded();
@@ -231,7 +231,7 @@ public class Player extends Entity {
         });
     }
 
-    void handleLoginStart(Packet packet) throws IOException {
+    private void handleLoginStart(Packet packet) throws IOException {
         name = packet.readString();
         uuid = UUID.nameUUIDFromBytes(String.format("OfflinePlayer:%s", name).getBytes());
         printf("UUID: %s%n", uuid);
@@ -240,13 +240,11 @@ public class Player extends Entity {
     }
 
     void setCompression(int maxLen) throws IOException {
-        connection.sendPacket(3, (p) -> {
-            p.writeVarInt(maxLen);
-        });
+        connection.sendPacket(3, (p) -> p.writeVarInt(maxLen));
         connection.setCompression(maxLen);
     }
 
-    void sendLoginSuccess() throws IOException {
+    public void sendLoginSuccess() throws IOException {
         connection.sendPacket(2, (p) -> { // login success
             p.writeLong(0);
             p.writeLong(0);
@@ -254,20 +252,18 @@ public class Player extends Entity {
         });
     }
 
-    void sendPluginMessage(String plugin, PacketBuilderLambda inner) throws IOException {
+    public void sendPluginMessage(String plugin, PacketBuilderLambda inner) throws IOException {
         connection.sendPacket(0x17, (p) -> {
             p.writeString(plugin);
             inner.apply(p);
         });
     }
 
-    void sendBrand(String brand) throws IOException {
-        sendPluginMessage("minecraft:brand", (p) -> {
-            p.writeString(brand);
-        });
+    public void sendBrand(String brand) throws IOException {
+        sendPluginMessage("minecraft:brand", (p) -> p.writeString(brand));
     }
 
-    void sendJoinGame() throws IOException {
+    public void sendJoinGame() throws IOException {
         connection.sendPacket(0x24, (p) -> { // Join Game
             p.writeInt(id);
             p.writeBoolean(false); // is hardcore
@@ -310,12 +306,10 @@ public class Player extends Entity {
         synchronized (Main.players) {
             Main.players.add(this);
         }
-        Main.forEachPlayer((player) -> {
-            player.sendNotification(String.format("%s has joined the game (id %d)", name, id));
-        });
+        Main.forEachPlayer((player) -> player.sendNotification(String.format("%s has joined the game (id %d)", name, id)));
     }
 
-    void sendEntityTeleport(int entityId, Position position) throws IOException {
+    public void sendEntityTeleport(int entityId, Position position) throws IOException {
         connection.sendPacket(0x56, (p) -> {
             p.writeVarInt(entityId);
             p.writeDouble(position.x);
@@ -327,7 +321,7 @@ public class Player extends Entity {
         });
     }
 
-    void handleEncryptionResponse(Packet packet) throws IOException {
+    private void handleEncryptionResponse(Packet packet) throws IOException {
         int secretLength = packet.readVarInt();
         byte[] secret = packet.readNBytes(secretLength);
         int tokenLength = packet.readVarInt();
@@ -370,7 +364,7 @@ public class Player extends Entity {
 
     // handle play packets
 
-    void sendChunk(ChunkLocation chunkLocation) throws IOException {
+    public void sendChunk(ChunkLocation chunkLocation) throws IOException {
         connection.sendPacket(0x20, (p) -> {
             p.writeInt(chunkLocation.x());
             p.writeInt(chunkLocation.z());
@@ -387,7 +381,7 @@ public class Player extends Entity {
         loadedChunks.remove(chunkLocation);
     }
 
-    void sendInventory() throws IOException {
+    public void sendInventory() throws IOException {
         connection.sendPacket(0x13, (p) -> {
             p.writeByte((byte) 0);
             p.writeShort((short) inventory.size());
@@ -397,7 +391,7 @@ public class Player extends Entity {
         });
     }
 
-    void sendPositionLook() throws IOException {
+    public void sendPositionLook() throws IOException {
         connection.sendPacket(0x34, (p) -> {
             p.writeDouble(position.x);
             p.writeDouble(position.y);
@@ -409,21 +403,19 @@ public class Player extends Entity {
         });
     }
 
-    void sendUpdateChunkPosition(int x, int z) throws IOException {
+    public void sendUpdateChunkPosition(int x, int z) throws IOException {
         connection.sendPacket(0x40, (p) -> {
             p.writeVarInt(x);
             p.writeVarInt(z);
         });
     }
 
-    void sendUpdateChunkPosition() throws IOException {
+    public void sendUpdateChunkPosition() throws IOException {
         sendUpdateChunkPosition(position.chunkX(), position.chunkZ());
     }
 
-    void sendSpawnPosition() throws IOException {
-        connection.sendPacket(0x42, (p) -> {
-            p.writePosition(0, 32, 0);
-        });
+    public void sendSpawnPosition() throws IOException {
+        connection.sendPacket(0x42, (p) -> p.writePosition(0, 32, 0));
     }
 
     void initialSpawnPlayer() throws IOException {
@@ -433,7 +425,7 @@ public class Player extends Entity {
         sendPositionLook();
     }
 
-    void handleSettings(Packet packet) throws IOException {
+    private void handleSettings(Packet packet) throws IOException {
         String locale = packet.readString();
         renderDistance = packet.read();
         if (renderDistance > maxRenderDistance) renderDistance = maxRenderDistance;
@@ -449,7 +441,7 @@ public class Player extends Entity {
         }
     }
 
-    void handlePluginMessage(Packet packet) throws IOException {
+    private void handlePluginMessage(Packet packet) throws IOException {
         String channel = packet.readString();
         switch (channel) {
             case "minecraft:brand" -> printf("client brand: %s%n", packet.readString());
@@ -457,7 +449,7 @@ public class Player extends Entity {
         }
     }
 
-    void handleKeepAlive(Packet packet) throws IOException {
+    private void handleKeepAlive(Packet packet) throws IOException {
         long keepAlive = packet.readLong();
         if (!connection.validateKeepAlive(keepAlive)) {
             println("Keepalives did not match!");
@@ -465,7 +457,7 @@ public class Player extends Entity {
         ping = connection.pingTime();
     }
 
-    void sendAddPlayers(Collection<Player> players) throws IOException {
+    public void sendAddPlayers(Collection<Player> players) throws IOException {
         if (players.size() == 0) {
             return;
         }
@@ -483,7 +475,7 @@ public class Player extends Entity {
         });
     }
 
-    void sendAddPlayer(Player player) throws IOException {
+    public void sendAddPlayer(Player player) throws IOException {
         connection.sendPacket(0x32, (p) -> {
             p.writeVarInt(0);
             p.writeVarInt(1);
@@ -496,7 +488,7 @@ public class Player extends Entity {
         });
     }
 
-    void sendSpawnPlayer(Player player) throws IOException {
+    public void sendSpawnPlayer(Player player) throws IOException {
         connection.sendPacket(4, (p) -> {
             p.writeVarInt(player.id);
             p.writeUUID(player.uuid);
@@ -508,7 +500,7 @@ public class Player extends Entity {
         });
     }
 
-    void sendRemovePlayer(Player player) throws IOException {
+    public void sendRemovePlayer(Player player) throws IOException {
         connection.sendPacket(0x32, (p) -> {
             p.writeVarInt(4);
             p.writeVarInt(1);
@@ -516,14 +508,14 @@ public class Player extends Entity {
         });
     }
 
-    void sendDespawnPlayer(Player player) throws IOException {
+    public void sendDespawnPlayer(Player player) throws IOException {
         connection.sendPacket(0x36, (p) -> {
             p.writeVarInt(1);
             p.writeVarInt(player.id);
         });
     }
 
-    void sendChat(Player sender, String message) throws IOException {
+    public void sendChat(Player sender, String message) throws IOException {
         var chat = new JSONObject();
         chat.put("text", String.format("<%s> %s", sender.name, message));
         connection.sendPacket(0x0E, (p) -> {
@@ -533,7 +525,7 @@ public class Player extends Entity {
         });
     }
 
-    void sendSystemMessage(String message, String color) throws IOException {
+    public void sendSystemMessage(String message, String color) throws IOException {
         var chat = new JSONObject();
         chat.put("text", message);
         chat.put("color", color);
@@ -545,19 +537,27 @@ public class Player extends Entity {
         });
     }
 
-    void sendNotification(String message) throws IOException {
+    public void sendNotification(String message) throws IOException {
         sendSystemMessage(message, "yellow");
     }
 
-    void sendError(String message) throws IOException {
+    public void sendError(String message) throws IOException {
         sendSystemMessage(message, "red");
     }
 
-    void sendEditorNotification(String message) throws IOException {
+    public void sendEditorNotification(String message) throws IOException {
         sendSystemMessage(message, "light_purple");
     }
 
-    void handleChat(Packet packet) throws IOException {
+    public void sendSpeed(float speed) throws IOException {
+        connection.sendPacket(0x30, (p) -> {
+            p.write(0x0F);
+            p.writeFloat(speed / 20); // for some reason, 0.05 is "normal speed"
+            p.writeFloat(0.1f);
+        });
+    }
+
+    private void handleChat(Packet packet) throws IOException {
         String message = packet.readString();
         printf("[chat] %s%n", message);
         if (message.startsWith("/")) {
@@ -570,13 +570,13 @@ public class Player extends Entity {
         }
     }
 
-    void sendCommandData() throws IOException {
+    public void sendCommandData() throws IOException {
         connection.sendPacket(0x10, (p) -> p.write(Main.commandPacket));
     }
 
     // movement
 
-    void sendEntityPositionAndRotation(int entityId, double dx, double dy, double dz, Position position) throws IOException {
+    public void sendEntityPositionAndRotation(int entityId, double dx, double dy, double dz, Position position) throws IOException {
         short protocol_dx = (short)(dx * 4096);
         short protocol_dy = (short)(dy * 4096);
         short protocol_dz = (short)(dz * 4096);
@@ -665,7 +665,7 @@ public class Player extends Entity {
         updatePosition(position.x, position.y, position.z, position.pitch, position.yaw, onGround);
     }
 
-    void handlePosition(Packet packet) throws IOException {
+    private void handlePosition(Packet packet) throws IOException {
         double x = packet.readDouble();
         double y = packet.readDouble();
         double z = packet.readDouble();
@@ -673,7 +673,7 @@ public class Player extends Entity {
         updatePosition(x, y, z, onGround);
     }
 
-    void handlePositionAndRotation(Packet packet) throws IOException {
+    private void handlePositionAndRotation(Packet packet) throws IOException {
         double x = packet.readDouble();
         double y = packet.readDouble();
         double z = packet.readDouble();
@@ -683,14 +683,14 @@ public class Player extends Entity {
         updatePosition(x, y, z, pitch, yaw, onGround);
     }
 
-    void handleRotation(Packet packet) throws IOException {
+    private void handleRotation(Packet packet) throws IOException {
         float yaw = packet.readFloat();
         float pitch = packet.readFloat();
         boolean onGround = packet.readBoolean();
         updatePosition(pitch, yaw, onGround);
     }
 
-    void handleMovement(Packet packet) throws IOException {
+    private void handleMovement(Packet packet) throws IOException {
         boolean onGround = packet.readBoolean();
         Main.forEachPlayer((player) -> {
             if (player == this) return;
@@ -709,21 +709,21 @@ public class Player extends Entity {
 
     // animation
 
-    void sendEntityAnimation(int entityId, int animation) throws IOException {
+    public void sendEntityAnimation(int entityId, int animation) throws IOException {
         connection.sendPacket(5, (p) -> {
             p.writeVarInt(entityId);
             p.writeByte((byte) animation);
         });
     }
 
-    void sendEntityStatus(int entityId, byte status) throws IOException {
+    public void sendEntityStatus(int entityId, byte status) throws IOException {
         connection.sendPacket(0x1A, (p) -> {
             p.writeInt(entityId);
             p.writeByte(status);
         });
     }
 
-    void sendSoundEffect(int soundEffect, int category, Location location) throws IOException {
+    public void sendSoundEffect(int soundEffect, int category, Location location) throws IOException {
         connection.sendPacket(0x51, (p) -> {
             p.writeVarInt(soundEffect);
             p.writeVarInt(category);
@@ -735,7 +735,7 @@ public class Player extends Entity {
         });
     }
 
-    void handleEntityAction(Packet packet) throws IOException {
+    private void handleEntityAction(Packet packet) throws IOException {
         int entity = packet.readVarInt();
         if (entity != id) {
             println("I got an update for not me");
@@ -756,7 +756,7 @@ public class Player extends Entity {
         });
     }
 
-    void handleAnimation(Packet packet) throws IOException {
+    private void handleAnimation(Packet packet) throws IOException {
         var hand = packet.readVarInt();
         Main.forEachPlayer((player) -> {
             if (player == this) return;
@@ -764,7 +764,7 @@ public class Player extends Entity {
         });
     }
 
-    void sendEntityMetadata(Player player) throws IOException {
+    public void sendEntityMetadata(Player player) throws IOException {
         connection.sendPacket(0x44, (p) -> {
             byte flags = 0;
             if (player.isElytraFlying) flags |= 0x80;
@@ -796,14 +796,14 @@ public class Player extends Entity {
 
     // block place & remove
 
-    void sendBlockChange(Location location, int blockId) throws IOException {
+    public void sendBlockChange(Location location, int blockId) throws IOException {
         connection.sendPacket(0xB, (p) -> {
             p.writeLong(location.encode());
             p.writeVarInt(blockId);
         });
     }
 
-    void sendBlockBreakParticles(Location location, short blockId) throws  IOException {
+    public void sendBlockBreakParticles(Location location, short blockId) throws  IOException {
         connection.sendPacket(0x21, (p) -> {
             p.writeInt(2001);
             p.writePosition(location);
@@ -812,7 +812,7 @@ public class Player extends Entity {
         });
     }
 
-    void handlePlayerDigging(Packet packet) throws IOException {
+    private void handlePlayerDigging(Packet packet) throws IOException {
         var status = packet.readVarInt();
         var location = packet.readLocation();
         var face = packet.read();
@@ -865,7 +865,7 @@ public class Player extends Entity {
         }
     }
 
-    void handlePlayerPlaceBlock(Packet packet) throws IOException {
+    private void handlePlayerPlaceBlock(Packet packet) throws IOException {
         var hand = packet.readVarInt();
         var originalLocation = packet.readLocation();
         if (selectedItem().itemId == 586 && hand == 0) {
@@ -937,7 +937,7 @@ public class Player extends Entity {
         }
     }
 
-    void handlePlayerUseItem(Packet packet) throws IOException {
+    private void handlePlayerUseItem(Packet packet) throws IOException {
         int hand = packet.readVarInt();
         printf("Use %d %s%n", hand, selectedItem());
 
@@ -951,7 +951,7 @@ public class Player extends Entity {
 
     // inventory
 
-    void handleCreativeInventoryAction(Packet packet) throws IOException {
+    private void handleCreativeInventoryAction(Packet packet) throws IOException {
         var slotNumber = packet.readShort();
         var slot = Slot.from(packet);
         inventory.put(slotNumber, slot);
@@ -966,7 +966,7 @@ public class Player extends Entity {
         }
     }
 
-    void handleHeldItemChange(Packet packet) throws IOException {
+    private void handleHeldItemChange(Packet packet) throws IOException {
         selectedHotbarSlot = packet.readShort();
         printf("Select %d %s%n", selectedHotbarSlot,selectedItem());
         Main.forEachPlayer((player) -> {
@@ -983,7 +983,7 @@ public class Player extends Entity {
         return inventory.get(45);
     }
 
-    void sendHeldItemChange(byte slot) throws IOException {
+    public void sendHeldItemChange(byte slot) throws IOException {
         connection.sendPacket(0x3F, (p) -> {
             p.writeByte(slot);
         });
@@ -1035,7 +1035,7 @@ public class Player extends Entity {
         sendEditorNotification("Selection cleared");
     }
 
-    void sendCUIEvent(int selection, Location location, long volume) throws IOException {
+    public void sendCUIEvent(int selection, Location location, long volume) throws IOException {
         if (selection == -1) {
             sendPluginMessage("worldedit:cui", (p) -> {
                 p.writeBytes("s|cuboid".getBytes());
@@ -1143,14 +1143,14 @@ public class Player extends Entity {
 
     // change game state
 
-    void sendChangeGameState(int reason, float value) throws IOException {
+    public void sendChangeGameState(int reason, float value) throws IOException {
         connection.sendPacket(0x1D, (p) -> {
             p.writeByte((byte) reason);
             p.writeFloat(value);
         });
     }
 
-    void sendChangeGamemode(Player player, int mode) throws IOException {
+    public void sendChangeGamemode(Player player, int mode) throws IOException {
         connection.sendPacket(0x32, (p) -> {
             p.writeVarInt(1);
             p.writeVarInt(1);
@@ -1168,7 +1168,7 @@ public class Player extends Entity {
 
     // spawn entity
 
-    void sendSpawnEntity(ObjectEntity entity) throws IOException {
+    public void sendSpawnEntity(ObjectEntity entity) throws IOException {
         connection.sendPacket(0, (p) -> {
             p.writeVarInt(entity.id);
             p.writeUUID(entity.uuid);
@@ -1179,7 +1179,7 @@ public class Player extends Entity {
         });
     }
 
-    void sendDestroyEntity(Entity entity) throws IOException {
+    public void sendDestroyEntity(Entity entity) throws IOException {
         connection.sendPacket(0x36, (p) -> {
             p.writeVarInt(1); // count
             p.writeVarInt(entity.id);
@@ -1188,7 +1188,7 @@ public class Player extends Entity {
 
     // equipment
 
-    void sendEquipment(Player player) throws IOException {
+    public void sendEquipment(Player player) throws IOException {
         connection.sendPacket(0x47, (p) -> {
             p.writeVarInt(player.id);
             p.writeByte((byte) 0x80); // Main hand
@@ -1235,7 +1235,7 @@ public class Player extends Entity {
 
     //
 
-    void handleInteractEntity(Packet packet) throws IOException {
+    private void handleInteractEntity(Packet packet) throws IOException {
         int entityId = packet.readVarInt();
         int type = packet.readVarInt();
         if (type == 2) {
@@ -1250,7 +1250,7 @@ public class Player extends Entity {
         printf("Interact %d entity %d%n", type, entityId);
     }
 
-    void sendGameOver(Player killer) throws IOException {
+    public void sendGameOver(Player killer) throws IOException {
         var chat = new JSONObject();
         chat.put("text", "Oof");
         connection.sendPacket(0x31, (p) -> {
@@ -1261,13 +1261,13 @@ public class Player extends Entity {
         });
     }
 
-    void handleClientStatus(Packet packet) throws IOException {
+    private void handleClientStatus(Packet packet) throws IOException {
         var action = packet.readVarInt();
         if (action == 0) { // perform respawn
         }
     }
 
-    void handleIsFlying(Packet packet) throws IOException {
+    private void handleIsFlying(Packet packet) throws IOException {
         var status = packet.read();
         isCreativeFlying = (status & 0x02) != 0;
         isElytraFlying = false;
