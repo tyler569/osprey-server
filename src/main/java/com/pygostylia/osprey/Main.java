@@ -169,8 +169,8 @@ public class Main {
         return players.get(entityId);
     }
 
-    static Entity entityById(int entityId) {
-        return entities.get(entityId);
+    static Optional<Entity> entityById(int entityId) {
+        return Optional.ofNullable(entities.get(entityId));
     }
 
     static void forEachPlayer(PlayerIOLambda lambda) throws IOException {

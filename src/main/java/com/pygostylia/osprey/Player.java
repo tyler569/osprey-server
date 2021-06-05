@@ -13,6 +13,7 @@ import java.sql.SQLException;
 import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Function;
 
 public class Player extends Entity {
     enum State {
@@ -40,7 +41,7 @@ public class Player extends Entity {
     boolean isSneaking;
     boolean isSprinting;
     boolean isShielding;
-    Entity ridingEntity;
+    int vehicleEntityId;
 
     Player(Socket sock) throws IOException {
         super();
@@ -172,6 +173,8 @@ public class Player extends Entity {
             case 19 -> handlePositionAndRotation(packet);
             case 20 -> handleRotation(packet);
             case 21 -> handleMovement(packet);
+            case 22 -> handleVehicleMove(packet);
+            case 23 -> handleSteerBoat(packet);
             case 26 -> handleIsFlying(packet);
             case 27 -> handlePlayerDigging(packet);
             case 28 -> handleEntityAction(packet);
@@ -843,8 +846,13 @@ public class Player extends Entity {
         float forward = packet.readFloat();
         int flags = packet.read();
 
+        var vehicle = Main.entityById(vehicleEntityId);
+        if (vehicle.isEmpty()) {
+            return;
+        }
+
         if ((flags & 0x02) != 0) {
-            if (ridingEntity instanceof BoatEntity boat) {
+            if (vehicle.get() instanceof BoatEntity boat) {
                 boat.removePassenger(this);
                 position.moveBy(0, 1, 0);
                 teleport();
@@ -1313,6 +1321,13 @@ public class Player extends Entity {
 
     //
 
+    // maybe
+    private void vehicle(Function<Entity, Void> lambda) {
+        Optional<Entity> maybeVehicle = Main.entityById(vehicleEntityId);
+        if (maybeVehicle.isEmpty()) return;
+        lambda.apply(maybeVehicle.get());
+    }
+
     private void handleInteractEntity(Packet packet) throws IOException {
         int entityId = packet.readVarInt();
         int type = packet.readVarInt();
@@ -1327,25 +1342,22 @@ public class Player extends Entity {
         var sneak = packet.readBoolean();
         printf("Interact %d entity %d%n", type, entityId);
 
-        Entity target = Main.entityById(entityId);
-        if (target == null) {
+        var target = Main.entityById(entityId);
+        if (target.isEmpty()) {
             return;
         }
-        if (target instanceof BoatEntity boat) {
-            if (type == 1) {
-                boat.destroy();
-            } else if (type == 0) {
-                boat.addPassenger(this);
-            }
+        switch (type) {
+            case 0 -> target.get().interact(this);
+            case 1 -> target.get().attack(this);
         }
     }
 
     public void setRidingEntity(Entity ridingEntity) {
-        this.ridingEntity = ridingEntity;
+        this.vehicleEntityId = ridingEntity.id;
     }
 
     public void setNotRidingEntity() {
-        this.ridingEntity = null;
+        this.vehicleEntityId = -1;
     }
 
     public void sendSetPassengers(Entity entity, Collection<Entity> passengers) throws IOException {
@@ -1356,6 +1368,32 @@ public class Player extends Entity {
                 p.writeVarInt(passenger.id);
             }
         });
+    }
+
+    private void handleVehicleMove(Packet packet) throws IOException {
+        Position position = packet.readPosition();
+        this.position = position;
+        var vehicle = Main.entityById(vehicleEntityId);
+        if (vehicle.isEmpty()) {
+            return;
+        }
+        vehicle.get().position = position;
+        otherPlayers(player -> player.sendEntityTeleport(vehicleEntityId, position));
+    }
+
+    private void handleSteerBoat(Packet packet) throws IOException {
+        boolean left = packet.readBoolean();
+        boolean right = packet.readBoolean();
+        var vehicle = Main.entityById(vehicleEntityId);
+        if (vehicle.isEmpty()) {
+            return;
+        }
+        if (vehicle.get() instanceof BoatEntity boat) {
+            boat.turningLeft = left;
+            boat.turningRight = right;
+            otherPlayers(player -> player.sendEntityMetadata(boat, 11, 7, left));
+            otherPlayers(player -> player.sendEntityMetadata(boat, 12, 7, right));
+        }
     }
 
     public void sendGameOver(Player killer) throws IOException {

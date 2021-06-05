@@ -53,4 +53,8 @@ abstract public class Entity {
     public int id() {
         return id;
     };
+
+    public void interact(Player sender) {}
+
+    public void attack(Player sender) {}
 }

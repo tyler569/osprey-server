@@ -18,6 +18,14 @@ public class Position {
         z = location.z();
     }
 
+    public Position(double x, double y, double z, float yaw, float pitch) {
+        this.x = x;
+        this.y = y;
+        this.z = z;
+        this.yaw = yaw;
+        this.pitch = pitch;
+    }
+
     static Position middle(Location location) {
         Position p = new Position();
         p.x = location.x() + 0.5;

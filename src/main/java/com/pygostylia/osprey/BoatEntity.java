@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 
 public class BoatEntity extends ObjectEntity {
+    public boolean turningLeft;
+    public boolean turningRight;
     ArrayList<Entity> passengers = new ArrayList<>();
 
     public BoatEntity(Position position) {
@@ -49,5 +51,19 @@ public class BoatEntity extends ObjectEntity {
             player.setNotRidingEntity();
         }
         updatePassengers();
+    }
+
+    @Override
+    public void interact(Player sender) {
+        addPassenger(sender);
+    }
+
+    public void dismount(Player sender) {
+        removePassenger(sender);
+    }
+
+    @Override
+    public void attack(Player sender) {
+        destroy();
     }
 }

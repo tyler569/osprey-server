@@ -48,4 +48,13 @@ public class Packet extends ByteArrayInputStream {
     Location readLocation() throws IOException {
         return new Location(Protocol.readLong(this));
     }
+
+    Position readPosition() throws IOException {
+        var x = readDouble();
+        var y = readDouble();
+        var z = readDouble();
+        var yaw = readFloat();
+        var pitch = readFloat();
+        return new Position(x, y, z, yaw, pitch);
+    }
 }
