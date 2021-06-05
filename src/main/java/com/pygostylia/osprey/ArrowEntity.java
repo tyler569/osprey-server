@@ -1,21 +1,32 @@
 package com.pygostylia.osprey;
 
 import java.io.IOException;
+import java.time.Duration;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 public class ArrowEntity extends ObjectEntity {
     int shooterId;
+    boolean critical;
     ScheduledFuture<?> tick;
 
     public ArrowEntity(Entity shooter, Position position, Velocity velocity) {
         super(position, velocity);
         noCollision = true;
         shooterId = shooter.id;
+        // Are arrows backwards or is Position backwards?
+        position.pitch = -position.pitch;
+        position.yaw = -position.yaw;
     }
 
-    public ArrowEntity(Entity shooter, Position position) {
-        this(shooter, position, Velocity.directionMagnitude(position, 30));
+    public ArrowEntity(Entity shooter, Position position, Duration pullTime) {
+        this(shooter, position, Velocity.directionMagnitude(
+                position,
+                Math.min(30f, pullTime.toMillis() / 1000f * 30)
+        ));
+        if (pullTime.compareTo(Duration.ofSeconds(1)) > 0) {
+            critical = true;
+        }
     }
 
     @Override
@@ -23,10 +34,12 @@ public class ArrowEntity extends ObjectEntity {
         super.spawn();
         tick = Main.entityController.submitForEachTick(this::stepPhysics);
         Main.entityController.submit(this::destroy, 30, TimeUnit.SECONDS);
-        for (Player player : playersWithLoaded) {
-            try {
-                player.sendEntityMetadata(this, 7, 0, (byte) 1);
-            } catch (IOException ignored) {
+        if (critical) {
+            for (Player player : playersWithLoaded) {
+                try {
+                    player.sendEntityMetadata(this, 7, 0, (byte) 1);
+                } catch (IOException ignored) {
+                }
             }
         }
     }

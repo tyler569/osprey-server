@@ -94,49 +94,13 @@ public class Main {
     private static final Map<Integer, Player> players = new ConcurrentHashMap<>();
     private static final Map<Integer, Entity> entities = new ConcurrentHashMap<>();
     static ChunkDispatcher chunkDispatcher = new ChunkDispatcher();
+    static Registry registry;
     static KeyPair encryptionKey;
     static World world;
     static CommandBucket commands;
     static byte[] commandPacket;
     static int nextEntityId = 1;
     static EntityController entityController = new EntityController();
-    static Map<Integer, Integer> itemToBlock = new HashMap<>();
-    static JSONObject registry;
-    static JSONObject blocks;
-
-    static Integer blockDefaultId(String name) {
-        var blockEntry = blocks.optJSONObject(name);
-        if (blockEntry == null) {
-            return null;
-        }
-        var blockStates = blockEntry.getJSONArray("states");
-
-        for (var maybeState : blockStates) {
-            if (maybeState instanceof JSONObject state) {
-                if (state.optBoolean("default", false)) {
-                    return state.getInt("id");
-                }
-            }
-        }
-        return null;
-    }
-
-    static void populateItemToBlock() throws IOException {
-        var items = registry.getJSONObject("minecraft:item").getJSONObject("entries");
-        Iterator<String> itemsKeys = items.keys();
-
-        var blockRegistry = Files.readString(Path.of("generated/reports/blocks.json"));
-        blocks = new JSONObject(blockRegistry);
-
-        while (itemsKeys.hasNext()) {
-            String key = itemsKeys.next();
-            var itemId = items.getJSONObject(key).getInt("protocol_id");
-            var blockId = blockDefaultId(key);
-            if (blockId != null) {
-                itemToBlock.put(itemId, blockId);
-            }
-        }
-    }
 
     static void addPlayer(Player player) {
         players.put(player.id, player);
@@ -213,26 +177,14 @@ public class Main {
         return result.toString();
     }
 
-    public static void main(String[] args) throws IOException {
-        final var registryFile = Files.readString(Path.of("generated/reports/registries.json"));
-        registry = new JSONObject(registryFile);
+    public static void main(String[] args) throws IOException, SQLException, NoSuchAlgorithmException {
+        registry = new Registry("generated");
 
-        populateItemToBlock();
+        world = World.open("world.db");
 
-        try {
-            world = World.open("world.db");
-        } catch (SQLException e) {
-            e.printStackTrace();
-            return;
-        }
-
-        try {
-            var kpg = KeyPairGenerator.getInstance("RSA");
-            kpg.initialize(1024);
-            encryptionKey = kpg.generateKeyPair();
-        } catch (NoSuchAlgorithmException e) {
-            e.printStackTrace();
-        }
+        final var kpg = KeyPairGenerator.getInstance("RSA");
+        kpg.initialize(1024);
+        encryptionKey = kpg.generateKeyPair();
 
         commands = new CommandBucket();
         commandPacket = commands.brigadierPacket();

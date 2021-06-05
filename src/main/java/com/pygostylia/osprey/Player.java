@@ -709,6 +709,10 @@ public class Player extends Entity {
         updatePosition(x, y, z, pitch, yaw, onGround);
     }
 
+    public Position eyes() {
+        return position.offset(0, 1.6, 0);
+    }
+
     private void handleRotation(Packet packet) throws IOException {
         float yaw = packet.readFloat();
         float pitch = packet.readFloat();
@@ -930,7 +934,7 @@ public class Player extends Entity {
                     player.sendPlayerEntityMetadata(this);
                 });
                 if (isHoldingBow(0)) {
-                    ArrowEntity arrow = new ArrowEntity(this, position.offset(0, 1.6, 0));
+                    ArrowEntity arrow = new ArrowEntity(this, eyes(), useTime());
                     arrow.spawn();
                 }
             }
@@ -1004,16 +1008,14 @@ public class Player extends Entity {
         }
 
         Slot item = selectedItem();
-        if (Main.itemToBlock.containsKey(item.itemId)) {
-            var blockId = Main.itemToBlock.get(item.itemId);
-            Main.world.setBlock(location, blockId);
-            Main.forEachPlayer((player) -> {
-                player.sendBlockChange(location, blockId);
-            });
-        } else {
+        Integer blockId = Main.registry.itemToBlockDefault(item.itemId);
+        if (blockId == null) {
             printf("Attempt to place %d is invalid%n", item.itemId);
-            sendBlockChange(location, 0);
+            sendBlockChange(location, Main.world.block(location));
+            return;
         }
+        Main.world.setBlock(location, blockId);
+        Main.forEachPlayer((player) -> player.sendBlockChange(location, blockId));
     }
 
     boolean isHoldingItem(int item, int hand) {
@@ -1063,6 +1065,10 @@ public class Player extends Entity {
         if (isHoldingBow(hand)) {
             startedUsing = Instant.now();
         }
+    }
+
+    Duration useTime() {
+        return Duration.between(startedUsing, Instant.now());
     }
 
     // inventory

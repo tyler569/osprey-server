@@ -24,7 +24,7 @@ public class Chunk {
         heightMap = new short[256];
     }
 
-    static int diamond = Main.blockDefaultId("minecraft:diamond_ore");
+    static int diamond = Main.registry.blockDefaultId("minecraft:diamond_ore");
 
     static Chunk defaultGeneration() {
         var random = new Random();
