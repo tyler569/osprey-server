@@ -44,8 +44,11 @@ public class Player extends Entity {
     boolean isShielding;
     int vehicleEntityId;
     Instant startedUsing;
+
+    // fun stuff
     boolean placeFalling;
     boolean boom;
+    boolean bulletTime;
 
     Player(Socket sock) throws IOException {
         super();
@@ -939,6 +942,7 @@ public class Player extends Entity {
                     ArrowEntity arrow = new ArrowEntity(this, eyes(), useTime());
                     arrow.spawn();
                     arrow.explode = boom;
+                    arrow.bulletTime = bulletTime;
                 }
             }
             case 6 -> {

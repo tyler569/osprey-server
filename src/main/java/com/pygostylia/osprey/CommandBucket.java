@@ -414,6 +414,11 @@ public class CommandBucket {
         sender.boom ^= true;
     }
 
+    @Command("bullettime")
+    void bulletTime(Player sender, String[] args) {
+        sender.bulletTime ^= true;
+    }
+
 
     // testing new Command interface using method parameters
 

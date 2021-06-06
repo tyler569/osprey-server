@@ -41,4 +41,8 @@ public record Velocity(float x, float y, float z) {
     static short blockPerSecondToProtocol(float blockPerSecond) {
         return (short) (blockPerSecond * 400f);
     }
+
+    public Velocity divide(float dividend) {
+        return new Velocity(x / dividend, y / dividend, z / dividend);
+    }
 }

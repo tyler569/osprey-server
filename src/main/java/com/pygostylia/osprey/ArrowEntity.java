@@ -11,6 +11,7 @@ public class ArrowEntity extends ObjectEntity {
     boolean critical;
     boolean stuck;
     boolean explode;
+    boolean bulletTime;
     ScheduledFuture<?> tick;
 
     public ArrowEntity(Entity shooter, Position position, Velocity velocity) {
@@ -82,13 +83,20 @@ public class ArrowEntity extends ObjectEntity {
     }
 
     private void stepPhysics() {
+        float gravity = -0.5f;
+        double tick = 20f;
+        if (bulletTime) {
+            gravity /= 10;
+            tick *= 10;
+        }
+
         if (!stuck) {
-            velocity = new Velocity(velocity.x(), velocity.y() - 0.5f, velocity.z());
+            velocity = new Velocity(velocity.x(), velocity.y() + gravity, velocity.z());
         }
         double dx, dy, dz;
-        dx = velocity.x() / 20;
-        dy = velocity.y() / 20;
-        dz = velocity.z() / 20;
+        dx = velocity.x() / tick;
+        dy = velocity.y() / tick;
+        dz = velocity.z() / tick;
         position.moveBy(dx, dy, dz);
         if (!stuck) {
             position.updateFacing(dx, dy, dz);
@@ -96,7 +104,7 @@ public class ArrowEntity extends ObjectEntity {
         for (Player player : playersWithLoaded) {
             try {
                 player.sendEntityPositionAndRotation(id, dx, dy, dz, position);
-                player.sendEntityVelocity(this, velocity);
+                player.sendEntityVelocity(this, velocity.divide(10));
             } catch (IOException ignored) {}
         }
         if (intersectingBlock()) {
