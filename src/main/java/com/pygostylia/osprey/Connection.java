@@ -58,7 +58,7 @@ public class Connection {
                 data = new byte[originalLen];
                 instream.readNBytes(data, 0, originalLen);
                 break;
-            } catch (SocketTimeoutException e) {}
+            } catch (SocketTimeoutException ignored) {}
         }
         if (compressionEnabled) {
             compressedLen = originalLen;
