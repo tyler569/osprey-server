@@ -75,4 +75,12 @@ public record Location(int x, int y, int z) {
     boolean withinRadiusOf(int radius, Location location) {
         return Math.abs(location.x - x) < radius && Math.abs(location.z - z) < radius;
     }
+
+    double distance(Location other) {
+        return Math.sqrt(
+                Math.pow(x - other.x, 2) +
+                Math.pow(y - other.y, 2) +
+                Math.pow(z - other.z, 2)
+        );
+    }
 }

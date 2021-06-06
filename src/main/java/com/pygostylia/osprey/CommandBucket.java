@@ -399,4 +399,13 @@ public class CommandBucket {
         });
     }
 
+    @Command("falling")
+    void falling(Player sender, String[] args) {
+        sender.placeFalling ^= true;
+    }
+
+    @Command("boom")
+    void boom(Player sender, String[] args) {
+        sender.boom ^= true;
+    }
 }

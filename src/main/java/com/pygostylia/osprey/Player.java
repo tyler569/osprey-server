@@ -44,6 +44,8 @@ public class Player extends Entity {
     boolean isShielding;
     int vehicleEntityId;
     Instant startedUsing;
+    boolean placeFalling;
+    boolean boom;
 
     Player(Socket sock) throws IOException {
         super();
@@ -936,6 +938,7 @@ public class Player extends Entity {
                 if (isHoldingBow(0)) {
                     ArrowEntity arrow = new ArrowEntity(this, eyes(), useTime());
                     arrow.spawn();
+                    arrow.explode = boom;
                 }
             }
             case 6 -> {
@@ -991,6 +994,16 @@ public class Player extends Entity {
             target.yaw = position.yaw;
             BoatEntity boat = new BoatEntity(target);
             boat.spawn();
+            return;
+        }
+
+        if (placeFalling) {
+            System.out.println("Spawn falling block");
+            final int sandBlock = Main.registry.itemToBlockDefault(selectedItem().itemId);
+            final Position target = Position.middle(location);
+            FallingBlockEntity block = new FallingBlockEntity(target, sandBlock);
+            sendBlockChange(location, current);
+            block.spawn();
             return;
         }
 
@@ -1454,6 +1467,25 @@ public class Player extends Entity {
         isElytraFlying = false;
         Main.forEachPlayer((player) -> {
             player.sendPlayerEntityMetadata(this);
+        });
+    }
+
+    public void sendExplosion(Position position, float strength, Collection<Location> boomBlocks, Velocity playerKick) throws IOException {
+        connection.sendPacket(0x1B, (p) -> {
+            p.writeFloat((float) position.x);
+            p.writeFloat((float) position.y);
+            p.writeFloat((float) position.z);
+            p.writeFloat(strength);
+            p.writeInt(boomBlocks.size());
+            Location center = position.location();
+            for (var block : boomBlocks) {
+                p.writeByte((byte) (block.x() - center.x()));
+                p.writeByte((byte) (block.y() - center.y()));
+                p.writeByte((byte) (block.z() - center.z()));
+            }
+            p.writeFloat(playerKick.x());
+            p.writeFloat(playerKick.y());
+            p.writeFloat(playerKick.z());
         });
     }
 }

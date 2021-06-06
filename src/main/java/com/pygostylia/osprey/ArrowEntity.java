@@ -2,12 +2,15 @@ package com.pygostylia.osprey;
 
 import java.io.IOException;
 import java.time.Duration;
+import java.util.Collection;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 public class ArrowEntity extends ObjectEntity {
     int shooterId;
     boolean critical;
+    boolean stuck;
+    boolean explode;
     ScheduledFuture<?> tick;
 
     public ArrowEntity(Entity shooter, Position position, Velocity velocity) {
@@ -79,13 +82,17 @@ public class ArrowEntity extends ObjectEntity {
     }
 
     private void stepPhysics() {
-        velocity = new Velocity(velocity.x(), velocity.y() - 0.5f, velocity.z());
+        if (!stuck) {
+            velocity = new Velocity(velocity.x(), velocity.y() - 0.5f, velocity.z());
+        }
         double dx, dy, dz;
         dx = velocity.x() / 20;
         dy = velocity.y() / 20;
         dz = velocity.z() / 20;
         position.moveBy(dx, dy, dz);
-        position.updateFacing(dx, dy, dz);
+        if (!stuck) {
+            position.updateFacing(dx, dy, dz);
+        }
         for (Player player : playersWithLoaded) {
             try {
                 player.sendEntityPositionAndRotation(id, dx, dy, dz, position);
@@ -93,7 +100,28 @@ public class ArrowEntity extends ObjectEntity {
             } catch (IOException ignored) {}
         }
         if (intersectingBlock()) {
-            destroy();
+            stickInBlock();
+        }
+    }
+
+    private void stickInBlock() {
+        velocity = Velocity.zero();
+        stuck = true;
+        tick.cancel(false);
+        if (explode) {
+            Collection<Location> boomBlocks = Explosion.generateBoomBlocks(location(), 5.5f);
+            for (Location boomBlock : boomBlocks) {
+                try {
+                    Main.world.setBlock(boomBlock, 0);
+                } catch (IOException ignored) {
+                }
+            }
+            playersWithLoaded.forEach(player -> {
+                try {
+                    player.sendExplosion(position, 5.5f, boomBlocks, Velocity.zero());
+                } catch (IOException ignored) {
+                }
+            });
         }
     }
 }
