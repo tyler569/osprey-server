@@ -6,7 +6,8 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.stream.Stream;
 
 public class ChunkDispatcher implements Runnable {
-    static record Pair(Player player, ChunkLocation chunkLocation) {}
+    static record Pair(Player player, ChunkLocation chunkLocation) {
+    }
 
     BlockingQueue<Pair> queue = new LinkedBlockingQueue<>();
 
@@ -21,8 +22,7 @@ public class ChunkDispatcher implements Runnable {
             }
             try {
                 pair.player().sendChunk(pair.chunkLocation());
-            } catch (IOException e) {
-                e.printStackTrace();
+            } catch (IOException ignored) {
             }
         }
     }

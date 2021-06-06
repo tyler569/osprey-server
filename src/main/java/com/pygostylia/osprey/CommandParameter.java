@@ -184,8 +184,8 @@ public class CommandParameter {
         switch (type) {
             case Boolean -> {
                 if (
-                    args[offset].equalsIgnoreCase("true") ||
-                    args[offset].equalsIgnoreCase("false")
+                        args[offset].equalsIgnoreCase("true") ||
+                                args[offset].equalsIgnoreCase("false")
                 ) {
                     return 1;
                 } else {
@@ -206,15 +206,15 @@ public class CommandParameter {
                     return 0;
                 }
                 return isRelativeInteger(args[offset]) &&
-                    isRelativeInteger(args[offset + 1]) ? 2 : 0;
+                        isRelativeInteger(args[offset + 1]) ? 2 : 0;
             }
             case Vec3 -> {
                 if (offset + 3 > args.length) {
                     return 0;
                 }
                 return isRelativeInteger(args[offset]) &&
-                    isRelativeInteger(args[offset + 1]) &&
-                    isRelativeInteger(args[offset + 2]) ? 3 : 0;
+                        isRelativeInteger(args[offset + 1]) &&
+                        isRelativeInteger(args[offset + 2]) ? 3 : 0;
             }
             case Literal -> {
                 if (args[offset].equals(literalValue)) {

@@ -58,9 +58,9 @@ public class World {
         var chunk = loadedChunks.get(location);
         var chunkBlob = chunk.encodeBlob();
         String sql = """
-            INSERT OR REPLACE INTO chunks (x, z, data)
-            VALUES (?, ?, ?);
-            """;
+                INSERT OR REPLACE INTO chunks (x, z, data)
+                VALUES (?, ?, ?);
+                """;
         try (var connection = connect();
              var statement = connection.prepareStatement(sql)) {
             statement.setInt(1, location.x());
@@ -83,9 +83,9 @@ public class World {
 
     Chunk loadFromDisk(ChunkLocation location) throws SQLException, IOException {
         String sql = """
-            SELECT data FROM chunks
-            WHERE x = ? AND z = ?;
-            """;
+                SELECT data FROM chunks
+                WHERE x = ? AND z = ?;
+                """;
         try (var connection = connect();
              var statement = connection.prepareStatement(sql)) {
             statement.setInt(1, location.x());
@@ -109,8 +109,8 @@ public class World {
                 statement.execute();
             }
             statement = connection.prepareStatement("""
-                INSERT INTO schema_migrations VALUES (?);
-                """);
+                    INSERT INTO schema_migrations VALUES (?);
+                    """);
             statement.setInt(1, id);
             statement.execute();
             connection.commit();
@@ -121,10 +121,10 @@ public class World {
         int version;
 
         String sql = """
-            CREATE TABLE IF NOT EXISTS schema_migrations(
-                id INTEGER NOT NULL PRIMARY KEY
-            );
-            """;
+                CREATE TABLE IF NOT EXISTS schema_migrations(
+                    id INTEGER NOT NULL PRIMARY KEY
+                );
+                """;
         try (var connection = connect();
              var statement = connection.prepareStatement(sql)) {
             statement.execute();
@@ -132,8 +132,8 @@ public class World {
         }
 
         sql = """
-            SELECT MAX(id) FROM schema_migrations;
-            """;
+                SELECT MAX(id) FROM schema_migrations;
+                """;
         try (var connection = connect();
              var statement = connection.prepareStatement(sql)) {
             var results = statement.executeQuery();
@@ -144,46 +144,46 @@ public class World {
         switch (version) {
             case 0:
                 migrationStep(1, """
-                    CREATE TABLE chunks (
-                        x INTEGER NOT NULL,
-                        z INTEGER NOT NULL,
-                        data BLOB,
-                        PRIMARY KEY(x, z)
-                    );
-                    """
+                        CREATE TABLE chunks (
+                            x INTEGER NOT NULL,
+                            z INTEGER NOT NULL,
+                            data BLOB,
+                            PRIMARY KEY(x, z)
+                        );
+                        """
                 );
             case 1:
                 migrationStep(2, """
-                    CREATE TABLE players (
-                        id INTEGER NOT NULL PRIMARY KEY,
-                        uuid STRING,
-                        name STRING
-                    );
-                    """,
-                    """
-                    CREATE TABLE inventory_slots (
-                        id INTEGER NOT NULL PRIMARY KEY,
-                        player_id INTEGER NOT NULL,
-                        slot_number INTEGER NOT NULL,
-                        item_id INTEGER NOT NULL,
-                        stack_count INTEGER NOT NULL,
-                        extra_data BLOB,
-                        FOREIGN KEY(player_id) REFERENCES players(id)
-                    );
-                    """);
+                                CREATE TABLE players (
+                                    id INTEGER NOT NULL PRIMARY KEY,
+                                    uuid STRING,
+                                    name STRING
+                                );
+                                """,
+                        """
+                                CREATE TABLE inventory_slots (
+                                    id INTEGER NOT NULL PRIMARY KEY,
+                                    player_id INTEGER NOT NULL,
+                                    slot_number INTEGER NOT NULL,
+                                    item_id INTEGER NOT NULL,
+                                    stack_count INTEGER NOT NULL,
+                                    extra_data BLOB,
+                                    FOREIGN KEY(player_id) REFERENCES players(id)
+                                );
+                                """);
             case 2:
                 migrationStep(3, """
-                    ALTER TABLE players
-                    ADD COLUMN selected_slot INTEGER;
-                    """);
+                        ALTER TABLE players
+                        ADD COLUMN selected_slot INTEGER;
+                        """);
             case 3:
                 migrationStep(4,
-                    "ALTER TABLE players ADD COLUMN x REAL;",
-                    "ALTER TABLE players ADD COLUMN y REAL;",
-                    "ALTER TABLE players ADD COLUMN z REAL;",
-                    "ALTER TABLE players ADD COLUMN pitch REAL;",
-                    "ALTER TABLE players ADD COLUMN yaw REAL;"
-                    );
+                        "ALTER TABLE players ADD COLUMN x REAL;",
+                        "ALTER TABLE players ADD COLUMN y REAL;",
+                        "ALTER TABLE players ADD COLUMN z REAL;",
+                        "ALTER TABLE players ADD COLUMN pitch REAL;",
+                        "ALTER TABLE players ADD COLUMN yaw REAL;"
+                );
             default:
         }
     }

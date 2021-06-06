@@ -12,7 +12,7 @@ public class VarInt {
             if (v == -1) {
                 throw new EOFException("EOF");
             }
-            b = (byte)v;
+            b = (byte) v;
             int value = b & 0b0111_1111;
             result |= value << (7 * numRead);
             numRead++;
@@ -22,7 +22,7 @@ public class VarInt {
 
     public static void write(OutputStream os, int i) throws IOException {
         do {
-            byte elem = (byte)(i & 0b0111_1111);
+            byte elem = (byte) (i & 0b0111_1111);
             i >>>= 7;
             if (i != 0) {
                 elem |= 0b1000_0000;

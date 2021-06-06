@@ -105,7 +105,8 @@ public class ArrowEntity extends ObjectEntity {
             try {
                 player.sendEntityPositionAndRotation(id, dx, dy, dz, position);
                 player.sendEntityVelocity(this, velocity.divide(10));
-            } catch (IOException ignored) {}
+            } catch (IOException ignored) {
+            }
         }
         if (intersectingBlock()) {
             stickInBlock();

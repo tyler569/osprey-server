@@ -7,19 +7,20 @@ import org.json.JSONObject;
 
 import java.io.IOException;
 import java.net.ServerSocket;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
 import java.sql.SQLException;
-import java.util.*;
+import java.util.Collection;
+import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
 
 public class Main {
     // TODO: read these in from configuration
     static NBTCompound overworldDimension = new NBTCompound();
+
     static {
         overworldDimension.put("piglin_safe", (byte) 0);
         overworldDimension.put("natural", (byte) 1);
@@ -37,6 +38,7 @@ public class Main {
     }
 
     static NBTCompound dimensionCodec = new NBTCompound(null);
+
     static {
         var dimensionType = new NBTCompound();
         dimensionType.put("type", "minecraft:dimension_type");

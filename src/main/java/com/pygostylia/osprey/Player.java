@@ -85,7 +85,8 @@ public class Player extends Entity {
     private void disconnect() {
         try {
             connection.close();
-        } catch (Exception ignored) {}
+        } catch (Exception ignored) {
+        }
         Main.removePlayer(this);
         if (connection.isEstablished()) {
             try {
@@ -232,7 +233,7 @@ public class Player extends Entity {
             int next = packet.readVarInt();
 
             printf("handshake: version: %d address: '%s' port: %d next: %d%n",
-                protocolVersion, address, port, next);
+                    protocolVersion, address, port, next);
             if (next == 2) {
                 state = State.Login;
             }
@@ -295,8 +296,8 @@ public class Player extends Entity {
         connection.sendPacket(0x24, (p) -> { // Join Game
             p.writeInt(id);
             p.writeBoolean(false); // is hardcore
-            p.writeByte((byte)1); // gamemode creative
-            p.writeByte((byte)-1); // previous gamemode
+            p.writeByte((byte) 1); // gamemode creative
+            p.writeByte((byte) -1); // previous gamemode
             p.writeVarInt(1); // world count
             p.writeString("minecraft:overworld"); // list of worlds (# count)
             Main.dimensionCodec.write(p);
@@ -361,12 +362,12 @@ public class Player extends Entity {
             cipher.init(Cipher.DECRYPT_MODE, Main.encryptionKey.getPrivate());
             decryptedToken = cipher.doFinal(token);
             printf("  decrypted token: %s%n",
-                Arrays.toString(decryptedToken));
+                    Arrays.toString(decryptedToken));
 
             cipher.init(Cipher.DECRYPT_MODE, Main.encryptionKey.getPrivate());
             decryptedSecret = cipher.doFinal(secret);
             printf("  decrypted secret key: %s%n",
-                Arrays.toString(decryptedSecret));
+                    Arrays.toString(decryptedSecret));
         } catch (Exception e) {
             e.printStackTrace();
             // login failure
@@ -588,8 +589,7 @@ public class Player extends Entity {
         printf("[chat] %s%n", message);
         if (message.startsWith("/")) {
             Main.commands.dispatch(this, message.substring(1).split(" +"));
-        }
-        else {
+        } else {
             Main.forEachPlayer((player) -> {
                 player.sendChat(this, message);
             });
@@ -603,9 +603,9 @@ public class Player extends Entity {
     // movement
 
     public void sendEntityPositionAndRotation(int entityId, double dx, double dy, double dz, Position position) throws IOException {
-        short protocol_dx = (short)(dx * 4096);
-        short protocol_dy = (short)(dy * 4096);
-        short protocol_dz = (short)(dz * 4096);
+        short protocol_dx = (short) (dx * 4096);
+        short protocol_dy = (short) (dy * 4096);
+        short protocol_dz = (short) (dz * 4096);
         connection.sendPacket(0x28, (p) -> {
             p.writeVarInt(entityId);
             p.writeShort(protocol_dx);
@@ -657,8 +657,8 @@ public class Player extends Entity {
     }
 
     void checkChunkPosition(double x, double z) throws IOException {
-        int chunkX = (int)x >> 4;
-        int chunkZ = (int)z >> 4;
+        int chunkX = (int) x >> 4;
+        int chunkZ = (int) z >> 4;
         if (chunkX != position.chunkX() || chunkZ != position.chunkZ()) {
             sendUpdateChunkPosition(chunkX, chunkZ);
             printf("new chunk %d %d%n", chunkX, chunkZ);
@@ -734,9 +734,7 @@ public class Player extends Entity {
     boolean intersectsLocation(Location location) {
         if (position.x + 0.3 < location.x() || location.x() + 1 < position.x - 0.3) return false;
         if (position.z + 0.3 < location.z() || location.z() + 1 < position.z - 0.3) return false;
-        if (position.y + 1.8 < location.y() || location.y() + 1 <= position.y) return false;
-
-        return true;
+        return !(position.y + 1.8 < location.y()) && !(location.y() + 1 <= position.y);
     }
 
     // animation
@@ -890,7 +888,7 @@ public class Player extends Entity {
         });
     }
 
-    public void sendBlockBreakParticles(Location location, short blockId) throws  IOException {
+    public void sendBlockBreakParticles(Location location, short blockId) throws IOException {
         connection.sendPacket(0x21, (p) -> {
             p.writeInt(2001);
             p.writePosition(location);
@@ -1096,8 +1094,8 @@ public class Player extends Entity {
         inventory.put(slotNumber, slot);
         printf("Inventory %d = %s%n", slotNumber, slot);
         if (slotNumber == selectedHotbarSlot + 36 ||
-            slotNumber == 45 ||
-            slotNumber >= 5 && slotNumber <= 8
+                slotNumber == 45 ||
+                slotNumber >= 5 && slotNumber <= 8
         ) {
             otherPlayers((player) -> player.sendEquipment(this));
         }
@@ -1105,7 +1103,7 @@ public class Player extends Entity {
 
     private void handleHeldItemChange(Packet packet) throws IOException {
         selectedHotbarSlot = packet.readShort();
-        printf("Select %d %s%n", selectedHotbarSlot,selectedItem());
+        printf("Select %d %s%n", selectedHotbarSlot, selectedItem());
         otherPlayers(player -> player.sendEquipment(this));
     }
 
@@ -1140,8 +1138,8 @@ public class Player extends Entity {
             return 0;
         }
         return ((long) Math.abs(editorLocations[0].x() - editorLocations[1].x()) + 1) *
-            ((long) Math.abs(editorLocations[0].y() - editorLocations[1].y()) + 1) *
-            ((long) Math.abs(editorLocations[0].z() - editorLocations[1].z()) + 1);
+                ((long) Math.abs(editorLocations[0].y() - editorLocations[1].y()) + 1) *
+                ((long) Math.abs(editorLocations[0].z() - editorLocations[1].z()) + 1);
     }
 
     void setEditorLocation(int n, Location location) throws IOException {
@@ -1152,11 +1150,11 @@ public class Player extends Entity {
             sendEditorNotification(String.format("%s %s", message, editorLocations[n]));
         } else {
             sendEditorNotification(String.format(
-                "%s %s (%d block%s)",
-                message,
-                editorLocations[n],
-                volume,
-                volume == 1 ? "" : "s"
+                    "%s %s (%d block%s)",
+                    message,
+                    editorLocations[n],
+                    volume,
+                    volume == 1 ? "" : "s"
             ));
         }
         sendCUIEvent(n, location, selectionVolume());
@@ -1177,14 +1175,14 @@ public class Player extends Entity {
         } else {
             sendPluginMessage("worldedit:cui", (p) -> {
                 p.writeBytes(
-                    String.format(
-                        "p|%d|%d|%d|%d|%d",
-                        selection,
-                        location.x(),
-                        location.y(),
-                        location.z(),
-                        volume
-                    ).getBytes()
+                        String.format(
+                                "p|%d|%d|%d|%d|%d",
+                                selection,
+                                location.x(),
+                                location.y(),
+                                location.z(),
+                                volume
+                        ).getBytes()
                 );
             });
         }
@@ -1194,8 +1192,8 @@ public class Player extends Entity {
 
     void loadFromDb() throws IOException {
         String sql = """
-            SELECT id, selected_slot, x, y, z, pitch, yaw FROM players WHERE name = ?;
-            """;
+                SELECT id, selected_slot, x, y, z, pitch, yaw FROM players WHERE name = ?;
+                """;
         try (var connection = Main.world.connect();
              var statement = connection.prepareStatement(sql)) {
             statement.setString(1, name);
@@ -1233,9 +1231,9 @@ public class Player extends Entity {
 
     void saveFirstTime() {
         String sql = """
-            INSERT INTO players (uuid, name)
-            VALUES (?, ?);
-            """;
+                INSERT INTO players (uuid, name)
+                VALUES (?, ?);
+                """;
         try (var connection = Main.world.connect();
              var statement = connection.prepareStatement(sql)) {
             statement.setString(1, uuid.toString());
@@ -1250,16 +1248,16 @@ public class Player extends Entity {
 
     void saveState() throws SQLException {
         String sql = """
-            UPDATE players
-            SET
-                selected_slot = ?,
-                x = ?,
-                y = ?,
-                z = ?,
-                pitch = ?,
-                yaw = ?
-            WHERE id = ?;
-            """;
+                UPDATE players
+                SET
+                    selected_slot = ?,
+                    x = ?,
+                    y = ?,
+                    z = ?,
+                    pitch = ?,
+                    yaw = ?
+                WHERE id = ?;
+                """;
         try (var connection = Main.world.connect();
              var statement = connection.prepareStatement(sql)) {
             statement.setInt(1, selectedHotbarSlot);
@@ -1292,7 +1290,7 @@ public class Player extends Entity {
             p.writeVarInt(mode);
         });
     }
-    
+
     void changeGamemode(int mode) throws IOException {
         sendChangeGameState(3, mode);
         Main.forEachPlayer((player) -> {

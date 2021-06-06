@@ -89,7 +89,7 @@ public class Protocol {
 
     public static void writeShort(OutputStream os, int v) throws IOException {
         var buffer = ByteBuffer.allocate(Long.BYTES);
-        buffer.putShort((short)v);
+        buffer.putShort((short) v);
         os.write(buffer.array(), 0, Short.BYTES);
     }
 
@@ -118,7 +118,7 @@ public class Protocol {
     }
 
     public static void writePosition(OutputStream os, int x, int y, int z) throws IOException {
-        long encoded = (((long)x & 0x3FFFFFF) << 38) | (((long)z & 0x3FFFFFF) << 12) | (y & 0xFFF);
+        long encoded = (((long) x & 0x3FFFFFF) << 38) | (((long) z & 0x3FFFFFF) << 12) | (y & 0xFFF);
         writeLong(os, encoded);
     }
 }

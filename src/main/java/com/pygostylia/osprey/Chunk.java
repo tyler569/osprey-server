@@ -110,7 +110,7 @@ public class Chunk {
         int dataIndex = 0;
         for (int z = 0; z < 16; z++) {
             for (int x = 0; x < 16; x++) {
-                data[dataIndex] |= ((long)heightMap[z*16 + x] << (index*9));
+                data[dataIndex] |= ((long) heightMap[z * 16 + x] << (index * 9));
                 index += 1;
                 if (index == 7) {
                     index = 0;

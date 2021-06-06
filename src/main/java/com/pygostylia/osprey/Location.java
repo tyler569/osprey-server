@@ -3,9 +3,9 @@ package com.pygostylia.osprey;
 public record Location(int x, int y, int z) {
     Location(long protocolLocation) {
         this(
-            (int)(protocolLocation >> 38),
-            (int)(protocolLocation & 0xFFF),
-            (int)((protocolLocation << 26) >> 38) // sign extension
+                (int) (protocolLocation >> 38),
+                (int) (protocolLocation & 0xFFF),
+                (int) ((protocolLocation << 26) >> 38) // sign extension
         );
     }
 
@@ -79,8 +79,8 @@ public record Location(int x, int y, int z) {
     double distance(Location other) {
         return Math.sqrt(
                 Math.pow(x - other.x, 2) +
-                Math.pow(y - other.y, 2) +
-                Math.pow(z - other.z, 2)
+                        Math.pow(y - other.y, 2) +
+                        Math.pow(z - other.z, 2)
         );
     }
 }

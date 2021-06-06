@@ -14,7 +14,6 @@ import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Arrays;
 import java.util.Random;
 import java.util.zip.DeflaterOutputStream;
 import java.util.zip.InflaterInputStream;
@@ -58,7 +57,8 @@ public class Connection {
                 data = new byte[originalLen];
                 instream.readNBytes(data, 0, originalLen);
                 break;
-            } catch (SocketTimeoutException ignored) {}
+            } catch (SocketTimeoutException ignored) {
+            }
         }
         if (compressionEnabled) {
             compressedLen = originalLen;
@@ -119,7 +119,7 @@ public class Connection {
 
     void setEncryption(byte[] secret)
             throws NoSuchPaddingException, NoSuchAlgorithmException,
-                InvalidAlgorithmParameterException, InvalidKeyException {
+            InvalidAlgorithmParameterException, InvalidKeyException {
         var protocolKey = new SecretKeySpec(secret, "AES");
         var protocolIv = new IvParameterSpec(secret);
         var protocolCipherOut = Cipher.getInstance("AES/CFB8/NoPadding");

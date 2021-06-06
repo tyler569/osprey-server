@@ -27,12 +27,12 @@ public class Position {
     }
 
     public Position(Position position) {
-         this.x = position.x;
-         this.y = position.y;
-         this.z = position.z;
-         this.yaw = position.yaw;
-         this.pitch = position.pitch;
-         this.onGround = position.onGround;
+        this.x = position.x;
+        this.y = position.y;
+        this.z = position.z;
+        this.yaw = position.yaw;
+        this.pitch = position.pitch;
+        this.onGround = position.onGround;
     }
 
     static Position middle(Location location) {
@@ -57,26 +57,26 @@ public class Position {
     }
 
     byte yawAngle() {
-        return (byte)(yaw / 360 * 256);
+        return (byte) (yaw / 360 * 256);
     }
 
     byte pitchAngle() {
-        return (byte)(pitch / 360 * 256);
+        return (byte) (pitch / 360 * 256);
     }
 
     int chunkX() {
-        return (int)x >> 4;
+        return (int) x >> 4;
     }
 
     int chunkZ() {
-        return (int)z >> 4;
+        return (int) z >> 4;
     }
 
     Location location() {
         return new Location(
-            (int)Math.floor(x),
-            (int)Math.floor(y),
-            (int)Math.floor(z)
+                (int) Math.floor(x),
+                (int) Math.floor(y),
+                (int) Math.floor(z)
         );
     }
 

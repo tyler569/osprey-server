@@ -52,11 +52,13 @@ abstract public class Entity {
 
     public int id() {
         return id;
-    };
+    }
 
-    public void interact(Player sender) {}
+    public void interact(Player sender) {
+    }
 
-    public void attack(Player sender) {}
+    public void attack(Player sender) {
+    }
 
     int spawnData() {
         return 0;
@@ -71,7 +73,6 @@ abstract public class Entity {
         float ey = colliderY();
         if (position.x + ex < point.x || point.x < position.x - ex) return false;
         if (position.z + ex < point.z || point.z < position.z - ex) return false;
-        if (position.y + ey < point.y || point.y <= position.y) return false;
-        return true;
+        return !(position.y + ey < point.y) && !(point.y <= position.y);
     }
 }

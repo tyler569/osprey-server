@@ -41,7 +41,7 @@ public class Registry {
         var items = registries.getJSONObject("minecraft:item").getJSONObject("entries");
         Iterator<String> itemsKeys = items.keys();
 
-        while(itemsKeys.hasNext()) {
+        while (itemsKeys.hasNext()) {
             String key = itemsKeys.next();
             var itemId = items.getJSONObject(key).getInt("protocol_id");
             var blockId = blockDefaultId(key);

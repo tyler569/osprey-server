@@ -49,9 +49,9 @@ public class Slot {
     @Override
     public String toString() {
         return "Slot{" +
-            "empty=" + empty +
-            ", itemId=" + itemId +
-            ", count=" + count +
-            '}';
+                "empty=" + empty +
+                ", itemId=" + itemId +
+                ", count=" + count +
+                '}';
     }
 }

@@ -1,8 +1,6 @@
 package com.pygostylia.osprey;
 
 import java.io.IOException;
-import java.io.OutputStream;
-import java.util.Vector;
 
 /*
 The protocol representation of velocity is as a triple of Shorts,

@@ -16,7 +16,7 @@ public class Inventory {
     }
 
     public void put(short slotNumber, Slot slot) {
-        slots.put((int)slotNumber, slot);
+        slots.put((int) slotNumber, slot);
     }
 
     public Slot get(int slotNumber) {
@@ -26,13 +26,13 @@ public class Inventory {
     public void save(int playerId) throws SQLException {
         try (var connection = Main.world.connect()) {
             String sql = """
-                DELETE FROM inventory_slots
-                WHERE player_id = ?;
-                """;
+                    DELETE FROM inventory_slots
+                    WHERE player_id = ?;
+                    """;
             String slotSql = """
-                INSERT INTO inventory_slots (player_id, slot_number, item_id, stack_count)
-                VALUES (?, ?, ?, ?);
-                """;
+                    INSERT INTO inventory_slots (player_id, slot_number, item_id, stack_count)
+                    VALUES (?, ?, ?, ?);
+                    """;
             var statement = connection.prepareStatement(sql);
             statement.setInt(1, playerId);
             statement.execute();
@@ -54,10 +54,10 @@ public class Inventory {
     public static Inventory loadFromDb(int playerId) throws SQLException {
         Inventory output = new Inventory();
         String sql = """
-            SELECT slot_number, item_id, stack_count
-            FROM inventory_slots
-            WHERE player_id = ?;
-            """;
+                SELECT slot_number, item_id, stack_count
+                FROM inventory_slots
+                WHERE player_id = ?;
+                """;
         try (var connection = Main.world.connect();
              var statement = connection.prepareStatement(sql)) {
             statement.setInt(1, playerId);

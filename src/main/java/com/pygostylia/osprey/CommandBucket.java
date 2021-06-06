@@ -115,7 +115,7 @@ public class CommandBucket {
             } else {
                 continue;
             }
-            for (CommandAlias commandAlias: method.getAnnotationsByType(CommandAlias.class)) {
+            for (CommandAlias commandAlias : method.getAnnotationsByType(CommandAlias.class)) {
                 String alias = commandAlias.value();
                 flatCommand.aliases.add(alias);
             }
@@ -277,7 +277,6 @@ public class CommandBucket {
     }
 
 
-
     // todo: move to a subclass or something
 
 
@@ -289,8 +288,8 @@ public class CommandBucket {
             return;
         }
         Location destination = Location.relativeLocation(
-            sender.position.location(),
-            Arrays.copyOfRange(args, 1, 4)
+                sender.position.location(),
+                Arrays.copyOfRange(args, 1, 4)
         );
         sender.teleport(destination);
     }
@@ -380,7 +379,7 @@ public class CommandBucket {
         var then = Instant.now();
         var took = Duration.between(now, then);
         sender.sendNotification(String.format("Saved world! (%fms)",
-            (double) took.getNano() / 1000000));
+                (double) took.getNano() / 1000000));
     }
 
     @Command(value = "gamemode", args = {"mode: integer(0,3)"})
