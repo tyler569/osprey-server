@@ -39,8 +39,7 @@ abstract public class Entity {
         playersWithLoaded.forEach((player) -> {
             try {
                 player.sendDestroyEntity(this);
-            } catch (IOException e) {
-                e.printStackTrace();
+            } catch (IOException ignored) {
             }
         });
         playersWithLoaded.clear();

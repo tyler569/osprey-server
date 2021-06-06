@@ -69,6 +69,10 @@ public class Registry {
         return lookupId("minecraft:entity_type", name);
     }
 
+    public Integer blockType(String name) {
+        return lookupId("minecraft:block", name);
+    }
+
     public Integer itemToBlockDefault(int item) {
         return itemToBlock.get(item);
     }
