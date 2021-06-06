@@ -107,6 +107,11 @@ public class CommandBucket {
                 var args = Arrays.stream(commandInfo.args()).map(CommandParameter::fromArg).collect(Collectors.toList());
                 flatCommand = new FlatCommand(commandInfo.value(), args, method);
                 flatCommands.add(flatCommand);
+            } else if (method.isAnnotationPresent(Command2.class)) {
+                Command2 commandInfo = method.getAnnotation(Command2.class);
+                var args = Arrays.stream(method.getParameters()).map(CommandParameter::fromClass).collect(Collectors.toList());
+                flatCommand = new FlatCommand(commandInfo.value(), args, method);
+                flatCommands.add(flatCommand);
             } else {
                 continue;
             }
@@ -153,7 +158,7 @@ public class CommandBucket {
         }
         method = element.method;
         try {
-            method.invoke(this, sender, (Object) args);
+            method.invoke(this, sender, args);
         } catch (Exception e) {
             var cause = e.getCause();
             if (cause != null) {
@@ -407,5 +412,23 @@ public class CommandBucket {
     @Command("boom")
     void boom(Player sender, String[] args) {
         sender.boom ^= true;
+    }
+
+
+    // testing new Command interface using method parameters
+
+    @Command2("new")
+    void newNoArgs(Player sender) throws IOException {
+        sender.sendNotification("You said new!");
+    }
+
+    @Command2("new")
+    void newWithArg(Player sender, String arg) throws IOException {
+        sender.sendNotification("You said abc " + arg + "!");
+    }
+
+    @Command2("new")
+    void newWithLocation(Player sender, Location arg) throws IOException {
+        sender.sendNotification("You said abc " + arg + "!");
     }
 }

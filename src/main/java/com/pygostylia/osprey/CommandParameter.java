@@ -1,5 +1,6 @@
 package com.pygostylia.osprey;
 
+import java.lang.reflect.Parameter;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -94,6 +95,35 @@ public class CommandParameter {
             case Entity -> pt.flags = 0x01;
         }
 
+        return pt;
+    }
+
+    static CommandParameter fromClass(Parameter argument) {
+        Class<?> argumentType = argument.getType();
+        Type type;
+        byte flags = 0;
+        if (argumentType == Integer.class) {
+            type = Type.Integer;
+        } else if (argumentType == Float.class) {
+            type = Type.Float;
+        } else if (argumentType == Boolean.class) {
+            type = Type.Boolean;
+        } else if (argumentType == String.class) {
+            type = Type.String;
+        } else if (argumentType == Entity.class) {
+            type = Type.Entity;
+            flags = 0x01;
+        } else if (argumentType == Player.class) {
+            type = Type.Entity;
+            flags = 0x03;
+        } else if (argumentType == Location.class) {
+            type = Type.Vec3;
+        } else {
+            throw new IllegalStateException(argumentType + " cannot be a command argument");
+        }
+        CommandParameter pt = new CommandParameter(type);
+        pt.literalValue = argument.getName();
+        pt.flags = flags;
         return pt;
     }
 
