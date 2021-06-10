@@ -37,14 +37,14 @@ public class Inventory {
             statement.setInt(1, playerId);
             statement.execute();
             for (var item : slots.entrySet()) {
-                if (item.getValue().empty) {
+                if (item.getValue().empty()) {
                     continue;
                 }
                 statement = connection.prepareStatement(slotSql);
                 statement.setInt(1, playerId);
                 statement.setInt(2, item.getKey());
-                statement.setInt(3, item.getValue().itemId);
-                statement.setInt(4, item.getValue().count);
+                statement.setInt(3, item.getValue().itemId());
+                statement.setInt(4, item.getValue().count());
                 statement.execute();
             }
             connection.commit();
@@ -64,10 +64,7 @@ public class Inventory {
             var results = statement.executeQuery();
             if (!results.isClosed()) {
                 do {
-                    Slot s = new Slot();
-                    s.itemId = results.getInt(2);
-                    s.count = results.getInt(3);
-                    s.empty = false;
+                    Slot s = new Slot(results.getInt(2), results.getInt(3));
                     output.put((short) results.getInt(1), s);
                 } while (results.next());
             }

@@ -5,19 +5,13 @@ import com.pygostylia.osprey.nbt.NBTCompound;
 import java.io.IOException;
 import java.io.OutputStream;
 
-public class Slot {
-    boolean empty;
-    int itemId;
-    int count;
-    NBTCompound data;
-
-    Slot() {
-        empty = true;
+public record Slot(boolean empty, int itemId, int count, NBTCompound data) {
+    public Slot() {
+        this(true, 0, 0, null);
     }
 
-    void setItem(int item) {
-        itemId = item;
-        count = 1;
+    public Slot(int itemId, int count) {
+        this(false, itemId, count, null);
     }
 
     void encode(OutputStream os) throws IOException {
@@ -36,22 +30,29 @@ public class Slot {
     }
 
     static Slot from(Packet packet) throws IOException {
-        var p = new Slot();
-        p.empty = !packet.readBoolean();
-        if (!p.empty) {
-            p.itemId = packet.readVarInt();
-            p.count = packet.readShort();
-            // TODO: p.data = packet.readNBT();
+        boolean hasEntry = packet.readBoolean();
+        int itemId = 0;
+        int count = 0;
+        NBTCompound data = null;
+        if (hasEntry) {
+            itemId = packet.readVarInt();
+            count = packet.read();
+            int nbtEnd = packet.read();
+            if (nbtEnd != 0) {
+                System.out.println("You got an item with NBT! Better implement deserialization!");
+            }
+            // TODO: data = packet.readNBT();
         }
-        return p;
+        return new Slot(!hasEntry, itemId, count, data);
     }
 
     @Override
     public String toString() {
-        return "Slot{" +
-                "empty=" + empty +
-                ", itemId=" + itemId +
-                ", count=" + count +
-                '}';
+        if (empty) {
+            return "Slot[]";
+        } else {
+            return String.format("Slot[item=%s, count=%d]",
+                    Registry.itemName(itemId), count);
+        }
     }
 }

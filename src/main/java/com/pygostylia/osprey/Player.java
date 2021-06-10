@@ -907,7 +907,7 @@ public class Player extends Entity {
                 // "start" digging, which of course means do all of digging
                 // for players in creative mode, which is all of them for now.
                 var blockId = Main.world.block(location);
-                if (selectedItem().itemId == 586) {
+                if (selectedItem().itemId() == 586) {
                     sendBlockChange(location, blockId);
                     setEditorLocation(0, location);
                     return;
@@ -958,7 +958,7 @@ public class Player extends Entity {
     private void handlePlayerPlaceBlock(Packet packet) throws IOException {
         var hand = packet.readVarInt();
         var originalLocation = packet.readLocation();
-        if (selectedItem().itemId == 586 && hand == 0) {
+        if (selectedItem().itemId() == 586 && hand == 0) {
             setEditorLocation(1, originalLocation);
             return;
         }
@@ -1023,9 +1023,9 @@ public class Player extends Entity {
         }
 
         Slot item = selectedItem();
-        Integer blockId = Main.registry.itemToBlockDefault(item.itemId);
+        Integer blockId = Main.registry.itemToBlockDefault(item.itemId());
         if (blockId == null) {
-            printf("Attempt to place %d is invalid%n", item.itemId);
+            printf("Attempt to place %d is invalid%n", item.itemId());
             sendBlockChange(location, Main.world.block(location));
             return;
         }
@@ -1035,9 +1035,9 @@ public class Player extends Entity {
 
     boolean isHoldingItem(int item, int hand) {
         if (hand == 0) {
-            return selectedItem().itemId == item;
+            return selectedItem().itemId() == item;
         } else {
-            return offhandItem().itemId == item;
+            return offhandItem().itemId() == item;
         }
     }
 
