@@ -146,9 +146,7 @@ public class Connection {
 
     void sendKeepAlive() throws IOException {
         lastKeepAlive = rng.nextLong();
-        sendPacket(0x1F, (p) -> {
-            p.writeLong(lastKeepAlive);
-        });
+        sendPacket(0x1F, (p) -> p.writeLong(lastKeepAlive));
         lastKeepAliveTime = Instant.now();
     }
 
