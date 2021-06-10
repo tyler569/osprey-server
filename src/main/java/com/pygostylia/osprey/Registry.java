@@ -9,18 +9,19 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
-public class Registry {
-    JSONObject blockStates;
-    JSONObject registries;
-    Map<Integer, Integer> itemToBlock = new HashMap<>();
+public final class Registry {
+    static JSONObject blockStates;
+    static JSONObject registries;
+    static Map<Integer, Integer> itemToBlock = new HashMap<>();
+    static Map<Integer, String> itemNames = new HashMap<>();
 
-    public Registry(String directory) throws IOException {
+    public static void setup(String directory) throws IOException {
         blockStates = new JSONObject(Files.readString(Path.of(directory, "reports", "blocks.json")));
         registries = new JSONObject(Files.readString(Path.of(directory, "reports", "registries.json")));
-        populateItemToBlockDefault();
+        populateItemInfo();
     }
 
-    Integer blockDefaultId(String name) {
+    public static Integer blockDefaultId(String name) {
         var blockEntry = blockStates.optJSONObject(name);
         if (blockEntry == null) {
             return null;
@@ -37,22 +38,22 @@ public class Registry {
         return null;
     }
 
-    private void populateItemToBlockDefault() {
+    private static void populateItemInfo() {
         var items = registries.getJSONObject("minecraft:item").getJSONObject("entries");
         Iterator<String> itemsKeys = items.keys();
 
         while (itemsKeys.hasNext()) {
             String key = itemsKeys.next();
             var itemId = items.getJSONObject(key).getInt("protocol_id");
+            itemNames.put(itemId, key);
             var blockId = blockDefaultId(key);
             if (blockId != null) {
                 itemToBlock.put(itemId, blockId);
             }
         }
-
     }
 
-    public Integer lookupId(String registry, String name) {
+    public static Integer lookupId(String registry, String name) {
         var items = registries.getJSONObject(registry).getJSONObject("entries");
         var item = items.optJSONObject(name);
         if (item == null) {
@@ -61,25 +62,29 @@ public class Registry {
         return item.getInt("protocol_id");
     }
 
-    public Integer item(String name) {
+    public static Integer item(String name) {
         return lookupId("minecraft:item", name);
     }
 
-    public Integer entity(String name) {
+    public static Integer entity(String name) {
         return lookupId("minecraft:entity_type", name);
     }
 
-    public Integer blockType(String name) {
+    public static Integer blockType(String name) {
         return lookupId("minecraft:block", name);
     }
 
-    public Integer itemToBlockDefault(int item) {
+    public static Integer itemToBlockDefault(int item) {
         return itemToBlock.get(item);
     }
 
-    public Integer itemToBlockDefault(String itemName) {
+    public static Integer itemToBlockDefault(String itemName) {
         var item = item(itemName);
         if (item == null) return null;
         return itemToBlock.get(item);
+    }
+
+    public static String itemName(int itemId) {
+        return itemNames.get(itemId);
     }
 }

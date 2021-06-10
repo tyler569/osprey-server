@@ -96,7 +96,6 @@ public class Main {
     private static final Map<Integer, Player> players = new ConcurrentHashMap<>();
     private static final Map<Integer, Entity> entities = new ConcurrentHashMap<>();
     static ChunkDispatcher chunkDispatcher = new ChunkDispatcher();
-    static Registry registry;
     static KeyPair encryptionKey;
     static World world;
     static CommandBucket commands;
@@ -180,14 +179,14 @@ public class Main {
     }
 
     public static void main(String[] args) throws IOException, SQLException, NoSuchAlgorithmException {
-        registry = new Registry("generated");
-
         world = World.open("world.db");
 
         final var kpg = KeyPairGenerator.getInstance("RSA");
         kpg.initialize(1024);
         encryptionKey = kpg.generateKeyPair();
 
+        Registry.setup("generated");
+        BlockState.setup();
         commands = new CommandBucket();
         commandPacket = commands.brigadierPacket();
 

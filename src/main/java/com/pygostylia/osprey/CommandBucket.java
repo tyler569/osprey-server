@@ -338,7 +338,8 @@ public class CommandBucket {
         try {
             blockId = Integer.parseInt(args[1]);
         } catch (NumberFormatException ignored) {
-            blockId = Main.registry.blockDefaultId(args[1]);
+            var state = new BlockState(args[1]);
+            blockId = state.protocolId();
         }
         int count = 0;
         for (int y = Integer.min(l1.y(), l2.y()); y <= Integer.max(l1.y(), l2.y()); y++) {

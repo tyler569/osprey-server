@@ -1001,7 +1001,7 @@ public class Player extends Entity {
 
         if (placeFalling) {
             System.out.println("Spawn falling block");
-            final int sandBlock = Main.registry.itemToBlockDefault(selectedItem().itemId);
+            final int sandBlock = Registry.itemToBlockDefault(selectedItem().itemId());
             final Position target = Position.middle(location);
             FallingBlockEntity block = new FallingBlockEntity(target, sandBlock);
             sendBlockChange(location, current);
@@ -1023,7 +1023,7 @@ public class Player extends Entity {
         }
 
         Slot item = selectedItem();
-        Integer blockId = Main.registry.itemToBlockDefault(item.itemId());
+        Integer blockId = Registry.itemToBlockDefault(item.itemId());
         if (blockId == null) {
             printf("Attempt to place %d is invalid%n", item.itemId());
             sendBlockChange(location, Main.world.block(location));
