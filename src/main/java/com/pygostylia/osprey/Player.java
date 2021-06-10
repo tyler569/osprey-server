@@ -869,6 +869,7 @@ public class Player extends Entity {
                     }
                 }
                 case 6 -> p.write((byte[]) value);
+                case 7 -> p.write(((Boolean) value) ? 1 : 0);
                 case 9 -> {
                     if (value instanceof Position position) {
                         p.writeLong(position.location().encode());
