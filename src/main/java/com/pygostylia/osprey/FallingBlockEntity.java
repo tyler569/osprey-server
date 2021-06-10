@@ -28,7 +28,7 @@ public class FallingBlockEntity extends ObjectEntity {
     @Override
     public void spawn() {
         super.spawn();
-        Main.entityController.submit(this::destroy, 30, TimeUnit.SECONDS);
+        Main.scheduler.submit(this::destroy, 30, TimeUnit.SECONDS);
     }
 
     @Override

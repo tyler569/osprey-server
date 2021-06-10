@@ -36,8 +36,8 @@ public class ArrowEntity extends ObjectEntity {
     @Override
     public void spawn() {
         super.spawn();
-        tick = Main.entityController.submitForEachTick(this::stepPhysics);
-        Main.entityController.submit(this::destroy, 30, TimeUnit.SECONDS);
+        tick = Main.scheduler.submitForEachTick(this::stepPhysics);
+        Main.scheduler.submit(this::destroy, 30, TimeUnit.SECONDS);
         if (critical) {
             for (Player player : playersWithLoaded) {
                 try {

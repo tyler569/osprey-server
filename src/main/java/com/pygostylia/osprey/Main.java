@@ -101,7 +101,7 @@ public class Main {
     static CommandBucket commands;
     static byte[] commandPacket;
     static int nextEntityId = 1;
-    static EntityController entityController = new EntityController();
+    static Scheduler scheduler = new Scheduler();
 
     static void addPlayer(Player player) {
         players.put(player.id, player);
@@ -191,7 +191,7 @@ public class Main {
         commandPacket = commands.brigadierPacket();
 
         new Thread(chunkDispatcher).start();
-        new Thread(entityController).start();
+        new Thread(scheduler).start();
 
         final var socket = new ServerSocket(25565);
         System.out.println("Ready");

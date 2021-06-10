@@ -2,13 +2,14 @@ package com.pygostylia.osprey;
 
 import java.util.concurrent.*;
 
-public class EntityController implements Runnable {
+public class Scheduler implements Runnable {
     DelayQueue<ScheduledFuture<?>> events = new DelayQueue<>();
     ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
 
-    public void submit(Runnable event, int time, TimeUnit unit) {
+    public ScheduledFuture<?> submit(Runnable event, int time, TimeUnit unit) {
         ScheduledFuture<?> future = executor.schedule(event, time, unit);
         events.add(future);
+        return future;
     }
 
     public ScheduledFuture<?> submitForEachTick(Runnable event) {

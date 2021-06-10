@@ -29,7 +29,7 @@ public class FireworkEntity extends ObjectEntity {
     @Override
     public void spawn() {
         super.spawn();
-        Main.entityController.submit(this::destroy, 1, TimeUnit.SECONDS);
+        Main.scheduler.submit(this::destroy, 1, TimeUnit.SECONDS);
     }
 
     public void spawnWithRider(int ridingEntity) {
