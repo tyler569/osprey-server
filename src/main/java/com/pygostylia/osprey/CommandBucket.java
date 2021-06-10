@@ -419,6 +419,64 @@ public class CommandBucket {
         sender.bulletTime ^= true;
     }
 
+    @Command("spawn")
+    void spawn(Player sender, String[] args) throws IOException {
+        sender.position = new Position();
+        sender.teleport();
+    }
+
+    @Command(value = "entitystatus", args = {"id: integer", "status: integer(0,255)"})
+    @CommandAlias("es")
+    void entityStatus(Player sender, String[] args) throws IOException {
+        Main.forEachPlayer(player -> {
+            player.sendEntityStatus(Integer.parseInt(args[1]), Byte.parseByte(args[2]));
+        });
+    }
+
+    @Command("cloud")
+    void cloud(Player sender, String[] args) throws IOException {
+        var future = Main.scheduler.submitForEachTick(() -> {
+            try {
+                Main.forEachPlayer(player -> {
+                    player.sendEntityStatus(sender.id, (byte) 43);
+                });
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        });
+        sender.addFuture(future);
+    }
+
+    @Command(value = "cancel", args = "job: integer")
+    void cancel(Player sender, String[] args) throws IOException {
+        int job = Integer.parseInt(args[1]);
+        var future = sender.futures.remove(job);
+        future.cancel(false);
+        sender.sendNotification("Job " + job + " cancelled");
+    }
+
+    @Command("followlightining")
+    void followLightning(Player sender, String[] args) throws IOException {
+        var future = Main.scheduler.submitForEachTick(() -> {
+            Position position;
+            if (sender.isSneaking) {
+                position = sender.position.offset(0, 1.5, 0);
+            } else {
+                position = sender.position.offset(0, 1.8, 0);
+            }
+            var bolt = new LightningEntity(position);
+            try {
+                Main.forEachPlayer(player -> {
+                    player.sendSpawnEntity(bolt);
+                });
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            bolt.destroy();
+        });
+        sender.addFuture(future);
+    }
+
 
     // testing new Command interface using method parameters
 
