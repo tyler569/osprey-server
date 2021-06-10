@@ -7,6 +7,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Scanner;
@@ -120,6 +122,10 @@ public class BlockState {
         return sb.toString();
     }
 
+    public boolean equals(BlockState other) {
+        return state == other.state;
+    }
+
     public String blockName() {
         return blockNames.get(blockId());
     }
@@ -129,7 +135,7 @@ public class BlockState {
     }
 
     public int blockId() {
-        return (int) state & 0x3FF;
+        return (int) state & ((1 << blockIdLength) - 1);
     }
 
     public Short protocolId() {
@@ -194,7 +200,7 @@ public class BlockState {
         return typeFields.get(type());
     }
 
-    // Several of these should be local to the generating code
+    // Several of these should probably be local to the generating code
     private static final Map<String, Integer> blockIds = new HashMap<>();
     private static final Map<Integer, String> blockNames = new HashMap<>();
     private static final Map<Map<String, BitField>, Type> blockStateTypes = new HashMap<>();
@@ -261,7 +267,7 @@ public class BlockState {
         }
     }
 
-    public static void main(String[] args) throws IOException {
+    public static void setup() throws IOException {
         JSONObject blocks = new JSONObject(Files.readString(Path.of("generated/reports/blocks.json")));
         JSONObject registry = new JSONObject(Files.readString(Path.of("generated/reports/registries.json")));
         JSONObject blockIdsJSON = registry.getJSONObject("minecraft:block").getJSONObject("entries");
@@ -271,18 +277,15 @@ public class BlockState {
             blockNames.put(blockIdsJSON.getJSONObject(key).getInt("protocol_id"), key);
         }
 
-        System.out.println(blockIds);
-        System.out.println(blockNames);
-
         for (var key : blocks.keySet()) {
             JSONObject block = blocks.getJSONObject(key);
-            final var props = block.optJSONObject("properties");
-            final var thisTypeFields = generatePropFields(props);
-            final Type thisType = findOrCreateType(thisTypeFields);
-            final var blockId = blockIds.get(key);
-            blockTypes.put(blockId, thisType);
-            var blockType = blockTypes.get(blockId);
-            var fields = typeFields.get(blockType);
+            {
+                final var props = block.optJSONObject("properties");
+                final var thisTypeFields = generatePropFields(props);
+                final Type thisType = findOrCreateType(thisTypeFields);
+                final var blockId = blockIds.get(key);
+                blockTypes.put(blockId, thisType);
+            }
 
             JSONArray states = block.optJSONArray("states");
             for (Object map : states) {
@@ -292,10 +295,14 @@ public class BlockState {
                 internalLongs.put(stateId, blockState.state);
                 protocolIds.put(blockState.state, stateId);
                 if (registryState.optBoolean("default")) {
-                    blockDefaultStates.put(blockId, stateId);
+                    blockDefaultStates.put(blockState.blockId(), stateId);
                 }
             }
         }
+    }
+
+    public static void main(String[] args) throws IOException {
+        setup();
         // System.out.println(blockStateTypes);
         // System.out.println(typeFields);
         // System.out.println(blockTypes);
@@ -305,6 +312,22 @@ public class BlockState {
             var state = new BlockState(protocolId);
             System.out.printf("%s %016x %s%n", state.protocolId(), state.longValue(), state);
         }
+
+        Instant now = Instant.now();
+        for (short protocolId = 0; protocolId < 17111; protocolId++) {
+            var state = new BlockState(protocolId);
+            var stateName = state.toString();
+            var parsed = new BlockState(stateName);
+            if (parsed.protocolId() != protocolId) {
+                throw new AssertionError("Conversion failure (protocolId)");
+            }
+            if (!parsed.toString().equals(state.toString())) {
+                throw new AssertionError("Conversion failure (toString)");
+            }
+        }
+        Instant then = Instant.now();
+        Duration duration = Duration.between(now, then);
+        System.out.println(duration);
 
         Scanner input = new Scanner(System.in);
         while (true) {
