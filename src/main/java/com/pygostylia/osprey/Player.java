@@ -13,6 +13,7 @@ import java.sql.SQLException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 
@@ -49,6 +50,15 @@ public class Player extends Entity {
     boolean placeFalling;
     boolean boom;
     boolean bulletTime;
+    Map<Integer, ScheduledFuture<?>> futures = new HashMap<>();
+    private int nextFuture = 1;
+
+    int addFuture(ScheduledFuture<?> future) throws IOException {
+        var index = nextFuture++;
+        futures.put(index, future);
+        sendNotification("Job submitted as " + index);
+        return index;
+    }
 
     Player(Socket sock) throws IOException {
         super();
@@ -63,7 +73,8 @@ public class Player extends Entity {
 
     static void runThread(Socket sock) throws IOException {
         var player = new Player(sock);
-        new Thread(player::connectionWrapper).start();
+        var thread = new Thread(player::connectionWrapper);
+        thread.start();
     }
 
     void connectionWrapper() {
