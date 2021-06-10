@@ -324,6 +324,7 @@ public class Player extends Entity {
         loadedChunks = new HashSet<>();
         editorLocations = new Location[2];
         sendInventory();
+        // sendTags();
         sendHeldItemChange((byte) selectedHotbarSlot);
         Main.forEachPlayer((player) -> {
             player.sendAddPlayer(this);
@@ -482,6 +483,25 @@ public class Player extends Entity {
             println("Keepalives did not match!");
         }
         ping = connection.pingTime();
+    }
+
+    public void sendTags() throws IOException {
+        connection.sendPacket(0x5B, (p) -> {
+            p.writeVarInt(0); // block tags
+            p.writeVarInt(0); // item tags
+
+            p.writeVarInt(2); // fluid tags
+            p.writeString("minecraft:water");
+            p.writeVarInt(2); // count
+            p.writeVarInt(1); // flowing water
+            p.writeVarInt(2); // water
+            p.writeString("minecraft:lava");
+            p.writeVarInt(2); // count
+            p.writeVarInt(3); // flowing lava
+            p.writeVarInt(4); // lava
+
+            p.writeVarInt(0); // entity tags
+        });
     }
 
     public void sendAddPlayers(Collection<Player> players) throws IOException {
