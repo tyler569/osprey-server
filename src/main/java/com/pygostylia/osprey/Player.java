@@ -35,7 +35,7 @@ public class Player extends Entity {
     Inventory inventory;
     int selectedHotbarSlot;
     Set<ChunkLocation> loadedChunks;
-    int renderDistance;
+    int renderDistance = 10;
     boolean firstSettings = true;
     Location[] editorLocations;
     boolean isElytraFlying;
@@ -346,6 +346,7 @@ public class Player extends Entity {
         });
         Main.addPlayer(this);
         Main.forEachPlayer((player) -> player.sendNotification(String.format("%s has joined the game (id %d)", name, id)));
+        initialSpawnPlayer();
     }
 
     public void sendEntityTeleport(int entityId, Position position) throws IOException {
@@ -459,6 +460,8 @@ public class Player extends Entity {
 
     void initialSpawnPlayer() throws IOException {
         sendSpawnPosition();
+        sendPositionLook();
+        sendUpdateChunkPosition();
         loadCorrectChunks();
         sendUpdateChunkPosition();
         sendPositionLook();
@@ -474,7 +477,7 @@ public class Player extends Entity {
         int mainHand = packet.readVarInt();
         if (firstSettings) {
             firstSettings = false;
-            initialSpawnPlayer();
+            // initialSpawnPlayer();
         } else {
             loadCorrectChunks();
         }
@@ -904,7 +907,7 @@ public class Player extends Entity {
 
         if ((flags & 0x02) != 0) {
             if (vehicle.get() instanceof BoatEntity boat) {
-                boat.removePassenger(this);
+                boat.dismount(this);
                 position.moveBy(0, 1, 0);
                 teleport();
             }
