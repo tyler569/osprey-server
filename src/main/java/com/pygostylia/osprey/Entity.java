@@ -75,4 +75,12 @@ abstract public class Entity {
         if (position.z + ex < point.z || point.z < position.z - ex) return false;
         return !(position.y + ey < point.y) && !(point.y <= position.y);
     }
+
+    boolean collides(Location block) {
+        return false;
+    }
+
+    boolean collides(Entity entity) {
+        return false;
+    }
 }
