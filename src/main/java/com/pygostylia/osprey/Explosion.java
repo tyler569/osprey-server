@@ -9,9 +9,10 @@ public class Explosion {
 
     static Collection<Location> generateBoomBlocks(Location center, float power) {
         var locations = new ArrayList<Location>();
-        for (int x = -20; x < 20; x++) {
-            for (int y = -20; y < 20; y++) {
-                for (int z = -20; z < 20; z++) {
+        final int maxRadius = 20;
+        for (int x = -maxRadius; x < maxRadius; x++) {
+            for (int y = -maxRadius; y < maxRadius; y++) {
+                for (int z = -maxRadius; z < maxRadius; z++) {
                     var location = center.offset(x, y, z);
                     if (location.y() > 255 || location.y() < 0) continue;
                     double distance = center.distance(location);
