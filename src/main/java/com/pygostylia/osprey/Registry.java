@@ -14,11 +14,13 @@ public final class Registry {
     static JSONObject registries;
     static Map<Integer, Integer> itemToBlock = new HashMap<>();
     static Map<Integer, String> itemNames = new HashMap<>();
+    static Map<Integer, String> entityNames = new HashMap<>();
 
     public static void setup(String directory) throws IOException {
         blockStates = new JSONObject(Files.readString(Path.of(directory, "reports", "blocks.json")));
         registries = new JSONObject(Files.readString(Path.of(directory, "reports", "registries.json")));
         populateItemInfo();
+        populateEntityInfo();
     }
 
     public static Integer blockDefaultId(String name) {
@@ -50,6 +52,17 @@ public final class Registry {
             if (blockId != null) {
                 itemToBlock.put(itemId, blockId);
             }
+        }
+    }
+
+    private static void populateEntityInfo() {
+        var entities = registries.getJSONObject("minecraft:entity_type").getJSONObject("entities");
+        Iterator<String> entitiesKeys = entities.keys();
+
+        while (entitiesKeys.hasNext()) {
+            String key = entitiesKeys.next();
+            var entityId = entities.getJSONObject(key).getInt("protocol_id");
+            entityNames.put(entityId, key);
         }
     }
 
@@ -86,5 +99,9 @@ public final class Registry {
 
     public static String itemName(int itemId) {
         return itemNames.get(itemId);
+    }
+
+    public static String entityName(int entityId) {
+        return entityNames.get(entityId);
     }
 }
