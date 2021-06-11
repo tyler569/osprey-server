@@ -14,6 +14,7 @@ public class CommandParameter {
         Player,
         Vec2,
         Vec3,
+        BlockState,
         NBT,
         Literal,
     }
@@ -44,6 +45,7 @@ public class CommandParameter {
             case Entity, Player -> "minecraft:entity";
             case Vec2 -> "minecraft:vec2";
             case Vec3 -> "minecraft:vec3";
+            case BlockState -> "minecraft:block_state";
             case NBT -> "minecraft:nbt";
             case Literal -> null;
         };
@@ -80,6 +82,7 @@ public class CommandParameter {
             case "player" -> Type.Player;
             case "vec2", "vector2" -> Type.Vec2;
             case "vec3", "vector3" -> Type.Vec3;
+            case "block", "block_state" -> Type.BlockState;
             case "nbt" -> Type.NBT;
             default -> throw new IllegalStateException("Unexpected value: " + type.toLowerCase());
         };
@@ -116,6 +119,8 @@ public class CommandParameter {
         } else if (argumentType == Player.class) {
             type = Type.Entity;
             flags = 0x03;
+        } else if (argumentType == BlockState.class) {
+            type = Type.BlockState;
         } else if (argumentType == Location.class) {
             type = Type.Vec3;
         } else {
@@ -198,7 +203,7 @@ public class CommandParameter {
             case Float -> {
                 return isFloat(args[offset], min, max) ? 1 : 0;
             }
-            case String, Player, Entity, NBT -> {
+            case String, Player, Entity, NBT, BlockState -> {
                 return 1;
             }
             case Vec2 -> {

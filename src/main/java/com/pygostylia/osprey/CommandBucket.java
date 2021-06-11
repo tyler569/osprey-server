@@ -330,7 +330,7 @@ public class CommandBucket {
         sender.unsetEditorSelection();
     }
 
-    @Command(value = "/set", args = {"block: string"})
+    @Command(value = "/set", args = {"block: block_state"})
     void editorSet(Player sender, String[] args) throws IOException {
         var l1 = sender.editorLocations[0];
         var l2 = sender.editorLocations[1];
@@ -476,7 +476,6 @@ public class CommandBucket {
         });
         sender.addFuture(future);
     }
-
 
     // testing new Command interface using method parameters
 
