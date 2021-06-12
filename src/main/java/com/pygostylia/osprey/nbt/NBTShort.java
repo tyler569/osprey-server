@@ -18,4 +18,9 @@ public class NBTShort extends NBTValue {
     void encode(OutputStream os) throws IOException {
         Conversion.outputShort(os, value);
     }
+
+    @Override
+    public String toString() {
+        return value + "s";
+    }
 }

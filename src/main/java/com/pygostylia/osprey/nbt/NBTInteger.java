@@ -18,4 +18,9 @@ public class NBTInteger extends NBTValue {
     void encode(OutputStream os) throws IOException {
         Conversion.outputInteger(os, value);
     }
+
+    @Override
+    public String toString() {
+        return value + "";
+    }
 }

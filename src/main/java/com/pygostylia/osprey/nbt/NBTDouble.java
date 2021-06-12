@@ -18,4 +18,9 @@ public class NBTDouble extends NBTValue {
     void encode(OutputStream os) throws IOException {
         Conversion.outputDouble(os, value);
     }
+
+    @Override
+    public String toString() {
+        return value + "";
+    }
 }

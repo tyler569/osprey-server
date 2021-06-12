@@ -16,4 +16,9 @@ public class NBTEnd extends NBTValue {
     void encode(OutputStream os) throws IOException {
         os.write(0);
     }
+
+    @Override
+    public String toString() {
+        return "(end)";
+    }
 }

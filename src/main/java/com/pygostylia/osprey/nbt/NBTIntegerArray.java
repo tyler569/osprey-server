@@ -32,4 +32,9 @@ public class NBTIntegerArray extends NBTValue {
     public boolean add(int e) {
         return value.add(e);
     }
+
+    @Override
+    public String toString() {
+        return "IntegerArray" + value.toString();
+    }
 }

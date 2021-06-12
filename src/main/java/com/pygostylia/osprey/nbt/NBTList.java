@@ -35,4 +35,22 @@ public class NBTList<T extends NBTValue> extends NBTValue {
     public boolean add(T v) {
         return value.add(v);
     }
+
+    @Override
+    public String toString() {
+        return "Array" + value.toString();
+    }
+
+    @Override
+    public String toStringPretty(int depth) {
+        var sb = new StringBuilder();
+        sb.append("Array[\n");
+        for (var v : value) {
+            sb.append("    ".repeat(depth + 1));
+            sb.append(v.toStringPretty(depth + 1));
+            sb.append(",\n");
+        }
+        sb.append("    ".repeat(depth)).append("]");
+        return sb.toString();
+    }
 }

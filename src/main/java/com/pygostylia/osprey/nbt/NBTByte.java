@@ -18,4 +18,9 @@ public class NBTByte extends NBTValue {
     void encode(OutputStream os) throws IOException {
         os.write(value);
     }
+
+    @Override
+    public String toString() {
+        return value + "b";
+    }
 }

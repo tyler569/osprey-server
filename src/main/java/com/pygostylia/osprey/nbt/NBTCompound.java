@@ -159,4 +159,39 @@ public class NBTCompound extends NBTValue implements Map<String, NBTValue> {
     public NBTValue get(Object key) {
         return value.get(key);
     }
+
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        if (name != null) {
+            sb.append("\"").append(name).append("\"");
+            sb.append(": ");
+        }
+        sb.append("{");
+        for (var kv : value.entrySet()) {
+            sb.append("\"").append(kv.getKey()).append("\": ");
+            sb.append(kv.getValue().toString());
+        }
+        sb.append("}");
+        return sb.toString();
+    }
+
+    @Override
+    public String toStringPretty(int depth) {
+        StringBuilder sb = new StringBuilder();
+        // sb.append("    ".repeat(depth));
+        if (name != null) {
+            sb.append("\"").append(name).append("\"");
+            sb.append(": ");
+        }
+        sb.append("{\n");
+        for (var kv : value.entrySet()) {
+            sb.append("    ".repeat(depth + 1));
+            sb.append("\"").append(kv.getKey()).append("\": ");
+            sb.append(kv.getValue().toStringPretty(depth + 1));
+            sb.append(",\n");
+        }
+        sb.append("    ".repeat(depth)).append("}");
+        return sb.toString();
+    }
 }

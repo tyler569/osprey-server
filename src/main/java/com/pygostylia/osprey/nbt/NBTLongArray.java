@@ -28,4 +28,9 @@ public class NBTLongArray extends NBTValue {
             Conversion.outputLong(os, v);
         }
     }
+
+    @Override
+    public String toString() {
+        return "LongArray" + value.toString();
+    }
 }

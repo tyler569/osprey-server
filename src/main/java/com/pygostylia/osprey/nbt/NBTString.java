@@ -18,4 +18,9 @@ public class NBTString extends NBTValue {
     void encode(OutputStream os) throws IOException {
         Conversion.putModifiedString(os, value);
     }
+
+    @Override
+    public String toString() {
+        return "\"" + value + "\"";
+    }
 }
