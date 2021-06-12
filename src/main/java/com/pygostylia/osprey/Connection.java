@@ -31,6 +31,7 @@ public class Connection {
     private final static Duration keepAliveInterval = Duration.ofSeconds(5);
     private final static Random rng = new Random();
     boolean debug;
+    int lastPacketType;
 
     Connection(Socket s) throws IOException {
         socket = s;
@@ -99,11 +100,14 @@ public class Connection {
                 stream.write(m.toByteArray());
                 stream.finish();
                 var compressedSize = inner.size();
-                Protocol.writeVarInt(outstream, compressedSize + VarInt.len(originalSize));
-                Protocol.writeVarInt(outstream, originalSize);
+                synchronized (socket) {
+                    Protocol.writeVarInt(outstream, compressedSize + VarInt.len(originalSize));
+                    Protocol.writeVarInt(outstream, originalSize);
 
-                outstream.write(inner.toByteArray());
-                outstream.flush();
+                    outstream.write(inner.toByteArray());
+                    outstream.flush();
+                    lastPacketType = type;
+                }
             } else {
                 var data = m.toByteArray();
                 synchronized (socket) {
@@ -111,6 +115,7 @@ public class Connection {
                     VarInt.write(outstream, 0);
                     outstream.write(data);
                     outstream.flush();
+                    lastPacketType = type;
                 }
             }
         }
