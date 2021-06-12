@@ -294,7 +294,7 @@ public class CommandBucket {
         sender.teleport(destination);
     }
 
-    @Command(value = "teleport", args = {"destination: player"})
+    @Command(value = "teleport", args = {"target: player"})
     void teleportPlayer(Player sender, String[] args) throws IOException {
         if (args.length < 2) {
             sender.sendError("Not enough arguments");
