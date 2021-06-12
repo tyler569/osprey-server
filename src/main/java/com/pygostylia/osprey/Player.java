@@ -13,6 +13,7 @@ import java.sql.SQLException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
@@ -34,10 +35,11 @@ public class Player extends Entity {
     Integer playerId;
     Inventory inventory;
     int selectedHotbarSlot;
-    Set<ChunkLocation> loadedChunks;
+    ConcurrentHashMap<ChunkLocation, Boolean> loadedChunks = new ConcurrentHashMap<>();
+    ConcurrentHashMap<ChunkLocation, Boolean> dispatchedChunks = new ConcurrentHashMap<>();
     int renderDistance = 10;
     boolean firstSettings = true;
-    Location[] editorLocations;
+    Location[] editorLocations = new Location[2];
     boolean isElytraFlying;
     boolean isCreativeFlying;
     boolean isSneaking;
@@ -142,7 +144,7 @@ public class Player extends Entity {
                 Packet p = connection.readPacket();
                 handlePacket(p);
             } catch (SocketException e) {
-                printf("Exception");
+                printf("Exception! %s;  Last packet was %#02x%n", e.getMessage(), connection.lastPacketType);
                 e.printStackTrace();
                 connection.close();
             }
@@ -332,8 +334,6 @@ public class Player extends Entity {
         sendAddPlayer(this);
         sendBrand(Main.brand);
         sendUpdateChunkPosition();
-        loadedChunks = new HashSet<>();
-        editorLocations = new Location[2];
         sendInventory();
         // sendTags();
         sendHeldItemChange((byte) selectedHotbarSlot);
@@ -404,23 +404,6 @@ public class Player extends Entity {
 
     // handle play packets
 
-    public void sendChunk(ChunkLocation chunkLocation) throws IOException {
-        connection.sendPacket(0x20, (p) -> {
-            p.writeInt(chunkLocation.x());
-            p.writeInt(chunkLocation.z());
-            Main.world.load(chunkLocation).encodePacket(p);
-        });
-        loadedChunks.add(chunkLocation);
-    }
-
-    void unloadChunk(ChunkLocation chunkLocation) throws IOException {
-        connection.sendPacket(0x1c, (p) -> {
-            p.writeInt(chunkLocation.x());
-            p.writeInt(chunkLocation.z());
-        });
-        loadedChunks.remove(chunkLocation);
-    }
-
     public void sendInventory() throws IOException {
         connection.sendPacket(0x13, (p) -> {
             p.writeByte((byte) 0);
@@ -463,8 +446,6 @@ public class Player extends Entity {
         sendPositionLook();
         sendUpdateChunkPosition();
         loadCorrectChunks();
-        sendUpdateChunkPosition();
-        sendPositionLook();
     }
 
     private void handleSettings(Packet packet) throws IOException {
@@ -665,6 +646,26 @@ public class Player extends Entity {
         });
     }
 
+    public void sendChunk(ChunkLocation chunkLocation) throws IOException {
+        connection.sendPacket(0x20, (p) -> {
+            p.writeInt(chunkLocation.x());
+            p.writeInt(chunkLocation.z());
+            Main.world.load(chunkLocation).encodePacket(p);
+        });
+        loadedChunks.put(chunkLocation, true);
+        dispatchedChunks.remove(chunkLocation);
+    }
+
+    void unloadChunk(ChunkLocation chunkLocation) throws IOException {
+        connection.sendPacket(0x1c, (p) -> {
+            p.writeInt(chunkLocation.x());
+            p.writeInt(chunkLocation.z());
+        });
+        loadedChunks.remove(chunkLocation);
+        dispatchedChunks.remove(chunkLocation);
+        // TODO: cancel any pending dispatches in ChunkDispatcher
+    }
+
     void loadCorrectChunks(int chunkX, int chunkZ) throws IOException {
         Set<ChunkLocation> shouldLoad = new HashSet<>();
         for (int cx = chunkX - renderDistance; cx <= chunkX + renderDistance; cx++) {
@@ -672,12 +673,14 @@ public class Player extends Entity {
                 shouldLoad.add(new ChunkLocation(cx, cz));
             }
         }
-        var unloadChunks = new HashSet<>(loadedChunks);
+        var unloadChunks = new HashSet<>(loadedChunks.keySet());
         unloadChunks.removeAll(shouldLoad);
         for (var chunk : unloadChunks) {
             unloadChunk(chunk);
         }
-        shouldLoad.removeAll(loadedChunks);
+        shouldLoad.removeAll(loadedChunks.keySet());
+        shouldLoad.removeAll(dispatchedChunks.keySet());
+        shouldLoad.forEach(location -> dispatchedChunks.put(location, true));
         Main.chunkDispatcher.dispatch(this, shouldLoad.stream()
                 .sorted(Comparator.comparingDouble(a -> a.distanceFrom(position.chunkLocation()))));
     }
