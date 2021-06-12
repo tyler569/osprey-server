@@ -56,7 +56,7 @@ public final class Registry {
     }
 
     private static void populateEntityInfo() {
-        var entities = registries.getJSONObject("minecraft:entity_type").getJSONObject("entities");
+        var entities = registries.getJSONObject("minecraft:entity_type").getJSONObject("entries");
         Iterator<String> entitiesKeys = entities.keys();
 
         while (entitiesKeys.hasNext()) {
