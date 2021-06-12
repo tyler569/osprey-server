@@ -4,6 +4,7 @@ import com.pygostylia.osprey.nbt.NBTCompound;
 
 import java.io.*;
 import java.nio.ByteBuffer;
+import java.nio.ShortBuffer;
 import java.util.Arrays;
 import java.util.Random;
 import java.util.zip.DeflaterOutputStream;
@@ -12,16 +13,15 @@ import java.util.zip.InflaterInputStream;
 public class Chunk {
     static final int chunkSectionBlockCount = 16 * 16 * 16;
     static final int chunkBlockCount = chunkSectionBlockCount * 16;
-    short[] blockArray;
-    short[] heightMap;
+    ByteBuffer blockData = ByteBuffer.allocate(chunkBlockCount * 2);
+    ShortBuffer blockArray = blockData.asShortBuffer();
+    short[] heightMap = new short[256];
 
     byte[] cachedPacket;
     boolean cacheValid;
     boolean modified;
 
     Chunk() {
-        blockArray = new short[chunkBlockCount];
-        heightMap = new short[256];
     }
 
     static int diamond = Registry.blockDefaultId("minecraft:diamond_ore");
@@ -44,7 +44,7 @@ public class Chunk {
     }
 
     void setBlock(int b, short id) {
-        blockArray[b] = id;
+        blockArray.put(b, id);
         cacheValid = false;
         modified = true;
     }
@@ -70,7 +70,7 @@ public class Chunk {
     }
 
     short block(Location location) {
-        return blockArray[location.blockIndex()];
+        return blockArray.get(location.blockIndex());
     }
 
     void encodeMap(OutputStream chunkData) throws IOException {
@@ -83,7 +83,7 @@ public class Chunk {
             int count = 0;
             for (int by = 0; by < chunkSectionBlockCount; by++) {
                 int blockIndex = chunkSectionY * chunkSectionBlockCount + by;
-                var block = (long) blockArray[blockIndex];
+                var block = (long) blockArray.get(blockIndex);
                 if (block != 0) {
                     count++;
                 }
@@ -159,9 +159,7 @@ public class Chunk {
     byte[] encodeBlob() throws IOException {
         var inner = new ByteArrayOutputStream();
         var deflater = new DeflaterOutputStream(inner);
-        var buffer = ByteBuffer.allocate(chunkBlockCount * Short.BYTES);
-        buffer.asShortBuffer().put(blockArray);
-        deflater.write(buffer.array());
+        deflater.write(blockData.array());
         deflater.finish();
         return inner.toByteArray();
     }
@@ -172,8 +170,8 @@ public class Chunk {
             var inflated = stream.readAllBytes();
             var c = new Chunk();
 
-            var buffer = ByteBuffer.wrap(inflated);
-            buffer.asShortBuffer().get(c.blockArray);
+            c.blockData = ByteBuffer.wrap(inflated);
+            c.blockArray = c.blockData.asShortBuffer();
             return c;
         } catch (EOFException e) {
             System.out.println("Problem decoding chunk from disk!");
