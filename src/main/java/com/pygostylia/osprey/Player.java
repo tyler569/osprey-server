@@ -9,6 +9,8 @@ import java.net.Socket;
 import java.net.SocketException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.sql.SQLException;
 import java.time.Duration;
 import java.time.Instant;
@@ -335,7 +337,7 @@ public class Player extends Entity {
         sendBrand(Main.brand);
         sendUpdateChunkPosition();
         sendInventory();
-        // sendTags();
+        sendTags();
         sendHeldItemChange((byte) selectedHotbarSlot);
         Main.forEachPlayer((player) -> {
             player.sendAddPlayer(this);
@@ -480,23 +482,21 @@ public class Player extends Entity {
         ping = connection.pingTime();
     }
 
+    static byte[] tagsPacketArray = null;
+
+    static {
+        try {
+            tagsPacketArray = Files.readAllBytes(Path.of("tagsPacket.dat"));
+        } catch (IOException ignored) {
+        }
+    }
+
     public void sendTags() throws IOException {
-        connection.sendPacket(0x5B, (p) -> {
-            p.writeVarInt(0); // block tags
-            p.writeVarInt(0); // item tags
-
-            p.writeVarInt(2); // fluid tags
-            p.writeString("minecraft:water");
-            p.writeVarInt(2); // count
-            p.writeVarInt(1); // flowing water
-            p.writeVarInt(2); // water
-            p.writeString("minecraft:lava");
-            p.writeVarInt(2); // count
-            p.writeVarInt(3); // flowing lava
-            p.writeVarInt(4); // lava
-
-            p.writeVarInt(0); // entity tags
-        });
+        if (tagsPacketArray != null) {
+            connection.sendPacket(0x5B, (p) -> {
+                p.write(tagsPacketArray);
+            });
+        }
     }
 
     public void sendAddPlayers(Collection<Player> players) throws IOException {
