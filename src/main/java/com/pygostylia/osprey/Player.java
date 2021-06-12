@@ -37,8 +37,8 @@ public class Player extends Entity {
     Integer playerId;
     Inventory inventory;
     int selectedHotbarSlot;
-    ConcurrentHashMap<ChunkLocation, Boolean> loadedChunks = new ConcurrentHashMap<>();
-    ConcurrentHashMap<ChunkLocation, Boolean> dispatchedChunks = new ConcurrentHashMap<>();
+    Set<ChunkLocation> loadedChunks = ConcurrentHashMap.newKeySet();
+    Set<ChunkLocation> dispatchedChunks = ConcurrentHashMap.newKeySet();
     int renderDistance = 10;
     boolean firstSettings = true;
     Location[] editorLocations = new Location[2];
@@ -652,7 +652,7 @@ public class Player extends Entity {
             p.writeInt(chunkLocation.z());
             Main.world.load(chunkLocation).encodePacket(p);
         });
-        loadedChunks.put(chunkLocation, true);
+        loadedChunks.add(chunkLocation);
         dispatchedChunks.remove(chunkLocation);
     }
 
@@ -673,14 +673,14 @@ public class Player extends Entity {
                 shouldLoad.add(new ChunkLocation(cx, cz));
             }
         }
-        var unloadChunks = new HashSet<>(loadedChunks.keySet());
+        var unloadChunks = new HashSet<>(loadedChunks);
         unloadChunks.removeAll(shouldLoad);
         for (var chunk : unloadChunks) {
             unloadChunk(chunk);
         }
-        shouldLoad.removeAll(loadedChunks.keySet());
-        shouldLoad.removeAll(dispatchedChunks.keySet());
-        shouldLoad.forEach(location -> dispatchedChunks.put(location, true));
+        shouldLoad.removeAll(loadedChunks);
+        shouldLoad.removeAll(dispatchedChunks);
+        dispatchedChunks.addAll(shouldLoad);
         Main.chunkDispatcher.dispatch(this, shouldLoad.stream()
                 .sorted(Comparator.comparingDouble(a -> a.distanceFrom(position.chunkLocation()))));
     }
