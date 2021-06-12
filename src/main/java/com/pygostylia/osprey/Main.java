@@ -15,6 +15,7 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 public class Main {
@@ -138,9 +139,9 @@ public class Main {
         return Optional.ofNullable(entities.get(entityId));
     }
 
-    static void forEachPlayer(PlayerIOLambda lambda) throws IOException {
+    static void forEachPlayer(Consumer<Player> lambda) {
         for (var player : Main.players.values()) {
-            lambda.apply(player);
+            lambda.accept(player);
         }
     }
 
@@ -148,7 +149,7 @@ public class Main {
         return players.values().stream().filter((player) -> player.location().withinRadiusOf(radius, location));
     }
 
-    static String handshakeJson() throws IOException {
+    static String handshakeJson() {
         var result = new JSONObject();
         var version = new JSONObject();
         var players = new JSONObject();

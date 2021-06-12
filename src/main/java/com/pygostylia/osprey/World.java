@@ -28,7 +28,7 @@ public class World {
         return world;
     }
 
-    Chunk load(ChunkLocation location) throws IOException {
+    Chunk load(ChunkLocation location) {
         var chunk = loadedChunks.get(location);
         if (chunk == null) {
             try {
@@ -81,7 +81,7 @@ public class World {
         }
     }
 
-    Chunk loadFromDisk(ChunkLocation location) throws SQLException, IOException {
+    Chunk loadFromDisk(ChunkLocation location) throws SQLException {
         String sql = """
                 SELECT data FROM chunks
                 WHERE x = ? AND z = ?;
@@ -197,13 +197,13 @@ public class World {
         }
     }
 
-    void setBlock(Location location, int blockId) throws IOException {
+    void setBlock(Location location, int blockId) {
         var affectedChunkLocation = location.chunkLocation();
         var affectedChunk = load(affectedChunkLocation);
         affectedChunk.setBlock(location.positionInChunk(), blockId);
     }
 
-    short block(Location location) throws IOException {
+    short block(Location location) {
         var affectedChunkLocation = location.chunkLocation();
         var affectedChunk = load(affectedChunkLocation);
         return affectedChunk.block(location.positionInChunk());

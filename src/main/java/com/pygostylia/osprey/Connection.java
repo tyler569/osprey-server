@@ -143,8 +143,11 @@ public class Connection {
         compressionEnabled = true;
     }
 
-    void close() throws IOException {
-        socket.close();
+    void close() {
+        try {
+            socket.close();
+        } catch (IOException ignored) {
+        }
     }
 
     // ================ persistence

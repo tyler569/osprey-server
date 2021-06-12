@@ -28,7 +28,7 @@ public class BoatEntity extends ObjectEntity {
     }
 
     @Override
-    public void spawnForPlayer(Player player) throws IOException {
+    public void spawnForPlayer(Player player) {
         super.spawnForPlayer(player);
         if (!passengers.isEmpty()) {
             updatePassengers(player);
@@ -36,11 +36,7 @@ public class BoatEntity extends ObjectEntity {
     }
 
     void updatePassengers(Player player) {
-        try {
-            player.sendSetPassengers(this, passengers);
-        } catch (IOException e) {
-            player.println("Failed to set passengers for <-");
-        }
+        player.sendSetPassengers(this, passengers);
     }
 
     void updatePassengers() {

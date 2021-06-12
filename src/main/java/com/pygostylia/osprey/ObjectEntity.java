@@ -15,19 +15,12 @@ abstract public class ObjectEntity extends Entity {
         this.velocity = velocity;
     }
 
-    public void spawnForPlayer(Player player) throws IOException {
+    public void spawnForPlayer(Player player) {
         super.spawnForPlayer(player);
         player.sendSpawnEntity(this, spawnData());
     }
 
     public void spawn() {
-        Main.playersWithin(64, position.location())
-                .forEach((player) -> {
-                    try {
-                        spawnForPlayer(player);
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-                });
+        Main.playersWithin(64, position.location()).forEach(this::spawnForPlayer);
     }
 }

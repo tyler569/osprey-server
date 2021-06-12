@@ -26,22 +26,17 @@ abstract public class Entity {
 
     abstract int type();
 
-    void spawnForPlayer(Player player) throws IOException {
+    void spawnForPlayer(Player player) {
         playersWithLoaded.add(player);
     }
 
-    void destroyForPlayer(Player player) throws IOException {
+    void destroyForPlayer(Player player) {
         player.sendDestroyEntity(this);
         playersWithLoaded.remove(player);
     }
 
     void destroy() {
-        playersWithLoaded.forEach((player) -> {
-            try {
-                player.sendDestroyEntity(this);
-            } catch (IOException ignored) {
-            }
-        });
+        playersWithLoaded.forEach(player -> player.sendDestroyEntity(this));
         playersWithLoaded.clear();
         Main.removeEntity(this);
     }

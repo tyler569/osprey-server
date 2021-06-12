@@ -20,10 +20,7 @@ public class ChunkDispatcher implements Runnable {
                 e.printStackTrace();
                 continue;
             }
-            try {
-                pair.player().sendChunk(pair.chunkLocation());
-            } catch (IOException ignored) {
-            }
+            pair.player().sendChunk(pair.chunkLocation());
         }
     }
 

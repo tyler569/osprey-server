@@ -35,13 +35,6 @@ public class FireworkEntity extends ObjectEntity {
     public void spawnWithRider(int ridingEntity) {
         spawn();
         this.ridingEntity = ridingEntity;
-        playersWithLoaded.forEach((player) -> {
-            try {
-                player.sendEntityMetadata(this, 8, 17, ridingEntity);
-            } catch (IOException e) {
-                player.println("Unable to send entity metadata to <-");
-                e.printStackTrace();
-            }
-        });
+        playersWithLoaded.forEach(player -> player.sendEntityMetadata(this, 8, 17, ridingEntity));
     }
 }

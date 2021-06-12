@@ -164,7 +164,7 @@ public class Chunk {
         return inner.toByteArray();
     }
 
-    static Chunk fromBlob(byte[] data) throws IOException {
+    static Chunk fromBlob(byte[] data) {
         try {
             var stream = new InflaterInputStream(new ByteArrayInputStream(data));
             var inflated = stream.readAllBytes();
@@ -173,7 +173,7 @@ public class Chunk {
             c.blockData = ByteBuffer.wrap(inflated);
             c.blockArray = c.blockData.asShortBuffer();
             return c;
-        } catch (EOFException e) {
+        } catch (Exception e) {
             System.out.println("Problem decoding chunk from disk!");
         }
         return null;

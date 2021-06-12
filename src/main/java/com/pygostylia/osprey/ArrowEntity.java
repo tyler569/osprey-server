@@ -40,10 +40,7 @@ public class ArrowEntity extends ObjectEntity {
         Main.scheduler.submit(this::destroy, 30, TimeUnit.SECONDS);
         if (critical) {
             for (Player player : playersWithLoaded) {
-                try {
-                    player.sendEntityMetadata(this, 7, 0, (byte) 1);
-                } catch (IOException ignored) {
-                }
+                player.sendEntityMetadata(this, 7, 0, (byte) 1);
             }
         }
     }
@@ -75,11 +72,7 @@ public class ArrowEntity extends ObjectEntity {
     }
 
     private boolean intersectingBlock() {
-        try {
-            return Main.world.block(location()) != 0;
-        } catch (IOException ignored) {
-            return true;
-        }
+        return Main.world.block(location()) != 0;
     }
 
     private void stepPhysics() {
@@ -102,11 +95,8 @@ public class ArrowEntity extends ObjectEntity {
             position.updateFacing(dx, dy, dz);
         }
         for (Player player : playersWithLoaded) {
-            try {
-                player.sendEntityPositionAndRotation(id, dx, dy, dz, position);
-                player.sendEntityVelocity(this, velocity.divide(10));
-            } catch (IOException ignored) {
-            }
+            player.sendEntityPositionAndRotation(id, dx, dy, dz, position);
+            player.sendEntityVelocity(this, velocity.divide(10));
         }
         if (intersectingBlock()) {
             stickInBlock();
@@ -120,17 +110,9 @@ public class ArrowEntity extends ObjectEntity {
         if (explode) {
             Collection<Location> boomBlocks = Explosion.generateBoomBlocks(location(), 5.5f);
             for (Location boomBlock : boomBlocks) {
-                try {
-                    Main.world.setBlock(boomBlock, 0);
-                } catch (IOException ignored) {
-                }
+                Main.world.setBlock(boomBlock, 0);
             }
-            playersWithLoaded.forEach(player -> {
-                try {
-                    player.sendExplosion(position, 5.5f, boomBlocks, Velocity.zero());
-                } catch (IOException ignored) {
-                }
-            });
+            playersWithLoaded.forEach(player -> player.sendExplosion(position, 5.5f, boomBlocks, Velocity.zero()));
         }
     }
 }

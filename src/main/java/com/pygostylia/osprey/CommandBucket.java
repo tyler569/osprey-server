@@ -436,13 +436,7 @@ public class CommandBucket {
     @Command("cloud")
     void cloud(Player sender, String[] args) throws IOException {
         var future = Main.scheduler.submitForEachTick(() -> {
-            try {
-                Main.forEachPlayer(player -> {
-                    player.sendEntityStatus(sender.id, (byte) 43);
-                });
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+            Main.forEachPlayer(player -> player.sendEntityStatus(sender.id, (byte) 43));
         });
         sender.addFuture(future);
     }
@@ -465,13 +459,7 @@ public class CommandBucket {
                 position = sender.position.offset(0, 1.8, 0);
             }
             var bolt = new LightningEntity(position);
-            try {
-                Main.forEachPlayer(player -> {
-                    player.sendSpawnEntity(bolt);
-                });
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+            Main.forEachPlayer(player -> player.sendSpawnEntity(bolt));
             bolt.destroy();
         });
         sender.addFuture(future);
