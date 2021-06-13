@@ -1,4 +1,5 @@
-package com.pygostylia.osprey;
+package com.pygostylia.osprey.commands;
+
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -7,8 +8,6 @@ import java.lang.annotation.Target;
 
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.METHOD)
-public @interface Command {
-    String value() default "";
-
-    String[] args() default {};
+public @interface CommandAliases {
+    CommandAlias[] value();
 }

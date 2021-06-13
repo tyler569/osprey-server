@@ -1,4 +1,6 @@
-package com.pygostylia.osprey;
+package com.pygostylia.osprey.commands;
+
+import com.pygostylia.osprey.*;
 
 import java.io.IOException;
 import java.lang.reflect.Method;
@@ -97,19 +99,19 @@ public class CommandBucket {
     }
 
     CommandElement rootNode;
+    byte[] packet;
 
-    CommandBucket() {
+    public CommandBucket() throws IOException {
         rootNode = CommandElement.rootNode();
-        for (Method method : CommandBucket.class.getDeclaredMethods()) {
+        packet = brigadierPacket();
+    }
+
+    public void register(Class<?> commandClass) throws IOException {
+        for (Method method : commandClass.getDeclaredMethods()) {
             FlatCommand flatCommand;
             if (method.isAnnotationPresent(Command.class)) {
                 Command commandInfo = method.getAnnotation(Command.class);
                 var args = Arrays.stream(commandInfo.args()).map(CommandParameter::fromArg).collect(Collectors.toList());
-                flatCommand = new FlatCommand(commandInfo.value(), args, method);
-                flatCommands.add(flatCommand);
-            } else if (method.isAnnotationPresent(Command2.class)) {
-                Command2 commandInfo = method.getAnnotation(Command2.class);
-                var args = Arrays.stream(method.getParameters()).map(CommandParameter::fromClass).collect(Collectors.toList());
                 flatCommand = new FlatCommand(commandInfo.value(), args, method);
                 flatCommands.add(flatCommand);
             } else {
@@ -120,6 +122,7 @@ public class CommandBucket {
                 flatCommand.aliases.add(alias);
             }
         }
+        packet = brigadierPacket();
     }
 
     CommandElement findMatch(CommandElement node, String[] args, int offset, boolean override) {
@@ -143,7 +146,7 @@ public class CommandBucket {
         return null;
     }
 
-    void dispatch(Player sender, String[] args) throws IOException {
+    public void dispatch(Player sender, String[] args) {
         CommandElement element;
         Method method;
         try {
@@ -158,7 +161,7 @@ public class CommandBucket {
         }
         method = element.method;
         try {
-            method.invoke(this, sender, args);
+            method.invoke(null, sender, args);
         } catch (Exception e) {
             var cause = e.getCause();
             if (cause != null) {
@@ -268,7 +271,7 @@ public class CommandBucket {
     byte[] brigadierPacket() throws IOException {
         PacketBuilder p = new PacketBuilder();
         var tmp = new PacketBuilder();
-        var length = Main.commands.encodeBrigadier(tmp);
+        var length = encodeBrigadier(tmp);
 
         p.writeVarInt(length);
         p.write(tmp.toByteArray());
@@ -276,209 +279,7 @@ public class CommandBucket {
         return p.toByteArray();
     }
 
-
-    // todo: move to a subclass or something
-
-
-    @Command(value = "teleport", args = {"destination: vec3"})
-    @CommandAlias("tp")
-    void teleport(Player sender, String[] args) throws IOException {
-        if (args.length < 4) {
-            sender.sendError("Not enough arguments");
-            return;
-        }
-        Location destination = Location.relativeLocation(
-                sender.position.location(),
-                Arrays.copyOfRange(args, 1, 4)
-        );
-        sender.teleport(destination);
-    }
-
-    @Command(value = "teleport", args = {"target: player"})
-    void teleportPlayer(Player sender, String[] args) throws IOException {
-        if (args.length < 2) {
-            sender.sendError("Not enough arguments");
-            return;
-        }
-        Player target = Main.playerByName(args[1]);
-        if (target == null) {
-            sender.sendError(String.format("%s is not online", args[1]));
-        }
-        assert target != null;
-        sender.teleport(target.position.location());
-    }
-
-    @Command("hello")
-    void hello(Player sender, String[] args) throws IOException {
-        sender.sendNotification("Hello World");
-    }
-
-    @Command("/pos1")
-    @CommandAlias("/1")
-    void setPos1(Player sender, String[] args) throws IOException {
-        sender.setEditorLocation(0, sender.position.location());
-    }
-
-    @Command("/pos2")
-    @CommandAlias("/2")
-    void setPos2(Player sender, String[] args) throws IOException {
-        sender.setEditorLocation(1, sender.position.location());
-    }
-
-    @Command("/sel")
-    void editorClear(Player sender, String[] args) throws IOException {
-        sender.unsetEditorSelection();
-    }
-
-    @Command(value = "/set", args = {"block: block_state"})
-    void editorSet(Player sender, String[] args) throws IOException {
-        var l1 = sender.editorLocations[0];
-        var l2 = sender.editorLocations[1];
-        int blockId;
-        try {
-            blockId = Integer.parseInt(args[1]);
-        } catch (NumberFormatException ignored) {
-            var state = new BlockState(args[1]);
-            blockId = state.protocolId();
-        }
-        int count = 0;
-        for (int y = Integer.min(l1.y(), l2.y()); y <= Integer.max(l1.y(), l2.y()); y++) {
-            for (int z = Integer.min(l1.z(), l2.z()); z <= Integer.max(l1.z(), l2.z()); z++) {
-                for (int x = Integer.min(l1.x(), l2.x()); x <= Integer.max(l1.x(), l2.x()); x++) {
-                    var location = new Location(x, y, z);
-                    Main.world.setBlock(location, blockId);
-                    count++;
-                    int finalBlockId = blockId;
-                    Main.forEachPlayer((player) -> {
-                        player.sendBlockChange(location, finalBlockId);
-                    });
-                }
-            }
-        }
-        sender.sendEditorNotification(String.format("Set %s blocks", count));
-    }
-
-    @Command("lag")
-    void lag(Player sender, String[] args) throws IOException {
-        Main.forEachPlayer((player) -> {
-            player.sendNotification(String.format("%s thought there was some lag", sender.name));
-        });
-        sender.kick();
-    }
-
-    @Command(value = "speed", args = {"speed: float"})
-    void speed(Player sender, String[] args) throws IOException {
-        var speed = Float.parseFloat(args[1]);
-        sender.sendSpeed(speed);
-    }
-
-    @Command("save")
-    void save(Player sender, String[] args) throws IOException {
-        var now = Instant.now();
-        if (sender.isAdmin())
-            Main.world.save();
-        var then = Instant.now();
-        var took = Duration.between(now, then);
-        sender.sendNotification(String.format("Saved world! (%fms)",
-                (double) took.getNano() / 1000000));
-    }
-
-    @Command(value = "gamemode", args = {"mode: integer(0,3)"})
-    @CommandAlias("gm")
-    void gamemode(Player sender, String[] args) throws IOException {
-        if (args.length < 2) {
-            sender.sendError("Not enough arguments");
-            return;
-        }
-        var value = Integer.parseInt(args[1]);
-        sender.changeGamemode(value);
-    }
-
-    @Command(value = "gamestate", args = {"mode: integer(0,14)", "arg: float"})
-    @CommandAlias("gs")
-    void gameState(Player sender, String[] args) throws IOException {
-        var reason = Byte.parseByte(args[1]);
-        var value = Float.parseFloat(args[2]);
-        Main.forEachPlayer((player) -> {
-            player.sendChangeGameState(reason, value);
-        });
-    }
-
-    @Command("falling")
-    void falling(Player sender, String[] args) {
-        sender.placeFalling ^= true;
-    }
-
-    @Command("boom")
-    void boom(Player sender, String[] args) {
-        sender.boom ^= true;
-    }
-
-    @Command("bullettime")
-    void bulletTime(Player sender, String[] args) {
-        sender.bulletTime ^= true;
-    }
-
-    @Command("spawn")
-    void spawn(Player sender, String[] args) throws IOException {
-        sender.position = new Position();
-        sender.teleport();
-    }
-
-    @Command(value = "entitystatus", args = {"id: integer", "status: integer(0,255)"})
-    @CommandAlias("es")
-    void entityStatus(Player sender, String[] args) throws IOException {
-        Main.forEachPlayer(player -> {
-            player.sendEntityStatus(Integer.parseInt(args[1]), Byte.parseByte(args[2]));
-        });
-    }
-
-    @Command("cloud")
-    void cloud(Player sender, String[] args) throws IOException {
-        var future = Main.scheduler.submitForEachTick(() -> {
-            Main.forEachPlayer(player -> player.sendEntityStatus(sender.id, (byte) 43));
-        });
-        sender.addFuture(future);
-    }
-
-    @Command(value = "cancel", args = "job: integer")
-    void cancel(Player sender, String[] args) throws IOException {
-        int job = Integer.parseInt(args[1]);
-        var future = sender.futures.remove(job);
-        future.cancel(false);
-        sender.sendNotification("Job " + job + " cancelled");
-    }
-
-    @Command("followlightining")
-    void followLightning(Player sender, String[] args) throws IOException {
-        var future = Main.scheduler.submitForEachTick(() -> {
-            Position position;
-            if (sender.isSneaking) {
-                position = sender.position.offset(0, 1.5, 0);
-            } else {
-                position = sender.position.offset(0, 1.8, 0);
-            }
-            var bolt = new LightningEntity(position);
-            Main.forEachPlayer(player -> player.sendSpawnEntity(bolt));
-            bolt.destroy();
-        });
-        sender.addFuture(future);
-    }
-
-    // testing new Command interface using method parameters
-
-    @Command2("new")
-    void newNoArgs(Player sender) throws IOException {
-        sender.sendNotification("You said new!");
-    }
-
-    @Command2("new")
-    void newWithArg(Player sender, String arg) throws IOException {
-        sender.sendNotification("You said abc " + arg + "!");
-    }
-
-    @Command2("new")
-    void newWithLocation(Player sender, Location arg) throws IOException {
-        sender.sendNotification("You said abc " + arg + "!");
+    public byte[] getPacket() {
+        return packet;
     }
 }

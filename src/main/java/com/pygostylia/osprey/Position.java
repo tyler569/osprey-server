@@ -6,7 +6,7 @@ public class Position {
     float pitch;
     float yaw;
 
-    Position() {
+    public Position() {
         x = 0.5;
         z = 0.5;
         y = 32;

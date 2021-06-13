@@ -1,5 +1,6 @@
 package com.pygostylia.osprey;
 
+import com.pygostylia.osprey.commands.CommandBucket;
 import com.pygostylia.osprey.nbt.NBTCompound;
 import com.pygostylia.osprey.nbt.NBTList;
 import org.json.JSONArray;
@@ -98,11 +99,10 @@ public class Main {
     private static final Map<Integer, Entity> entities = new ConcurrentHashMap<>();
     static ChunkDispatcher chunkDispatcher = new ChunkDispatcher();
     static KeyPair encryptionKey;
-    static World world;
-    static CommandBucket commands;
-    static byte[] commandPacket;
+    public static World world;
+    public static CommandBucket commands;
     static int nextEntityId = 1;
-    static Scheduler scheduler = new Scheduler();
+    public static Scheduler scheduler = new Scheduler();
 
     static void addPlayer(Player player) {
         players.put(player.id, player);
@@ -124,7 +124,7 @@ public class Main {
         return players.values();
     }
 
-    static Player playerByName(String name) {
+    public static Player playerByName(String name) {
         return players.values().stream()
                 .filter((player) -> player.name.equals(name))
                 .findFirst()
@@ -139,7 +139,7 @@ public class Main {
         return Optional.ofNullable(entities.get(entityId));
     }
 
-    static void forEachPlayer(Consumer<Player> lambda) {
+    public static void forEachPlayer(Consumer<Player> lambda) {
         for (var player : Main.players.values()) {
             lambda.accept(player);
         }
@@ -189,7 +189,7 @@ public class Main {
         Registry.setup("generated");
         BlockState.setup();
         commands = new CommandBucket();
-        commandPacket = commands.brigadierPacket();
+        commands.register(Commands.class);
 
         new Thread(chunkDispatcher).start();
         new Thread(scheduler).start();

@@ -64,7 +64,7 @@ public record Location(int x, int y, int z) {
         }
     }
 
-    static Location relativeLocation(Location base, String[] args) {
+    public static Location relativeLocation(Location base, String[] args) {
         int x, y, z;
         x = parseRelative(base.x(), args[0]);
         y = parseRelative(base.y(), args[1]);

@@ -5,56 +5,56 @@ import java.io.IOException;
 import java.util.UUID;
 
 public class PacketBuilder extends ByteArrayOutputStream {
-    void writeString(String s) throws IOException {
+    public void writeString(String s) throws IOException {
         Protocol.writeString(this, s);
     }
 
-    void writeByte(byte b) throws IOException {
+    public void writeByte(byte b) throws IOException {
         Protocol.writeByte(this, b);
     }
 
-    void writeShort(short s) throws IOException {
+    public void writeShort(short s) throws IOException {
         Protocol.writeShort(this, s);
     }
 
-    void writeInt(int i) throws IOException {
+    public void writeInt(int i) throws IOException {
         Protocol.writeInt(this, i);
     }
 
-    void writeLong(long l) throws IOException {
+    public void writeLong(long l) throws IOException {
         Protocol.writeLong(this, l);
     }
 
-    void writeVarInt(int i) throws IOException {
+    public void writeVarInt(int i) throws IOException {
         Protocol.writeVarInt(this, i);
     }
 
-    void writeBoolean(boolean b) throws IOException {
+    public void writeBoolean(boolean b) throws IOException {
         Protocol.writeBoolean(this, b);
     }
 
-    void writeFloat(float f) throws IOException {
+    public void writeFloat(float f) throws IOException {
         Protocol.writeFloat(this, f);
     }
 
-    void writeDouble(double d) throws IOException {
+    public void writeDouble(double d) throws IOException {
         Protocol.writeDouble(this, d);
     }
 
-    void writePosition(int x, int y, int z) throws IOException {
+    public void writePosition(int x, int y, int z) throws IOException {
         Protocol.writePosition(this, x, y, z);
     }
 
-    void writePosition(Location l) throws IOException {
+    public void writePosition(Location l) throws IOException {
         Protocol.writeLong(this, l.encode());
     }
 
-    void writeUUID(UUID uuid) throws IOException {
+    public void writeUUID(UUID uuid) throws IOException {
         Protocol.writeLong(this, uuid.getMostSignificantBits());
         Protocol.writeLong(this, uuid.getLeastSignificantBits());
     }
 
-    void writePosition(Position position) throws IOException {
+    public void writePosition(Position position) throws IOException {
         Protocol.writeDouble(this, position.x);
         Protocol.writeDouble(this, position.y);
         Protocol.writeDouble(this, position.z);

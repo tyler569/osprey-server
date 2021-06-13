@@ -1,4 +1,9 @@
-package com.pygostylia.osprey;
+package com.pygostylia.osprey.commands;
+
+import com.pygostylia.osprey.BlockState;
+import com.pygostylia.osprey.Entity;
+import com.pygostylia.osprey.Location;
+import com.pygostylia.osprey.Player;
 
 import java.lang.reflect.Parameter;
 import java.util.regex.Matcher;

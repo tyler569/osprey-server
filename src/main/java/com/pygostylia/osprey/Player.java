@@ -42,8 +42,10 @@ public class Player extends Entity {
     Set<ChunkLocation> dispatchedChunks = ConcurrentHashMap.newKeySet();
     int renderDistance = 10;
     boolean firstSettings = true;
+
     Location[] editorLocations = new Location[2];
     boolean isElytraFlying;
+
     boolean isCreativeFlying;
     boolean isSneaking;
     boolean isSprinting;
@@ -52,18 +54,11 @@ public class Player extends Entity {
     Instant startedUsing;
 
     // fun stuff
-    boolean placeFalling;
-    boolean boom;
-    boolean bulletTime;
+    public boolean placeFalling;
+    public boolean boom;
+    public boolean bulletTime;
     Map<Integer, ScheduledFuture<?>> futures = new HashMap<>();
     private int nextFuture = 1;
-
-    int addFuture(ScheduledFuture<?> future) throws IOException {
-        var index = nextFuture++;
-        futures.put(index, future);
-        sendNotification("Job submitted as " + index);
-        return index;
-    }
 
     Player(Socket sock) throws IOException {
         super();
@@ -71,9 +66,52 @@ public class Player extends Entity {
         state = State.Status;
     }
 
+    public int addFuture(ScheduledFuture<?> future) {
+        var index = nextFuture++;
+        futures.put(index, future);
+        sendNotification("Job submitted as " + index);
+        return index;
+    }
+
+    public ScheduledFuture<?> removeFuture(int id) {
+        return futures.remove(id);
+    }
+
     @Override
     int type() {
         return 106;
+    }
+
+    public String name() {
+        return name;
+    }
+
+    public Duration ping() {
+        return ping;
+    }
+
+    public Location[] getEditorLocations() {
+        return editorLocations;
+    }
+
+    public boolean isElytraFlying() {
+        return isElytraFlying;
+    }
+
+    public boolean isCreativeFlying() {
+        return isCreativeFlying;
+    }
+
+    public boolean isSneaking() {
+        return isSneaking;
+    }
+
+    public boolean isSprinting() {
+        return isSprinting;
+    }
+
+    public boolean isShielding() {
+        return isShielding;
     }
 
     static void runThread(Socket sock) throws IOException {
@@ -103,7 +141,7 @@ public class Player extends Entity {
         chat.put("text", message);
         chat.put("color", "white");
         sendPacket(0x19, p -> p.writeString(chat.toString()));
-        connection.close();
+        disconnect();
     }
 
     private void sendPacket(int type, PacketBuilderLambda closure) {
@@ -165,12 +203,12 @@ public class Player extends Entity {
         println("Leaving handleConnection");
     }
 
-    void teleport(Location location) {
+    public void teleport(Location location) {
         position.moveTo(location);
         teleport();
     }
 
-    void teleport() {
+    public void teleport() {
         sendPositionLook();
         sendUpdateChunkPosition();
         otherPlayers(player -> player.sendEntityTeleport(id, position));
@@ -623,7 +661,7 @@ public class Player extends Entity {
     }
 
     public void sendCommandData() {
-        sendPacket(0x10, p -> p.write(Main.commandPacket));
+        sendPacket(0x10, p -> p.write(Main.commands.getPacket()));
     }
 
     // movement
@@ -696,7 +734,7 @@ public class Player extends Entity {
                 .sorted(Comparator.comparingDouble(a -> a.distanceFrom(position.chunkLocation()))));
     }
 
-    boolean isAdmin() {
+    public boolean isAdmin() {
         return name.equals("tyler569");
     }
 
@@ -1191,7 +1229,7 @@ public class Player extends Entity {
                 ((long) Math.abs(editorLocations[0].z() - editorLocations[1].z()) + 1);
     }
 
-    void setEditorLocation(int n, Location location) {
+    public void setEditorLocation(int n, Location location) {
         editorLocations[n] = location;
         String message = String.format("Position %d set to ", n + 1);
         var volume = selectionVolume();
@@ -1209,7 +1247,7 @@ public class Player extends Entity {
         sendCUIEvent(n, location, selectionVolume());
     }
 
-    void unsetEditorSelection() throws IOException {
+    public void unsetEditorSelection() {
         editorLocations[0] = null;
         editorLocations[1] = null;
         sendCUIEvent(-1, null, 0);
@@ -1340,7 +1378,7 @@ public class Player extends Entity {
         });
     }
 
-    void changeGamemode(int mode) {
+    public void changeGamemode(int mode) {
         sendChangeGameState(3, mode);
         Main.forEachPlayer(player -> {
             player.sendChangeGamemode(this, mode);

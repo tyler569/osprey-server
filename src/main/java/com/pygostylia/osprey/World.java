@@ -188,7 +188,7 @@ public class World {
         }
     }
 
-    void save() {
+    public void save() {
         for (ChunkLocation location : loadedChunks.keySet()) {
             if (loadedChunks.get(location).modified) {
                 saveChunkSafe(location);
@@ -197,7 +197,7 @@ public class World {
         }
     }
 
-    void setBlock(Location location, int blockId) {
+    public void setBlock(Location location, int blockId) {
         var affectedChunkLocation = location.chunkLocation();
         var affectedChunk = load(affectedChunkLocation);
         affectedChunk.setBlock(location.positionInChunk(), blockId);

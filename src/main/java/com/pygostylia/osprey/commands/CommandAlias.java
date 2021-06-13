@@ -1,4 +1,4 @@
-package com.pygostylia.osprey;
+package com.pygostylia.osprey.commands;
 
 import java.lang.annotation.*;
 

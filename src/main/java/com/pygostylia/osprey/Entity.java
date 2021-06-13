@@ -35,13 +35,17 @@ abstract public class Entity {
         playersWithLoaded.remove(player);
     }
 
-    void destroy() {
+    public void destroy() {
         playersWithLoaded.forEach(player -> player.sendDestroyEntity(this));
         playersWithLoaded.clear();
         Main.removeEntity(this);
     }
 
-    Location location() {
+    public Position position() {
+        return position;
+    }
+
+    public Location location() {
         return position.location();
     }
 
