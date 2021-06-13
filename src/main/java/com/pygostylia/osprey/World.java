@@ -203,7 +203,7 @@ public class World {
         affectedChunk.setBlock(location.positionInChunk(), blockId);
     }
 
-    short block(Location location) {
+    public short block(Location location) {
         var affectedChunkLocation = location.chunkLocation();
         var affectedChunk = load(affectedChunkLocation);
         return affectedChunk.block(location.positionInChunk());

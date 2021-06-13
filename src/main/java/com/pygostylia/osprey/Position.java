@@ -1,10 +1,10 @@
 package com.pygostylia.osprey;
 
 public class Position {
-    boolean onGround;
-    double x, y, z;
-    float pitch;
-    float yaw;
+    public boolean onGround;
+    public double x, y, z;
+    public float pitch;
+    public float yaw;
 
     public Position() {
         x = 0.5;
@@ -12,7 +12,7 @@ public class Position {
         y = 32;
     }
 
-    Position(Location location) {
+    public Position(Location location) {
         x = location.x();
         y = location.y();
         z = location.z();
@@ -35,7 +35,7 @@ public class Position {
         this.onGround = position.onGround;
     }
 
-    static Position middle(Location location) {
+    public static Position middle(Location location) {
         Position p = new Position();
         p.x = location.x() + 0.5;
         p.y = location.y();
@@ -43,36 +43,36 @@ public class Position {
         return p;
     }
 
-    static Position orientation(float yaw, float pitch) {
+    public static Position orientation(float yaw, float pitch) {
         var position = new Position();
         position.yaw = yaw;
         position.pitch = pitch;
         return position;
     }
 
-    void moveTo(Location location) {
+    public void moveTo(Location location) {
         x = location.x() + 0.5;
         y = location.y();
         z = location.z() + 0.5;
     }
 
-    byte yawAngle() {
+    public byte yawAngle() {
         return (byte) (yaw / 360 * 256);
     }
 
-    byte pitchAngle() {
+    public byte pitchAngle() {
         return (byte) (pitch / 360 * 256);
     }
 
-    int chunkX() {
+    public int chunkX() {
         return (int) x >> 4;
     }
 
-    int chunkZ() {
+    public int chunkZ() {
         return (int) z >> 4;
     }
 
-    Location location() {
+    public Location location() {
         return new Location(
                 (int) Math.floor(x),
                 (int) Math.floor(y),
@@ -80,7 +80,7 @@ public class Position {
         );
     }
 
-    ChunkLocation chunkLocation() {
+    public ChunkLocation chunkLocation() {
         return new ChunkLocation(chunkX(), chunkZ());
     }
 

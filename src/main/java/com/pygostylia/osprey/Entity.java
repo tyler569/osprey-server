@@ -41,6 +41,10 @@ abstract public class Entity {
         Main.removeEntity(this);
     }
 
+    public UUID uuid() {
+        return uuid;
+    }
+
     public Position position() {
         return position;
     }

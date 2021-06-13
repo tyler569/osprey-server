@@ -12,13 +12,13 @@ public record Velocity(float x, float y, float z) {
         return new Velocity(0, 0, 0);
     }
 
-    void write(PacketBuilder os) throws IOException {
+    public void write(PacketBuilder os) throws IOException {
         os.writeShort(blockPerSecondToProtocol(x));
         os.writeShort(blockPerSecondToProtocol(y));
         os.writeShort(blockPerSecondToProtocol(z));
     }
 
-    static Velocity directionMagnitude(Position position, float speed) {
+    public static Velocity directionMagnitude(Position position, float speed) {
         var x = -Math.sin(position.yawRadians());
         var z = Math.cos(position.yawRadians());
         var yH = -Math.sin(position.pitchRadians());
@@ -32,11 +32,11 @@ public record Velocity(float x, float y, float z) {
         );
     }
 
-    static float protocolToBlockPerSecond(short protocol) {
+    public static float protocolToBlockPerSecond(short protocol) {
         return protocol / 400f;
     }
 
-    static short blockPerSecondToProtocol(float blockPerSecond) {
+    public static short blockPerSecondToProtocol(float blockPerSecond) {
         return (short) (blockPerSecond * 400f);
     }
 

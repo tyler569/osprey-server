@@ -364,8 +364,8 @@ public class Player extends Entity {
             p.writeByte((byte) -1); // previous gamemode
             p.writeVarInt(1); // world count
             p.writeString("minecraft:overworld"); // list of worlds (# count)
-            Main.dimensionCodec.write(p);
-            Main.overworldDimension.write(p);
+            DimensionCodec.codec.write(p);
+            DimensionCodec.overworld.write(p);
             p.writeString("minecraft:overworld"); // world name
             p.writeLong(1); // hashed seed
             p.writeVarInt(100); // max players

@@ -7,7 +7,7 @@ import java.util.Random;
 public class Explosion {
     static Random rng = new Random();
 
-    static Collection<Location> generateBoomBlocks(Location center, float power) {
+    public static Collection<Location> generateBoomBlocks(Location center, float power) {
         var locations = new ArrayList<Location>();
         final int maxRadius = 20;
         for (int x = -maxRadius; x < maxRadius; x++) {
