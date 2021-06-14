@@ -46,6 +46,22 @@ public record Slot(boolean empty, int itemId, int count, NBTCompound data) {
         return new Slot(!hasEntry, itemId, count, data);
     }
 
+    public Slot decrement() {
+        if (count == 1) {
+            return new Slot();
+        } else {
+            return new Slot(itemId, count - 1);
+        }
+    }
+
+    public Slot one() {
+        if (count != 0) {
+            return new Slot(itemId, 1);
+        } else {
+            return new Slot();
+        }
+    }
+
     @Override
     public String toString() {
         if (empty) {

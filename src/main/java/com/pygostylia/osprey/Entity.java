@@ -1,6 +1,5 @@
 package com.pygostylia.osprey;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -13,10 +12,9 @@ abstract public class Entity {
     boolean noCollision;
 
     Entity() {
-        id = Main.nextEntityId++;
         uuid = UUID.randomUUID();
         playersWithLoaded = new ArrayList<>();
-        Main.addEntity(this);
+        id = Main.addEntity(this);
     }
 
     Entity(Position position) {

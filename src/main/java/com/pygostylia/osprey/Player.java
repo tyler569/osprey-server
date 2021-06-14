@@ -258,7 +258,7 @@ public class Player extends Entity {
             case 22 -> handleVehicleMove(packet);
             case 23 -> handleSteerBoat(packet);
             case 26 -> handleIsFlying(packet);
-            case 27 -> handlePlayerDigging(packet);
+            case 27 -> handlePlayerAction(packet);
             case 28 -> handleEntityAction(packet);
             case 29 -> handleSteerVehicle(packet);
             case 37 -> handleHeldItemChange(packet);
@@ -923,7 +923,7 @@ public class Player extends Entity {
                         p.write((byte[]) value);
                     }
                 }
-                case 6 -> p.write((byte[]) value);
+                case 6 -> ((Slot) value).encode(p);
                 case 7 -> p.write(((Boolean) value) ? 1 : 0);
                 case 9 -> {
                     if (value instanceof Position position) {
@@ -984,7 +984,7 @@ public class Player extends Entity {
         });
     }
 
-    private void handlePlayerDigging(Packet packet) throws IOException {
+    private void handlePlayerAction(Packet packet) throws IOException {
         var status = packet.readVarInt();
         var location = packet.readLocation();
         var face = packet.read();
@@ -1015,7 +1015,14 @@ public class Player extends Entity {
                 // drop item stack
             }
             case 4 -> {
-                // drop item
+                if (selectedItem().empty()) {
+                    return;
+                }
+                Slot drop = selectedItem().one();
+                Slot rest = selectedItem().decrement();
+                ItemEntity item = new ItemEntity(eyes(), Velocity.directionMagnitude(position, 10f), drop);
+                item.spawn();
+                setSelectedItem(rest);
             }
             case 5 -> {
                 // finish interacting
@@ -1194,8 +1201,16 @@ public class Player extends Entity {
         otherPlayers(player -> player.sendEquipment(this));
     }
 
-    Slot selectedItem() {
+    public Slot selectedItem() {
         return inventory.get(selectedHotbarSlot + 36);
+    }
+
+    public void setSelectedItem(Slot value) {
+        inventory.put((short) (selectedHotbarSlot + 36), value);
+    }
+
+    Slot clearSelectedItem() {
+        return inventory.slots.remove(selectedHotbarSlot + 36);
     }
 
     Slot offhandItem() {
