@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 
 public class BoatEntity extends ObjectEntity {
+    static final int TYPE = Registry.entity("minecraft:boat");
+
     public boolean turningLeft;
     public boolean turningRight;
     ArrayList<Entity> passengers = new ArrayList<>();
@@ -14,7 +16,7 @@ public class BoatEntity extends ObjectEntity {
 
     @Override
     int type() {
-        return 6;
+        return TYPE;
     }
 
     @Override

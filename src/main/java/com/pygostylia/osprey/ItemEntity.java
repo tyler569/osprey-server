@@ -1,7 +1,7 @@
 package com.pygostylia.osprey;
 
 public class ItemEntity extends ObjectEntity {
-    static int TYPE = Registry.entity("minecraft:item");
+    static final int TYPE = Registry.entity("minecraft:item");
 
     Slot itemInfo;
 
@@ -10,6 +10,7 @@ public class ItemEntity extends ObjectEntity {
         this.itemInfo = itemInfo;
     }
 
+    @Override
     int type() {
         return TYPE;
     }

@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
 public class FireworkEntity extends ObjectEntity {
+    static final int TYPE = Registry.entity("minecraft:firework_rocket");
+
     int ridingEntity;
 
     public FireworkEntity(Position position, Velocity velocity) {
@@ -13,7 +15,7 @@ public class FireworkEntity extends ObjectEntity {
 
     @Override
     int type() {
-        return 27;
+        return TYPE;
     }
 
     @Override

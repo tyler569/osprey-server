@@ -7,6 +7,8 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 public class ArrowEntity extends ObjectEntity {
+    static final int TYPE = Registry.entity("minecraft:arrow");
+
     int shooterId;
     boolean critical;
     boolean stuck;
@@ -53,7 +55,7 @@ public class ArrowEntity extends ObjectEntity {
 
     @Override
     int type() {
-        return 2;
+        return TYPE;
     }
 
     @Override

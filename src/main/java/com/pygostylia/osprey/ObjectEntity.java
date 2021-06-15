@@ -1,7 +1,5 @@
 package com.pygostylia.osprey;
 
-import java.io.IOException;
-
 abstract public class ObjectEntity extends Entity {
     Velocity velocity;
 

@@ -3,6 +3,8 @@ package com.pygostylia.osprey;
 import java.util.concurrent.TimeUnit;
 
 public class FallingBlockEntity extends ObjectEntity {
+    static final int TYPE = Registry.entity("minecraft:falling_block");
+
     int blockType;
 
     public FallingBlockEntity(Position position, int blockType) {
@@ -12,7 +14,7 @@ public class FallingBlockEntity extends ObjectEntity {
 
     @Override
     int type() {
-        return 26;
+        return TYPE;
     }
 
     @Override
