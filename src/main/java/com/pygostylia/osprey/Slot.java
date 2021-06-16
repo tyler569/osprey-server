@@ -14,18 +14,18 @@ public record Slot(boolean empty, int itemId, int count, NBTCompound data) {
         this(false, itemId, count, null);
     }
 
-    void encode(OutputStream os) throws IOException {
+    public void encode(PacketBuilder p) {
         if (empty) {
-            Protocol.writeBoolean(os, false);
+            p.writeBoolean(false);
         } else {
-            Protocol.writeBoolean(os, true);
-            Protocol.writeVarInt(os, itemId);
+            p.writeBoolean(true);
+            p.writeVarInt(itemId);
             if (count > 255) {
-                Protocol.writeByte(os, 1);
+                p.write(1);
             } else {
-                Protocol.writeByte(os, count);
+                p.write(count);
             }
-            os.write(0); // NBTEnd, no NBT
+            p.write(0); // NBTEnd, no NBT
         }
     }
 

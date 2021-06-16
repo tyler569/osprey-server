@@ -1,64 +1,87 @@
 package com.pygostylia.osprey;
 
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.UUID;
 
 public class PacketBuilder extends ByteArrayOutputStream {
-    public void writeString(String s) throws IOException {
-        Protocol.writeString(this, s);
+    public void writeString(String str) {
+        VarInt.write(this, str.length());
+        writeBytes(str.getBytes());
     }
 
-    public void writeByte(byte b) throws IOException {
-        Protocol.writeByte(this, b);
+    public void writeString0(String str) {
+        writeBytes(str.getBytes());
+        write(0);
     }
 
-    public void writeShort(short s) throws IOException {
-        Protocol.writeShort(this, s);
+    public void writeVarInt(int number) {
+        VarInt.write(this, number);
     }
 
-    public void writeInt(int i) throws IOException {
-        Protocol.writeInt(this, i);
+    public void writeByte(byte b) {
+        write(b);
     }
 
-    public void writeLong(long l) throws IOException {
-        Protocol.writeLong(this, l);
+    public void writeBoolean(boolean b) {
+        write(b ? 1 : 0);
     }
 
-    public void writeVarInt(int i) throws IOException {
-        Protocol.writeVarInt(this, i);
+    public void writeShort(short v) {
+        var buffer = ByteBuffer.allocate(Long.BYTES);
+        buffer.putShort(v);
+        write(buffer.array(), 0, Short.BYTES);
     }
 
-    public void writeBoolean(boolean b) throws IOException {
-        Protocol.writeBoolean(this, b);
+    public void writeShort(int v) {
+        var buffer = ByteBuffer.allocate(Long.BYTES);
+        buffer.putShort((short) v);
+        write(buffer.array(), 0, Short.BYTES);
     }
 
-    public void writeFloat(float f) throws IOException {
-        Protocol.writeFloat(this, f);
+    public void writeInt(int v) {
+        var buffer = ByteBuffer.allocate(Long.BYTES);
+        buffer.putInt(v);
+        write(buffer.array(), 0, Integer.BYTES);
     }
 
-    public void writeDouble(double d) throws IOException {
-        Protocol.writeDouble(this, d);
+    public void writeLong(long v) {
+        var buffer = ByteBuffer.allocate(Long.BYTES);
+        buffer.putLong(v);
+        write(buffer.array(), 0, Long.BYTES);
     }
 
-    public void writePosition(int x, int y, int z) throws IOException {
-        Protocol.writePosition(this, x, y, z);
+    public void writeFloat(float v) {
+        var buffer = ByteBuffer.allocate(Long.BYTES);
+        buffer.putFloat(v);
+        write(buffer.array(), 0, Float.BYTES);
     }
 
-    public void writePosition(Location l) throws IOException {
-        Protocol.writeLong(this, l.encode());
+    public void writeDouble(double v) {
+        var buffer = ByteBuffer.allocate(Long.BYTES);
+        buffer.putDouble(v);
+        write(buffer.array(), 0, Double.BYTES);
     }
 
-    public void writeUUID(UUID uuid) throws IOException {
-        Protocol.writeLong(this, uuid.getMostSignificantBits());
-        Protocol.writeLong(this, uuid.getLeastSignificantBits());
+    public void writeUUID(UUID uuid) {
+        writeLong(uuid.getMostSignificantBits());
+        writeLong(uuid.getLeastSignificantBits());
     }
 
-    public void writePosition(Position position) throws IOException {
-        Protocol.writeDouble(this, position.x);
-        Protocol.writeDouble(this, position.y);
-        Protocol.writeDouble(this, position.z);
-        Protocol.writeByte(this, position.pitchAngle());
-        Protocol.writeByte(this, position.yawAngle());
+    public void writeLocation(int x, int y, int z) {
+        long encoded = (((long) x & 0x3FFFFFF) << 38) | (((long) z & 0x3FFFFFF) << 12) | (y & 0xFFF);
+        writeLong(encoded);
+    }
+
+    public void writeLocation(Location location) {
+        writeLocation(location.x(), location.y(), location.z());
+    }
+
+    public void writePosition(Position position) {
+        writeDouble(position.x);
+        writeDouble(position.y);
+        writeDouble(position.z);
+        writeByte(position.pitchAngle());
+        writeByte(position.yawAngle());
     }
 }

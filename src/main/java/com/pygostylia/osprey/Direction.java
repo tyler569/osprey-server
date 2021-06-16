@@ -1,10 +1,10 @@
 package com.pygostylia.osprey;
 
 public enum Direction {
+    Down,
+    Up,
     North,
     South,
-    East,
     West,
-    Up,
-    Down,
+    East,
 }

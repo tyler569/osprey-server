@@ -31,6 +31,17 @@ public class VarInt {
         } while (i != 0);
     }
 
+    public static void write(ByteArrayOutputStream os, int i) {
+        do {
+            byte elem = (byte) (i & 0b0111_1111);
+            i >>>= 7;
+            if (i != 0) {
+                elem |= 0b1000_0000;
+            }
+            os.write(elem);
+        } while (i != 0);
+    }
+
     public static int len(int i) {
         int len = 0;
         do {
@@ -42,11 +53,7 @@ public class VarInt {
 
     static byte[] encode(int i) {
         var m = new ByteArrayOutputStream();
-        try {
-            write(m, i);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        write(m, i);
         return m.toByteArray();
     }
 

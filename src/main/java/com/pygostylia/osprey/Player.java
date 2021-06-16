@@ -488,7 +488,7 @@ public class Player extends Entity {
     }
 
     public void sendSpawnPosition() {
-        sendPacket(0x42, p -> p.writePosition(0, 32, 0));
+        sendPacket(0x42, p -> p.writeLocation(0, 32, 0));
     }
 
     void initialSpawnPlayer() {
@@ -972,7 +972,7 @@ public class Player extends Entity {
     public void sendBlockBreakParticles(Location location, short blockId) {
         sendPacket(0x21, p -> {
             p.writeInt(2001);
-            p.writePosition(location);
+            p.writeLocation(location);
             p.writeInt(blockId);
             p.writeBoolean(false);
         });
