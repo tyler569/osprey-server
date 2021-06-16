@@ -41,7 +41,6 @@ public class Player extends Entity {
     Set<ChunkLocation> loadedChunks = ConcurrentHashMap.newKeySet();
     Set<ChunkLocation> dispatchedChunks = ConcurrentHashMap.newKeySet();
     int renderDistance = 10;
-    boolean firstSettings = true;
 
     Location[] editorLocations = new Location[2];
     boolean isElytraFlying;
@@ -507,12 +506,7 @@ public class Player extends Entity {
         boolean chatColors = packet.readBoolean();
         int skinParts = packet.read();
         int mainHand = packet.readVarInt();
-        if (firstSettings) {
-            firstSettings = false;
-            // initialSpawnPlayer();
-        } else {
-            loadCorrectChunks();
-        }
+        loadCorrectChunks();
     }
 
     private void handlePluginMessage(Packet packet) throws IOException {
