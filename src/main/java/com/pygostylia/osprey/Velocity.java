@@ -6,6 +6,9 @@ import java.io.IOException;
 The protocol representation of velocity is as a triple of Shorts,
 representing velocity along the three axes in units of
 1/8000 block / 50ms
+
+Internally, I represent velocity as a float blocks / second, and
+convert on-demand when encoding to the protocol layer.
  */
 public record Velocity(float x, float y, float z) {
     public static Velocity zero() {
@@ -32,15 +35,23 @@ public record Velocity(float x, float y, float z) {
         );
     }
 
-    public static float protocolToBlockPerSecond(short protocol) {
+    private static float protocolToBlockPerSecond(short protocol) {
         return protocol / 400f;
     }
 
-    public static short blockPerSecondToProtocol(float blockPerSecond) {
+    private static short blockPerSecondToProtocol(float blockPerSecond) {
         return (short) (blockPerSecond * 400f);
     }
 
     public Velocity divide(float dividend) {
         return new Velocity(x / dividend, y / dividend, z / dividend);
+    }
+
+    public Velocity add(float x, float y, float z) {
+        return new Velocity(this.x + x, this.y + y, this.z + z);
+    }
+
+    public Velocity offsetGravity(float y) {
+        return this.add(0, y, 0);
     }
 }

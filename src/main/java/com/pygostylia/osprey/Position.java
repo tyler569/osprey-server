@@ -1,5 +1,7 @@
 package com.pygostylia.osprey;
 
+import java.time.Duration;
+
 public class Position {
     public boolean onGround;
     public double x, y, z;
@@ -111,5 +113,12 @@ public class Position {
     public void updateFacing(double dx, double dy, double dz) {
         yaw = (float) Math.toDegrees(Math.atan2(dx, dz));
         pitch = (float) Math.toDegrees(Math.atan2(dy, Math.hypot(dx, dz)));
+    }
+
+    public void stepVelocity(Velocity velocity, Duration timeStep) {
+        double factor = (double) timeStep.toNanos() / 1_000_000_000;
+        x += velocity.x() / factor;
+        y += velocity.y() / factor;
+        z += velocity.z() / factor;
     }
 }
