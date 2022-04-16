@@ -72,9 +72,9 @@ abstract public class Entity {
     boolean collides(Position point) {
         float ex = colliderXZ() / 2;
         float ey = colliderY();
-        if (position.x + ex < point.x || point.x < position.x - ex) return false;
-        if (position.z + ex < point.z || point.z < position.z - ex) return false;
-        return !(position.y + ey < point.y) && !(point.y <= position.y);
+        if (position.getX() + ex < point.getX() || point.getX() < position.getX() - ex) return false;
+        if (position.getZ() + ex < point.getZ() || point.getZ() < position.getZ() - ex) return false;
+        return !(position.getY() + ey < point.getY()) && !(point.getY() <= position.getY());
     }
 
     boolean collides(Location block) {

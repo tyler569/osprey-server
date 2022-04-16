@@ -78,9 +78,9 @@ public class PacketBuilder extends ByteArrayOutputStream {
     }
 
     public void writePosition(Position position) {
-        writeDouble(position.x);
-        writeDouble(position.y);
-        writeDouble(position.z);
+        writeDouble(position.getX());
+        writeDouble(position.getY());
+        writeDouble(position.getZ());
         writeByte(position.pitchAngle());
         writeByte(position.yawAngle());
     }

@@ -403,12 +403,12 @@ public class Player extends Entity {
     public void sendEntityTeleport(int entityId, Position position) {
         sendPacket(0x56, p -> {
             p.writeVarInt(entityId);
-            p.writeDouble(position.x);
-            p.writeDouble(position.y);
-            p.writeDouble(position.z);
+            p.writeDouble(position.getX());
+            p.writeDouble(position.getY());
+            p.writeDouble(position.getZ());
             p.writeByte(position.yawAngle());
             p.writeByte(position.pitchAngle());
-            p.writeBoolean(position.onGround);
+            p.writeBoolean(position.getOnGround());
         });
     }
 
@@ -467,11 +467,11 @@ public class Player extends Entity {
 
     public void sendPositionLook() {
         sendPacket(0x34, p -> {
-            p.writeDouble(position.x);
-            p.writeDouble(position.y);
-            p.writeDouble(position.z);
-            p.writeFloat(position.yaw);
-            p.writeFloat(position.pitch);
+            p.writeDouble(position.getX());
+            p.writeDouble(position.getY());
+            p.writeDouble(position.getZ());
+            p.writeFloat(position.getYaw());
+            p.writeFloat(position.getPitch());
             p.writeByte((byte) 0);
             p.writeVarInt(0);
         });
@@ -578,9 +578,9 @@ public class Player extends Entity {
         sendPacket(4, p -> {
             p.writeVarInt(player.id);
             p.writeUUID(player.uuid);
-            p.writeDouble(player.position.x);
-            p.writeDouble(player.position.y);
-            p.writeDouble(player.position.z);
+            p.writeDouble(player.position.getX());
+            p.writeDouble(player.position.getY());
+            p.writeDouble(player.position.getZ());
             p.writeByte(player.position.yawAngle());
             p.writeByte(player.position.pitchAngle());
         });
@@ -672,7 +672,7 @@ public class Player extends Entity {
             p.writeShort(protocol_dz);
             p.writeByte(position.yawAngle());
             p.writeByte(position.pitchAngle());
-            p.writeBoolean(position.onGround);
+            p.writeBoolean(position.getOnGround());
         });
         sendPacket(0x3A, p -> {
             p.writeVarInt(entityId);
@@ -752,16 +752,11 @@ public class Player extends Entity {
     }
 
     void updatePosition(double x, double y, double z, float pitch, float yaw, boolean onGround) {
-        double delta_x = x - position.x;
-        double delta_y = y - position.y;
-        double delta_z = z - position.z;
+        double delta_x = x - position.getX();
+        double delta_y = y - position.getY();
+        double delta_z = z - position.getZ();
         checkChunkPosition(x, z);
-        position.x = x;
-        position.y = y;
-        position.z = z;
-        position.pitch = pitch;
-        position.yaw = yaw;
-        position.onGround = onGround;
+        position = new Position(x, y, z, yaw, pitch, onGround);
         otherPlayers(player -> player.sendEntityPositionAndRotation(id, delta_x, delta_y, delta_z, position));
         if (isElytraFlying && onGround) {
             isElytraFlying = false;
@@ -770,15 +765,15 @@ public class Player extends Entity {
     }
 
     void updatePosition(double x, double y, double z, boolean onGround) {
-        updatePosition(x, y, z, position.pitch, position.yaw, onGround);
+        updatePosition(x, y, z, position.getPitch(), position.getYaw(), onGround);
     }
 
     void updatePosition(float pitch, float yaw, boolean onGround) {
-        updatePosition(position.x, position.y, position.z, pitch, yaw, onGround);
+        updatePosition(position.getX(), position.getY(), position.getZ(), pitch, yaw, onGround);
     }
 
     void updatePosition(boolean onGround) {
-        updatePosition(position.x, position.y, position.z, position.pitch, position.yaw, onGround);
+        updatePosition(position.getX(), position.getY(), position.getZ(), position.getPitch(), position.getYaw(), onGround);
     }
 
     private void handlePosition(Packet packet) throws IOException {
@@ -817,9 +812,9 @@ public class Player extends Entity {
     }
 
     boolean intersectsLocation(Location location) {
-        if (position.x + 0.3 < location.x() || location.x() + 1 < position.x - 0.3) return false;
-        if (position.z + 0.3 < location.z() || location.z() + 1 < position.z - 0.3) return false;
-        return !(position.y + 1.8 < location.y()) && !(location.y() + 1 <= position.y);
+        if (position.getX() + 0.3 < location.x() || location.x() + 1 < position.getX() - 0.3) return false;
+        if (position.getZ() + 0.3 < location.z() || location.z() + 1 < position.getZ() - 0.3) return false;
+        return !(position.getY() + 1.8 < location.y()) && !(location.y() + 1 <= position.getY());
     }
 
     // animation
@@ -1073,9 +1068,7 @@ public class Player extends Entity {
 
         if (isHoldingFirework(hand)) {
             Position target = new Position(originalLocation);
-            target.x += cursorX;
-            target.y += cursorY;
-            target.z += cursorZ;
+            target = target.offset(cursorX, cursorY, cursorZ);
             FireworkEntity firework = new FireworkEntity(target, new Velocity(0, 0, 0));
             firework.spawn();
             return;
@@ -1083,10 +1076,8 @@ public class Player extends Entity {
 
         if (isHoldingBoat(hand)) {
             Position target = new Position(originalLocation);
-            target.x += cursorX;
-            target.y += cursorY;
-            target.z += cursorZ;
-            target.yaw = position.yaw;
+            target = target.offset(cursorX, cursorY, cursorZ);
+            target.setYaw(position.getYaw());
             BoatEntity boat = new BoatEntity(target);
             boat.spawn();
             return;
@@ -1305,11 +1296,11 @@ public class Player extends Entity {
                 position = new Position();
                 var xTmp = results.getDouble(3);
                 if (!results.wasNull()) {
-                    position.x = xTmp;
-                    position.y = results.getDouble(4);
-                    position.z = results.getDouble(5);
-                    position.pitch = results.getFloat(6);
-                    position.yaw = results.getFloat(7);
+                    position.setX(xTmp);
+                    position.setY(results.getDouble(4));
+                    position.setZ(results.getDouble(5));
+                    position.setPitch(results.getFloat(6));
+                    position.setYaw(results.getFloat(7));
                 }
             }
         } catch (SQLException e) {
@@ -1362,11 +1353,11 @@ public class Player extends Entity {
         try (var connection = Main.INSTANCE.getWorld().connect();
              var statement = connection.prepareStatement(sql)) {
             statement.setInt(1, selectedHotbarSlot);
-            statement.setDouble(2, position.x);
-            statement.setDouble(3, position.y);
-            statement.setDouble(4, position.z);
-            statement.setDouble(5, position.pitch);
-            statement.setDouble(6, position.yaw);
+            statement.setDouble(2, position.getX());
+            statement.setDouble(3, position.getY());
+            statement.setDouble(4, position.getZ());
+            statement.setDouble(5, position.getPitch());
+            statement.setDouble(6, position.getYaw());
             statement.setInt(7, playerId);
             statement.execute();
             connection.commit();
@@ -1446,12 +1437,12 @@ public class Player extends Entity {
     //
 
     Direction facing() {
-        if (position.pitch > 45) {
+        if (position.getPitch() > 45) {
             return Direction.Down;
-        } else if (position.pitch < -45) {
+        } else if (position.getPitch() < -45) {
             return Direction.Up;
         }
-        var yaw = (position.yaw + 45.0) % 360.0;
+        var yaw = (position.getYaw() + 45.0) % 360.0;
         if (yaw < 0) yaw += 360;
         if (yaw < 90) {
             return Direction.South;
@@ -1573,9 +1564,9 @@ public class Player extends Entity {
 
     public void sendExplosion(Position position, float strength, Collection<Location> boomBlocks, Velocity playerKick) {
         sendPacket(0x1B, p -> {
-            p.writeFloat((float) position.x);
-            p.writeFloat((float) position.y);
-            p.writeFloat((float) position.z);
+            p.writeFloat((float) position.getX());
+            p.writeFloat((float) position.getY());
+            p.writeFloat((float) position.getZ());
             p.writeFloat(strength);
             p.writeInt(boomBlocks.size());
             Location center = position.location();

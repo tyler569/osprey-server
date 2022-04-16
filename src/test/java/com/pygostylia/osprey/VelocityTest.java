@@ -27,9 +27,9 @@ class VelocityTest {
 
     void assertVelocityClose(Velocity actual, Velocity expected) {
         float epsilon = 0.0005f;
-        if (Math.abs(actual.x() - expected.x()) > epsilon ||
-            Math.abs(actual.y() - expected.y()) > epsilon ||
-            Math.abs(actual.z() - expected.z()) > epsilon) {
+        if (Math.abs(actual.getX() - expected.getX()) > epsilon ||
+            Math.abs(actual.getY() - expected.getY()) > epsilon ||
+            Math.abs(actual.getZ() - expected.getZ()) > epsilon) {
 
             fail(String.format("""
                 

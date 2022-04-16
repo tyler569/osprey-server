@@ -20,8 +20,8 @@ public class ArrowEntity extends ObjectEntity {
         noCollision = true;
         shooterId = shooter.id;
         // Are arrows backwards or is Position backwards?
-        position.pitch = -position.pitch;
-        position.yaw = -position.yaw;
+        position.setPitch(-position.getPitch());
+        position.setYaw(-position.getYaw());
     }
 
     public ArrowEntity(Entity shooter, Position position, Duration pullTime) {
