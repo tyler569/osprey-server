@@ -10,8 +10,8 @@ data class BlockPosition(val x: Int, val y: Int, val z: Int) {
     fun chunkX() = x shr 4
     fun chunkZ() = z shr 4
 
-    fun chunkLocation(): ChunkLocation {
-        return ChunkLocation(chunkX(), chunkZ())
+    fun chunkPosition(): ChunkPosition {
+        return ChunkPosition(chunkX(), chunkZ())
     }
 
     fun offsetByChunks(dx: Int, dz: Int): BlockPosition {

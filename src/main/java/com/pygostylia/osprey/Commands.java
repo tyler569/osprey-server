@@ -61,8 +61,8 @@ public class Commands {
 
     @Command(value = "/set", args = {"block: block_state"})
     public static void editorSet(Player sender, String[] args) {
-        var l1 = sender.getEditorLocations()[0];
-        var l2 = sender.getEditorLocations()[1];
+        var l1 = sender.getEditorPositions()[0];
+        var l2 = sender.getEditorPositions()[1];
         int blockId;
         try {
             blockId = Integer.parseInt(args[1]);

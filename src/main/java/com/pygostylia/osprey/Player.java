@@ -38,8 +38,8 @@ public class Player extends Entity {
     Integer playerId;
     Inventory inventory;
     int selectedHotbarSlot;
-    Set<ChunkLocation> loadedChunks = ConcurrentHashMap.newKeySet();
-    Set<ChunkLocation> dispatchedChunks = ConcurrentHashMap.newKeySet();
+    Set<ChunkPosition> loadedChunks = ConcurrentHashMap.newKeySet();
+    Set<ChunkPosition> dispatchedChunks = ConcurrentHashMap.newKeySet();
     int renderDistance = 10;
 
     BlockPosition[] editorBlockPositions = new BlockPosition[2];
@@ -88,7 +88,7 @@ public class Player extends Entity {
         return ping;
     }
 
-    public BlockPosition[] getEditorLocations() {
+    public BlockPosition[] getEditorPositions() {
         return editorBlockPositions;
     }
 
@@ -688,31 +688,31 @@ public class Player extends Entity {
         });
     }
 
-    public void sendChunk(ChunkLocation chunkLocation) {
+    public void sendChunk(ChunkPosition ChunkPosition) {
         sendPacket(0x20, p -> {
-            p.writeInt(chunkLocation.x());
-            p.writeInt(chunkLocation.z());
-            Main.INSTANCE.getWorld().load(chunkLocation).encodePacket(p);
+            p.writeInt(ChunkPosition.getX());
+            p.writeInt(ChunkPosition.getZ());
+            Main.INSTANCE.getWorld().load(ChunkPosition).encodePacket(p);
         });
-        loadedChunks.add(chunkLocation);
-        dispatchedChunks.remove(chunkLocation);
+        loadedChunks.add(ChunkPosition);
+        dispatchedChunks.remove(ChunkPosition);
     }
 
-    void unloadChunk(ChunkLocation chunkLocation) {
+    void unloadChunk(ChunkPosition ChunkPosition) {
         sendPacket(0x1c, p -> {
-            p.writeInt(chunkLocation.x());
-            p.writeInt(chunkLocation.z());
+            p.writeInt(ChunkPosition.getX());
+            p.writeInt(ChunkPosition.getZ());
         });
-        loadedChunks.remove(chunkLocation);
-        dispatchedChunks.remove(chunkLocation);
+        loadedChunks.remove(ChunkPosition);
+        dispatchedChunks.remove(ChunkPosition);
         // TODO: cancel any pending dispatches in ChunkDispatcher
     }
 
     void loadCorrectChunks(int chunkX, int chunkZ) {
-        Set<ChunkLocation> shouldLoad = new HashSet<>();
+        Set<ChunkPosition> shouldLoad = new HashSet<>();
         for (int cx = chunkX - renderDistance; cx <= chunkX + renderDistance; cx++) {
             for (int cz = chunkZ - renderDistance; cz <= chunkZ + renderDistance; cz++) {
-                shouldLoad.add(new ChunkLocation(cx, cz));
+                shouldLoad.add(new ChunkPosition(cx, cz));
             }
         }
         var unloadChunks = new HashSet<>(loadedChunks);
@@ -724,7 +724,7 @@ public class Player extends Entity {
         shouldLoad.removeAll(dispatchedChunks);
         dispatchedChunks.addAll(shouldLoad);
         var stream = shouldLoad.stream()
-                .sorted(Comparator.comparingDouble(a -> a.distanceFrom(entityPosition.chunkLocation())));
+                .sorted(Comparator.comparingDouble(a -> a.distanceFrom(entityPosition.chunkPosition())));
         BackgroundJob.Companion.queue(() -> {
             stream.forEachOrdered(this::sendChunk);
             return null;

@@ -38,8 +38,8 @@ data class EntityPosition(
         return BlockPosition(Math.floor(x).toInt(), Math.floor(y).toInt(), Math.floor(z).toInt())
     }
 
-    fun chunkLocation(): ChunkLocation {
-        return ChunkLocation(chunkX(), chunkZ())
+    fun chunkPosition(): ChunkPosition {
+        return ChunkPosition(chunkX(), chunkZ())
     }
 
     fun pitchRadians(): Float {
