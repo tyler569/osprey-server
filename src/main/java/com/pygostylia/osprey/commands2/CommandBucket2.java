@@ -1,5 +1,9 @@
-package com.pygostylia.osprey;
+package com.pygostylia.osprey.commands2;
 
+import com.pygostylia.osprey.BlockPosition;
+import com.pygostylia.osprey.BlockState;
+import com.pygostylia.osprey.Entity;
+import com.pygostylia.osprey.Player;
 import com.pygostylia.osprey.nbt.NBTCompound;
 
 import java.lang.reflect.Method;
