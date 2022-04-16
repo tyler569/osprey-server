@@ -46,16 +46,16 @@ class Packet private constructor(buf: ByteArray) : ByteArrayInputStream(buf) {
         return Protocol.readDouble(this)
     }
 
-    fun readLocation(): Location {
-        return Location(Protocol.readLong(this))
+    fun readLocation(): BlockPosition {
+        return BlockPosition(Protocol.readLong(this))
     }
 
-    fun readPosition(): Position {
+    fun readPosition(): EntityPosition {
         val x = readDouble()
         val y = readDouble()
         val z = readDouble()
         val yaw = readFloat()
         val pitch = readFloat()
-        return Position(x, y, z, yaw, pitch)
+        return EntityPosition(x, y, z, yaw, pitch)
     }
 }

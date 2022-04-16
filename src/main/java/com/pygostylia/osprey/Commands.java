@@ -7,7 +7,6 @@ import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Arrays;
-import java.util.HashSet;
 
 public class Commands {
     @Command(value = "teleport", args = {"destination: vec3"})
@@ -17,7 +16,7 @@ public class Commands {
             sender.sendError("Not enough arguments");
             return;
         }
-        Location destination = Location.relativeLocation(
+        BlockPosition destination = BlockPosition.relativeLocation(
                 sender.location(),
                 Arrays.copyOfRange(args, 1, 4)
         );
@@ -75,7 +74,7 @@ public class Commands {
         for (int y = Integer.min(l1.getY(), l2.getY()); y <= Integer.max(l1.getY(), l2.getY()); y++) {
             for (int z = Integer.min(l1.getZ(), l2.getZ()); z <= Integer.max(l1.getZ(), l2.getZ()); z++) {
                 for (int x = Integer.min(l1.getX(), l2.getX()); x <= Integer.max(l1.getX(), l2.getX()); x++) {
-                    var location = new Location(x, y, z);
+                    var location = new BlockPosition(x, y, z);
                     Main.INSTANCE.getWorld().setBlock(location, blockId);
                     count++;
                     int finalBlockId = blockId;
@@ -151,7 +150,7 @@ public class Commands {
 
     @Command("spawn")
     public static void spawn(Player sender, String[] args) throws IOException {
-        sender.teleport(new Location(0, 32, 0));
+        sender.teleport(new BlockPosition(0, 32, 0));
     }
 
     @Command(value = "entitystatus", args = {"id: integer", "status: integer(0,255)"})
@@ -181,13 +180,13 @@ public class Commands {
     @Command("followlightining")
     public static void followLightning(Player sender, String[] args) {
         var future = Main.INSTANCE.getScheduler().submitForEachTick(() -> {
-            Position position;
+            EntityPosition entityPosition;
             if (sender.isSneaking()) {
-                position = sender.position().offset(0, 1.5, 0);
+                entityPosition = sender.position().offset(0, 1.5, 0);
             } else {
-                position = sender.position().offset(0, 1.8, 0);
+                entityPosition = sender.position().offset(0, 1.8, 0);
             }
-            var bolt = new LightningEntity(position);
+            var bolt = new LightningEntity(entityPosition);
             Main.INSTANCE.forEachPlayer(player -> player.sendSpawnEntity(bolt));
             bolt.destroy();
         });

@@ -39,7 +39,7 @@ public class CommandBucket2 {
                     return new PlayerParameter(name);
                 } else if (argumentType == BlockState.class) {
                     return new BlockStateParameter(name);
-                } else if (argumentType == Location.class) {
+                } else if (argumentType == BlockPosition.class) {
                     return new LocationParameter(name);
                 } else if (argumentType == NBTCompound.class) {
                     return new NBTParameter(name);
@@ -230,8 +230,8 @@ public class CommandBucket2 {
         sender.teleport(target.location());
     }
 
-    @Command2("/tp <location>")
-    void teleportLocation(Player sender, Location location) {
-        sender.teleport(location);
+    @Command2("/tp <blockPosition>")
+    void teleportLocation(Player sender, BlockPosition blockPosition) {
+        sender.teleport(blockPosition);
     }
 }

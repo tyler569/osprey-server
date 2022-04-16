@@ -2,7 +2,7 @@ package com.pygostylia.osprey
 
 import java.time.Duration
 
-data class Position(
+data class EntityPosition(
     var x: Double = 0.5,
     var y: Double = 32.0,
     var z: Double = 0.5,
@@ -10,12 +10,12 @@ data class Position(
     var yaw: Float = 0f,
     var onGround: Boolean = false,
 ) {
-    constructor(location: Location) : this(location.x.toDouble(), location.y.toDouble(), location.z.toDouble())
+    constructor(blockPosition: BlockPosition) : this(blockPosition.x.toDouble(), blockPosition.y.toDouble(), blockPosition.z.toDouble())
 
-    fun moveTo(location: Location) {
-        x = location.x + 0.5
-        y = location.y.toDouble()
-        z = location.z + 0.5
+    fun moveTo(blockPosition: BlockPosition) {
+        x = blockPosition.x + 0.5
+        y = blockPosition.y.toDouble()
+        z = blockPosition.z + 0.5
     }
 
     fun yawAngle(): Byte {
@@ -34,8 +34,8 @@ data class Position(
         return z.toInt() shr 4
     }
 
-    fun location(): Location {
-        return Location(Math.floor(x).toInt(), Math.floor(y).toInt(), Math.floor(z).toInt())
+    fun location(): BlockPosition {
+        return BlockPosition(Math.floor(x).toInt(), Math.floor(y).toInt(), Math.floor(z).toInt())
     }
 
     fun chunkLocation(): ChunkLocation {
@@ -56,7 +56,7 @@ data class Position(
         z += dz
     }
 
-    fun offset(dx: Double, dy: Double, dz: Double): Position {
+    fun offset(dx: Double, dy: Double, dz: Double): EntityPosition {
         val p = copy()
         p.moveBy(dx, dy, dz)
         return p
@@ -76,20 +76,20 @@ data class Position(
 
     companion object {
         @JvmStatic
-        fun middle(location: Location): Position {
-            val p = Position()
-            p.x = location.x + 0.5
-            p.y = location.y.toDouble()
-            p.z = location.z + 0.5
+        fun middle(blockPosition: BlockPosition): EntityPosition {
+            val p = EntityPosition()
+            p.x = blockPosition.x + 0.5
+            p.y = blockPosition.y.toDouble()
+            p.z = blockPosition.z + 0.5
             return p
         }
 
         @JvmStatic
-        fun orientation(yaw: Float, pitch: Float): Position {
-            val position = Position()
-            position.yaw = yaw
-            position.pitch = pitch
-            return position
+        fun orientation(yaw: Float, pitch: Float): EntityPosition {
+            val entityPosition = EntityPosition()
+            entityPosition.yaw = yaw
+            entityPosition.pitch = pitch
+            return entityPosition
         }
     }
 }

@@ -1,6 +1,6 @@
 package com.pygostylia.osprey
 
-data class Location(val x: Int, val y: Int, val z: Int) {
+data class BlockPosition(val x: Int, val y: Int, val z: Int) {
     internal constructor(protocolLocation: Long) : this(
         (protocolLocation shr 38).toInt(),
         (protocolLocation and 0xFFFL).toInt(),
@@ -14,25 +14,25 @@ data class Location(val x: Int, val y: Int, val z: Int) {
         return ChunkLocation(chunkX(), chunkZ())
     }
 
-    fun offsetByChunks(dx: Int, dz: Int): Location {
-        return Location(x + dx * 16, y, z + dz * 16)
+    fun offsetByChunks(dx: Int, dz: Int): BlockPosition {
+        return BlockPosition(x + dx * 16, y, z + dz * 16)
     }
 
-    fun offset(dx: Int, dy: Int, dz: Int): Location {
-        return Location(x + dx, y + dy, z + dz)
+    fun offset(dx: Int, dy: Int, dz: Int): BlockPosition {
+        return BlockPosition(x + dx, y + dy, z + dz)
     }
 
     fun offset(direction: Direction, delta: Int) = when (direction) {
-        Direction.North -> Location(x, y, z - delta)
-        Direction.South -> Location(x, y, z + delta)
-        Direction.West -> Location(x - delta, y, z)
-        Direction.East -> Location(x + delta, y, z)
-        Direction.Up -> Location(x, y + delta, z)
-        Direction.Down -> Location(x, y - delta, z)
+        Direction.North -> BlockPosition(x, y, z - delta)
+        Direction.South -> BlockPosition(x, y, z + delta)
+        Direction.West -> BlockPosition(x - delta, y, z)
+        Direction.East -> BlockPosition(x + delta, y, z)
+        Direction.Up -> BlockPosition(x, y + delta, z)
+        Direction.Down -> BlockPosition(x, y - delta, z)
     }
 
-    fun positionInChunk(): Location {
-        return Location(x and 0xF, y, z and 0xF)
+    fun positionInChunk(): BlockPosition {
+        return BlockPosition(x and 0xF, y, z and 0xF)
     }
 
     fun encode(): Long {
@@ -43,11 +43,11 @@ data class Location(val x: Int, val y: Int, val z: Int) {
         return y * 256 + z * 16 + x
     }
 
-    fun withinRadiusOf(radius: Int, location: Location): Boolean {
-        return Math.abs(location.x - x) < radius && Math.abs(location.z - z) < radius
+    fun withinRadiusOf(radius: Int, blockPosition: BlockPosition): Boolean {
+        return Math.abs(blockPosition.x - x) < radius && Math.abs(blockPosition.z - z) < radius
     }
 
-    fun distance(other: Location): Double {
+    fun distance(other: BlockPosition): Double {
         return Math.sqrt(
             Math.pow((x - other.x).toDouble(), 2.0) +
                     Math.pow((y - other.y).toDouble(), 2.0) +
@@ -69,14 +69,14 @@ data class Location(val x: Int, val y: Int, val z: Int) {
         }
 
         @JvmStatic
-        fun relativeLocation(base: Location, args: Array<String>): Location {
+        fun relativeLocation(base: BlockPosition, args: Array<String>): BlockPosition {
             val x: Int
             val y: Int
             val z: Int
             x = parseRelative(base.x, args[0])
             y = parseRelative(base.y, args[1])
             z = parseRelative(base.z, args[2])
-            return Location(x, y, z)
+            return BlockPosition(x, y, z)
         }
     }
 }

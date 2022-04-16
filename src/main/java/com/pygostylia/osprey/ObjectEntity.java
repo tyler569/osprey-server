@@ -3,13 +3,13 @@ package com.pygostylia.osprey;
 abstract public class ObjectEntity extends Entity {
     Velocity velocity;
 
-    public ObjectEntity(Position position) {
-        super(position);
+    public ObjectEntity(EntityPosition entityPosition) {
+        super(entityPosition);
         this.velocity = Velocity.zero();
     }
 
-    public ObjectEntity(Position position, Velocity velocity) {
-        super(position);
+    public ObjectEntity(EntityPosition entityPosition, Velocity velocity) {
+        super(entityPosition);
         this.velocity = velocity;
     }
 
@@ -19,6 +19,6 @@ abstract public class ObjectEntity extends Entity {
     }
 
     public void spawn() {
-        Main.INSTANCE.playersWithin(64, position.location()).forEach(this::spawnForPlayer);
+        Main.INSTANCE.playersWithin(64, entityPosition.location()).forEach(this::spawnForPlayer);
     }
 }

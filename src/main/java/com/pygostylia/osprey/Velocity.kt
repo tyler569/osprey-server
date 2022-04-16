@@ -37,11 +37,11 @@ data class Velocity(val x: Float, val y: Float, val z: Float) {
         }
 
         @JvmStatic
-        fun directionMagnitude(position: Position, speed: Float): Velocity {
-            var x = -Math.sin(position.yawRadians().toDouble())
-            var z = Math.cos(position.yawRadians().toDouble())
-            val yH = -Math.sin(position.pitchRadians().toDouble())
-            val yXZ = Math.cos(position.pitchRadians().toDouble())
+        fun directionMagnitude(entityPosition: EntityPosition, speed: Float): Velocity {
+            var x = -Math.sin(entityPosition.yawRadians().toDouble())
+            var z = Math.cos(entityPosition.yawRadians().toDouble())
+            val yH = -Math.sin(entityPosition.pitchRadians().toDouble())
+            val yXZ = Math.cos(entityPosition.pitchRadians().toDouble())
             x *= yXZ
             z *= yXZ
             return Velocity(

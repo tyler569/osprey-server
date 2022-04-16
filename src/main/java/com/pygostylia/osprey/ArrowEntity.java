@@ -15,18 +15,18 @@ public class ArrowEntity extends ObjectEntity {
     boolean bulletTime;
     ScheduledFuture<?> tick;
 
-    public ArrowEntity(Entity shooter, Position position, Velocity velocity) {
-        super(position, velocity);
+    public ArrowEntity(Entity shooter, EntityPosition entityPosition, Velocity velocity) {
+        super(entityPosition, velocity);
         noCollision = true;
         shooterId = shooter.id;
-        // Are arrows backwards or is Position backwards?
-        position.setPitch(-position.getPitch());
-        position.setYaw(-position.getYaw());
+        // Are arrows backwards or is EntityPosition backwards?
+        entityPosition.setPitch(-entityPosition.getPitch());
+        entityPosition.setYaw(-entityPosition.getYaw());
     }
 
-    public ArrowEntity(Entity shooter, Position position, Duration pullTime) {
-        this(shooter, position, Velocity.directionMagnitude(
-                position,
+    public ArrowEntity(Entity shooter, EntityPosition entityPosition, Duration pullTime) {
+        this(shooter, entityPosition, Velocity.directionMagnitude(
+                entityPosition,
                 Math.min(30f, pullTime.toMillis() / 1000f * 30)
         ));
         if (pullTime.compareTo(Duration.ofSeconds(1)) > 0) {
@@ -91,12 +91,12 @@ public class ArrowEntity extends ObjectEntity {
         dx = velocity.getX() / tick;
         dy = velocity.getY() / tick;
         dz = velocity.getZ() / tick;
-        position.moveBy(dx, dy, dz);
+        entityPosition.moveBy(dx, dy, dz);
         if (!stuck) {
-            position.updateFacing(dx, dy, dz);
+            entityPosition.updateFacing(dx, dy, dz);
         }
         for (Player player : playersWithLoaded) {
-            player.sendEntityPositionAndRotation(id, dx, dy, dz, position);
+            player.sendEntityPositionAndRotation(id, dx, dy, dz, entityPosition);
             player.sendEntityVelocity(this, velocity.divide(10));
         }
         if (intersectingBlock()) {
@@ -109,11 +109,11 @@ public class ArrowEntity extends ObjectEntity {
         stuck = true;
         tick.cancel(false);
         if (explode) {
-            Collection<Location> boomBlocks = Explosion.generateBoomBlocks(location(), 5.5f);
-            for (Location boomBlock : boomBlocks) {
+            Collection<BlockPosition> boomBlocks = Explosion.generateBoomBlocks(location(), 5.5f);
+            for (BlockPosition boomBlock : boomBlocks) {
                 Main.INSTANCE.getWorld().setBlock(boomBlock, 0);
             }
-            playersWithLoaded.forEach(player -> player.sendExplosion(position, 5.5f, boomBlocks, Velocity.zero()));
+            playersWithLoaded.forEach(player -> player.sendExplosion(entityPosition, 5.5f, boomBlocks, Velocity.zero()));
         }
     }
 }

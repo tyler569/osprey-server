@@ -3,12 +3,9 @@ package com.pygostylia.osprey
 import com.pygostylia.osprey.commands.CommandBucket
 import org.json.JSONArray
 import org.json.JSONObject
-import java.io.IOException
 import java.net.ServerSocket
 import java.security.KeyPair
 import java.security.KeyPairGenerator
-import java.security.NoSuchAlgorithmException
-import java.sql.SQLException
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 import java.util.function.Consumer
@@ -75,9 +72,9 @@ object Main {
         }
     }
 
-    fun playersWithin(radius: Int, location: Location): Stream<Player?> {
+    fun playersWithin(radius: Int, blockPosition: BlockPosition): Stream<Player?> {
         return players.values.stream()
-            .filter { player: Player? -> player!!.location().withinRadiusOf(radius, location) }
+            .filter { player: Player? -> player!!.location().withinRadiusOf(radius, blockPosition) }
     }
 
     fun handshakeJson(): String {

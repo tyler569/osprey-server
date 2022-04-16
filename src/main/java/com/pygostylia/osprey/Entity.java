@@ -7,7 +7,7 @@ import java.util.UUID;
 abstract public class Entity {
     int id;
     UUID uuid;
-    Position position;
+    EntityPosition entityPosition;
     List<Player> playersWithLoaded;
     boolean noCollision;
 
@@ -17,9 +17,9 @@ abstract public class Entity {
         id = Main.INSTANCE.addEntity(this);
     }
 
-    Entity(Position position) {
+    Entity(EntityPosition entityPosition) {
         this();
-        this.position = position;
+        this.entityPosition = entityPosition;
     }
 
     abstract int type();
@@ -43,12 +43,12 @@ abstract public class Entity {
         return uuid;
     }
 
-    public Position position() {
-        return position;
+    public EntityPosition position() {
+        return entityPosition;
     }
 
-    public Location location() {
-        return position.location();
+    public BlockPosition location() {
+        return entityPosition.location();
     }
 
     public int id() {
@@ -69,15 +69,15 @@ abstract public class Entity {
 
     abstract float colliderY();
 
-    boolean collides(Position point) {
+    boolean collides(EntityPosition point) {
         float ex = colliderXZ() / 2;
         float ey = colliderY();
-        if (position.getX() + ex < point.getX() || point.getX() < position.getX() - ex) return false;
-        if (position.getZ() + ex < point.getZ() || point.getZ() < position.getZ() - ex) return false;
-        return !(position.getY() + ey < point.getY()) && !(point.getY() <= position.getY());
+        if (entityPosition.getX() + ex < point.getX() || point.getX() < entityPosition.getX() - ex) return false;
+        if (entityPosition.getZ() + ex < point.getZ() || point.getZ() < entityPosition.getZ() - ex) return false;
+        return !(entityPosition.getY() + ey < point.getY()) && !(point.getY() <= entityPosition.getY());
     }
 
-    boolean collides(Location block) {
+    boolean collides(BlockPosition block) {
         return false;
     }
 

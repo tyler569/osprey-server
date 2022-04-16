@@ -3,8 +3,8 @@ package com.pygostylia.osprey;
 public class LightningEntity extends ObjectEntity {
     static final int TYPE = Registry.entity("minecraft:lightning_bolt");
 
-    public LightningEntity(Position position) {
-        super(position);
+    public LightningEntity(EntityPosition entityPosition) {
+        super(entityPosition);
     }
 
     @Override
