@@ -20,6 +20,7 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.stream.Stream;
 
 public class Player extends Entity {
     enum State {
@@ -724,8 +725,12 @@ public class Player extends Entity {
         shouldLoad.removeAll(loadedChunks);
         shouldLoad.removeAll(dispatchedChunks);
         dispatchedChunks.addAll(shouldLoad);
-        Main.chunkDispatcher.dispatch(this, shouldLoad.stream()
-                .sorted(Comparator.comparingDouble(a -> a.distanceFrom(position.chunkLocation()))));
+        var stream = shouldLoad.stream()
+                .sorted(Comparator.comparingDouble(a -> a.distanceFrom(position.chunkLocation())));
+        BackgroundJob.Companion.queue(() -> {
+            stream.forEachOrdered(this::sendChunk);
+            return null;
+        });
     }
 
     public boolean isAdmin() {

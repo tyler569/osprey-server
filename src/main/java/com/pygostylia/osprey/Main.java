@@ -120,6 +120,7 @@ public class Main {
 
         new Thread(chunkDispatcher).start();
         new Thread(scheduler).start();
+        new Thread(BackgroundJob.Companion).start();
 
         final var socket = new ServerSocket(25565);
         System.out.println("Ready");
