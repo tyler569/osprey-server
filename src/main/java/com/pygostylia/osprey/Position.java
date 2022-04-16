@@ -117,8 +117,8 @@ public class Position {
 
     public void stepVelocity(Velocity velocity, Duration timeStep) {
         double factor = (double) timeStep.toNanos() / 1_000_000_000;
-        x += velocity.x() / factor;
-        y += velocity.y() / factor;
-        z += velocity.z() / factor;
+        x += velocity.getX() / factor;
+        y += velocity.getY() / factor;
+        z += velocity.getZ() / factor;
     }
 }

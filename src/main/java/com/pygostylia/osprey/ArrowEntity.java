@@ -85,12 +85,12 @@ public class ArrowEntity extends ObjectEntity {
         }
 
         if (!stuck) {
-            velocity = new Velocity(velocity.x(), velocity.y() + gravity, velocity.z());
+            velocity = new Velocity(velocity.getX(), velocity.getY() + gravity, velocity.getZ());
         }
         double dx, dy, dz;
-        dx = velocity.x() / tick;
-        dy = velocity.y() / tick;
-        dz = velocity.z() / tick;
+        dx = velocity.getX() / tick;
+        dy = velocity.getY() / tick;
+        dz = velocity.getZ() / tick;
         position.moveBy(dx, dy, dz);
         if (!stuck) {
             position.updateFacing(dx, dy, dz);

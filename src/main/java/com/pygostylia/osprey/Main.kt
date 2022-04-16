@@ -104,7 +104,6 @@ object Main {
         return result.toString()
     }
 
-    @Throws(IOException::class, SQLException::class, NoSuchAlgorithmException::class)
     @JvmStatic
     fun main(args: Array<String>) {
         Registry.setup("generated")
@@ -117,7 +116,7 @@ object Main {
         Thread(BackgroundJob).start()
 
         val socket = ServerSocket(25565)
-        println("Ready")
+        println("Ready - Listening on ${socket.localSocketAddress}")
         while (!socket.isClosed) {
             val connection = socket.accept()
             Player.runThread(connection)

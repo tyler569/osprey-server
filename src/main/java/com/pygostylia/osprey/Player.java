@@ -1584,9 +1584,9 @@ public class Player extends Entity {
                 p.writeByte((byte) (block.y() - center.y()));
                 p.writeByte((byte) (block.z() - center.z()));
             }
-            p.writeFloat(playerKick.x());
-            p.writeFloat(playerKick.y());
-            p.writeFloat(playerKick.z());
+            p.writeFloat(playerKick.getX());
+            p.writeFloat(playerKick.getY());
+            p.writeFloat(playerKick.getZ());
         });
     }
 }
