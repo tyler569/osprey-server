@@ -74,7 +74,7 @@ public class PacketBuilder extends ByteArrayOutputStream {
     }
 
     public void writeLocation(Location location) {
-        writeLocation(location.x(), location.y(), location.z());
+        writeLocation(location.getX(), location.getY(), location.getZ());
     }
 
     public void writePosition(Position position) {

@@ -812,9 +812,9 @@ public class Player extends Entity {
     }
 
     boolean intersectsLocation(Location location) {
-        if (position.getX() + 0.3 < location.x() || location.x() + 1 < position.getX() - 0.3) return false;
-        if (position.getZ() + 0.3 < location.z() || location.z() + 1 < position.getZ() - 0.3) return false;
-        return !(position.getY() + 1.8 < location.y()) && !(location.y() + 1 <= position.getY());
+        if (position.getX() + 0.3 < location.getX() || location.getX() + 1 < position.getX() - 0.3) return false;
+        if (position.getZ() + 0.3 < location.getZ() || location.getZ() + 1 < position.getZ() - 0.3) return false;
+        return !(position.getY() + 1.8 < location.getY()) && !(location.getY() + 1 <= position.getY());
     }
 
     // animation
@@ -837,9 +837,9 @@ public class Player extends Entity {
         sendPacket(0x51, p -> {
             p.writeVarInt(soundEffect);
             p.writeVarInt(category);
-            p.writeInt(location.x());
-            p.writeInt(location.y());
-            p.writeInt(location.z());
+            p.writeInt(location.getX());
+            p.writeInt(location.getY());
+            p.writeInt(location.getZ());
             p.writeFloat(1);
             p.writeFloat(1);
         });
@@ -1229,9 +1229,9 @@ public class Player extends Entity {
         if (editorLocations[0] == null || editorLocations[1] == null) {
             return 0;
         }
-        return ((long) Math.abs(editorLocations[0].x() - editorLocations[1].x()) + 1) *
-                ((long) Math.abs(editorLocations[0].y() - editorLocations[1].y()) + 1) *
-                ((long) Math.abs(editorLocations[0].z() - editorLocations[1].z()) + 1);
+        return ((long) Math.abs(editorLocations[0].getX() - editorLocations[1].getX()) + 1) *
+                ((long) Math.abs(editorLocations[0].getY() - editorLocations[1].getY()) + 1) *
+                ((long) Math.abs(editorLocations[0].getZ() - editorLocations[1].getZ()) + 1);
     }
 
     public void setEditorLocation(int n, Location location) {
@@ -1270,9 +1270,9 @@ public class Player extends Entity {
                         String.format(
                                 "p|%d|%d|%d|%d|%d",
                                 selection,
-                                location.x(),
-                                location.y(),
-                                location.z(),
+                                location.getX(),
+                                location.getY(),
+                                location.getZ(),
                                 volume
                         ).getBytes()
                 );
@@ -1571,9 +1571,9 @@ public class Player extends Entity {
             p.writeInt(boomBlocks.size());
             Location center = position.location();
             for (var block : boomBlocks) {
-                p.writeByte((byte) (block.x() - center.x()));
-                p.writeByte((byte) (block.y() - center.y()));
-                p.writeByte((byte) (block.z() - center.z()));
+                p.writeByte((byte) (block.getX() - center.getX()));
+                p.writeByte((byte) (block.getY() - center.getY()));
+                p.writeByte((byte) (block.getZ() - center.getZ()));
             }
             p.writeFloat(playerKick.getX());
             p.writeFloat(playerKick.getY());

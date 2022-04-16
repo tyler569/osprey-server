@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Arrays;
+import java.util.HashSet;
 
 public class Commands {
     @Command(value = "teleport", args = {"destination: vec3"})
@@ -71,9 +72,9 @@ public class Commands {
             blockId = state.protocolId();
         }
         int count = 0;
-        for (int y = Integer.min(l1.y(), l2.y()); y <= Integer.max(l1.y(), l2.y()); y++) {
-            for (int z = Integer.min(l1.z(), l2.z()); z <= Integer.max(l1.z(), l2.z()); z++) {
-                for (int x = Integer.min(l1.x(), l2.x()); x <= Integer.max(l1.x(), l2.x()); x++) {
+        for (int y = Integer.min(l1.getY(), l2.getY()); y <= Integer.max(l1.getY(), l2.getY()); y++) {
+            for (int z = Integer.min(l1.getZ(), l2.getZ()); z <= Integer.max(l1.getZ(), l2.getZ()); z++) {
+                for (int x = Integer.min(l1.getX(), l2.getX()); x <= Integer.max(l1.getX(), l2.getX()); x++) {
                     var location = new Location(x, y, z);
                     Main.INSTANCE.getWorld().setBlock(location, blockId);
                     count++;

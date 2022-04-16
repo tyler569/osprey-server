@@ -75,7 +75,7 @@ object Main {
         }
     }
 
-    fun playersWithin(radius: Int, location: Location?): Stream<Player?> {
+    fun playersWithin(radius: Int, location: Location): Stream<Player?> {
         return players.values.stream()
             .filter { player: Player? -> player!!.location().withinRadiusOf(radius, location) }
     }

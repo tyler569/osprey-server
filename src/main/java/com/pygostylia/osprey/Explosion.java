@@ -14,7 +14,7 @@ public class Explosion {
             for (int y = -maxRadius; y < maxRadius; y++) {
                 for (int z = -maxRadius; z < maxRadius; z++) {
                     var location = center.offset(x, y, z);
-                    if (location.y() > 255 || location.y() < 0) continue;
+                    if (location.getY() > 255 || location.getY() < 0) continue;
                     double distance = center.distance(location);
                     if (power / 1.5 > distance || rng.nextDouble() * power > distance) {
                         locations.add(location);

@@ -13,9 +13,9 @@ data class Position(
     constructor(location: Location) : this(location.x.toDouble(), location.y.toDouble(), location.z.toDouble())
 
     fun moveTo(location: Location) {
-        x = location.x() + 0.5
-        y = location.y().toDouble()
-        z = location.z() + 0.5
+        x = location.x + 0.5
+        y = location.y.toDouble()
+        z = location.z + 0.5
     }
 
     fun yawAngle(): Byte {
@@ -78,9 +78,9 @@ data class Position(
         @JvmStatic
         fun middle(location: Location): Position {
             val p = Position()
-            p.x = location.x() + 0.5
-            p.y = location.y().toDouble()
-            p.z = location.z() + 0.5
+            p.x = location.x + 0.5
+            p.y = location.y.toDouble()
+            p.z = location.z + 0.5
             return p
         }
 
