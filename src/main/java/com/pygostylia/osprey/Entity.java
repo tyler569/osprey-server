@@ -14,7 +14,7 @@ abstract public class Entity {
     Entity() {
         uuid = UUID.randomUUID();
         playersWithLoaded = new ArrayList<>();
-        id = Main.addEntity(this);
+        id = Main.INSTANCE.addEntity(this);
     }
 
     Entity(Position position) {
@@ -36,7 +36,7 @@ abstract public class Entity {
     public void destroy() {
         playersWithLoaded.forEach(player -> player.sendDestroyEntity(this));
         playersWithLoaded.clear();
-        Main.removeEntity(this);
+        Main.INSTANCE.removeEntity(this);
     }
 
     public UUID uuid() {

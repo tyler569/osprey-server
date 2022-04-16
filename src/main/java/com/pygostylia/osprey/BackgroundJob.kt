@@ -1,9 +1,8 @@
 package com.pygostylia.osprey
 
-import java.util.*
 import java.util.concurrent.PriorityBlockingQueue
 
-class BackgroundJob(val f: () -> Unit, val priority: Int) : Comparable<BackgroundJob> {
+data class BackgroundJob(val f: () -> Unit, val priority: Int) : Comparable<BackgroundJob> {
     companion object : Runnable {
         private val backgroundQueue: PriorityBlockingQueue<BackgroundJob> = PriorityBlockingQueue()
 

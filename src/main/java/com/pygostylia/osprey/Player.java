@@ -156,9 +156,9 @@ public class Player extends Entity {
 
     private void disconnect() {
         connection.close();
-        Main.removePlayer(this);
+        Main.INSTANCE.removePlayer(this);
         if (connection.isEstablished()) {
-            Main.forEachPlayer(player -> {
+            Main.INSTANCE.forEachPlayer(player -> {
                 player.sendDespawnPlayer(this);
                 player.sendRemovePlayer(this);
                 player.sendNotification(String.format("%s has left the game.", name));
@@ -183,7 +183,7 @@ public class Player extends Entity {
     }
 
     private void otherPlayers(Consumer<Player> lambda) {
-        Main.forEachPlayer(player -> {
+        Main.INSTANCE.forEachPlayer(player -> {
             if (player == this) return;
             lambda.accept(player);
         });
@@ -271,7 +271,7 @@ public class Player extends Entity {
     }
 
     void writeHandshakeResponse() {
-        final String handshakeInfo = Main.handshakeJson();
+        final String handshakeInfo = Main.INSTANCE.handshakeJson();
         sendPacket(0, p -> {
             p.writeVarInt(handshakeInfo.length());
             p.write(handshakeInfo.getBytes());
@@ -316,7 +316,7 @@ public class Player extends Entity {
     public void sendEncryptionRequest() {
         sendPacket(1, p -> { // encryption request
             p.writeString("server id not short");
-            var encodedKey = Main.encryptionKey.getPublic().getEncoded();
+            var encodedKey = Main.INSTANCE.getEncryptionKey().getPublic().getEncoded();
             p.writeVarInt(encodedKey.length);
             p.writeBytes(encodedKey);
             p.writeVarInt(encryptionToken.length);
@@ -381,22 +381,22 @@ public class Player extends Entity {
         loadFromDb();
         sendJoinGame();
         sendCommandData();
-        sendAddPlayers(Main.allPlayers());
+        sendAddPlayers(Main.INSTANCE.allPlayers());
         sendAddPlayer(this);
         sendBrand(Main.brand);
         sendUpdateChunkPosition();
         sendInventory();
         sendTags();
         sendHeldItemChange((byte) selectedHotbarSlot);
-        Main.forEachPlayer(player -> {
+        Main.INSTANCE.forEachPlayer(player -> {
             player.sendAddPlayer(this);
             player.sendSpawnPlayer(this);
             player.sendEquipment(this);
             sendSpawnPlayer(player);
             sendEquipment(player);
         });
-        Main.addPlayer(this);
-        Main.forEachPlayer(player -> player.sendNotification(String.format("%s has joined the game (id %d)", name, id)));
+        Main.INSTANCE.addPlayer(this);
+        Main.INSTANCE.forEachPlayer(player -> player.sendNotification(String.format("%s has joined the game (id %d)", name, id)));
         initialSpawnPlayer();
     }
 
@@ -423,12 +423,12 @@ public class Player extends Entity {
 
         try {
             var cipher = Cipher.getInstance("RSA");
-            cipher.init(Cipher.DECRYPT_MODE, Main.encryptionKey.getPrivate());
+            cipher.init(Cipher.DECRYPT_MODE, Main.INSTANCE.getEncryptionKey().getPrivate());
             decryptedToken = cipher.doFinal(token);
             printf("  decrypted token: %s%n",
                     Arrays.toString(decryptedToken));
 
-            cipher.init(Cipher.DECRYPT_MODE, Main.encryptionKey.getPrivate());
+            cipher.init(Cipher.DECRYPT_MODE, Main.INSTANCE.getEncryptionKey().getPrivate());
             decryptedSecret = cipher.doFinal(secret);
             printf("  decrypted secret key: %s%n",
                     Arrays.toString(decryptedSecret));
@@ -647,16 +647,16 @@ public class Player extends Entity {
         String message = packet.readString();
         printf("[chat] %s%n", message);
         if (message.startsWith("/")) {
-            Main.commands.dispatch(this, message.substring(1).split(" +"));
+            Main.INSTANCE.getCommands().dispatch(this, message.substring(1).split(" +"));
         } else {
-            Main.forEachPlayer(player -> {
+            Main.INSTANCE.forEachPlayer(player -> {
                 player.sendChat(this, message);
             });
         }
     }
 
     public void sendCommandData() {
-        sendPacket(0x10, p -> p.write(Main.commands.getPacket()));
+        sendPacket(0x10, p -> p.write(Main.INSTANCE.getCommands().getPacket()));
     }
 
     // movement
@@ -694,7 +694,7 @@ public class Player extends Entity {
         sendPacket(0x20, p -> {
             p.writeInt(chunkLocation.x());
             p.writeInt(chunkLocation.z());
-            Main.world.load(chunkLocation).encodePacket(p);
+            Main.INSTANCE.getWorld().load(chunkLocation).encodePacket(p);
         });
         loadedChunks.add(chunkLocation);
         dispatchedChunks.remove(chunkLocation);
@@ -765,7 +765,7 @@ public class Player extends Entity {
         otherPlayers(player -> player.sendEntityPositionAndRotation(id, delta_x, delta_y, delta_z, position));
         if (isElytraFlying && onGround) {
             isElytraFlying = false;
-            Main.forEachPlayer(player -> player.sendPlayerEntityMetadata(this));
+            Main.INSTANCE.forEachPlayer(player -> player.sendPlayerEntityMetadata(this));
         }
     }
 
@@ -951,7 +951,7 @@ public class Player extends Entity {
         float forward = packet.readFloat();
         int flags = packet.read();
 
-        var vehicle = Main.entityById(vehicleEntityId);
+        var vehicle = Main.INSTANCE.entityById(vehicleEntityId);
         if (vehicle.isEmpty()) {
             return;
         }
@@ -992,13 +992,13 @@ public class Player extends Entity {
             case 0 -> {
                 // "start" digging, which of course means do all of digging
                 // for players in creative mode, which is all of them for now.
-                var blockId = Main.world.block(location);
+                var blockId = Main.INSTANCE.getWorld().block(location);
                 if (selectedItem().itemId() == 586) {
                     sendBlockChange(location, blockId);
                     setEditorLocation(0, location);
                     return;
                 }
-                Main.world.setBlock(location, 0);
+                Main.INSTANCE.getWorld().setBlock(location, 0);
                 otherPlayers(player -> {
                     player.sendBlockBreakParticles(location, blockId);
                     player.sendBlockChange(location, 0);
@@ -1026,7 +1026,7 @@ public class Player extends Entity {
             case 5 -> {
                 // finish interacting
                 isShielding = false;
-                Main.forEachPlayer(player -> {
+                Main.INSTANCE.forEachPlayer(player -> {
                     player.sendPlayerEntityMetadata(this);
                 });
                 if (isHoldingBow(0)) {
@@ -1040,7 +1040,7 @@ public class Player extends Entity {
                 var held = selectedItem();
                 inventory.put((short) (selectedHotbarSlot + 36), offhandItem());
                 inventory.put((short) 45, held);
-                Main.forEachPlayer(player -> {
+                Main.INSTANCE.forEachPlayer(player -> {
                     // explicitly including this player, this updates the client
                     player.sendEquipment(this);
                 });
@@ -1065,7 +1065,7 @@ public class Player extends Entity {
             case 5 -> originalLocation.offset(1, 0, 0);
             default -> throw new IllegalStateException("Invalid face value");
         };
-        var current = Main.world.block(location);
+        var current = Main.INSTANCE.getWorld().block(location);
         float cursorX = packet.readFloat();
         float cursorY = packet.readFloat();
         float cursorZ = packet.readFloat();
@@ -1105,7 +1105,7 @@ public class Player extends Entity {
         printf("Place %d %s %s %f %f %f %b%n", hand, location, face, cursorX, cursorY, cursorZ, insideBlock);
 
         AtomicBoolean blockPlacement = new AtomicBoolean(false);
-        Main.forEachPlayer(player -> {
+        Main.INSTANCE.forEachPlayer(player -> {
             if (player.intersectsLocation(location)) {
                 blockPlacement.set(true);
             }
@@ -1119,11 +1119,11 @@ public class Player extends Entity {
         Integer blockId = Registry.itemToBlockDefault(item.itemId());
         if (blockId == null) {
             printf("Attempt to place %d is invalid%n", item.itemId());
-            sendBlockChange(location, Main.world.block(location));
+            sendBlockChange(location, Main.INSTANCE.getWorld().block(location));
             return;
         }
-        Main.world.setBlock(location, blockId);
-        Main.forEachPlayer(player -> player.sendBlockChange(location, blockId));
+        Main.INSTANCE.getWorld().setBlock(location, blockId);
+        Main.INSTANCE.forEachPlayer(player -> player.sendBlockChange(location, blockId));
     }
 
     boolean isHoldingItem(int item, int hand) {
@@ -1160,7 +1160,7 @@ public class Player extends Entity {
 
         if (isHoldingShield(hand)) {
             isShielding = true;
-            Main.forEachPlayer(player -> {
+            Main.INSTANCE.forEachPlayer(player -> {
                 player.sendPlayerEntityMetadata(this);
             });
         }
@@ -1295,7 +1295,7 @@ public class Player extends Entity {
         String sql = """
                 SELECT id, selected_slot, x, y, z, pitch, yaw FROM players WHERE name = ?;
                 """;
-        try (var connection = Main.world.connect();
+        try (var connection = Main.INSTANCE.getWorld().connect();
              var statement = connection.prepareStatement(sql)) {
             statement.setString(1, name);
             var results = statement.executeQuery();
@@ -1335,7 +1335,7 @@ public class Player extends Entity {
                 INSERT INTO players (uuid, name)
                 VALUES (?, ?);
                 """;
-        try (var connection = Main.world.connect();
+        try (var connection = Main.INSTANCE.getWorld().connect();
              var statement = connection.prepareStatement(sql)) {
             statement.setString(1, uuid.toString());
             statement.setString(2, name);
@@ -1359,7 +1359,7 @@ public class Player extends Entity {
                     yaw = ?
                 WHERE id = ?;
                 """;
-        try (var connection = Main.world.connect();
+        try (var connection = Main.INSTANCE.getWorld().connect();
              var statement = connection.prepareStatement(sql)) {
             statement.setInt(1, selectedHotbarSlot);
             statement.setDouble(2, position.x);
@@ -1394,7 +1394,7 @@ public class Player extends Entity {
 
     public void changeGamemode(int mode) {
         sendChangeGameState(3, mode);
-        Main.forEachPlayer(player -> {
+        Main.INSTANCE.forEachPlayer(player -> {
             player.sendChangeGamemode(this, mode);
         });
     }
@@ -1474,7 +1474,7 @@ public class Player extends Entity {
 
     // maybe
     private void vehicle(Function<Entity, Void> lambda) {
-        Optional<Entity> maybeVehicle = Main.entityById(vehicleEntityId);
+        Optional<Entity> maybeVehicle = Main.INSTANCE.entityById(vehicleEntityId);
         if (maybeVehicle.isEmpty()) return;
         lambda.apply(maybeVehicle.get());
     }
@@ -1493,7 +1493,7 @@ public class Player extends Entity {
         var sneak = packet.readBoolean();
         printf("Interact %d entity %d%n", type, entityId);
 
-        var target = Main.entityById(entityId);
+        var target = Main.INSTANCE.entityById(entityId);
         if (target.isEmpty()) {
             return;
         }
@@ -1524,7 +1524,7 @@ public class Player extends Entity {
     private void handleVehicleMove(Packet packet) throws IOException {
         Position position = packet.readPosition();
         this.position = position;
-        var vehicle = Main.entityById(vehicleEntityId);
+        var vehicle = Main.INSTANCE.entityById(vehicleEntityId);
         if (vehicle.isEmpty()) {
             return;
         }
@@ -1535,7 +1535,7 @@ public class Player extends Entity {
     private void handleSteerBoat(Packet packet) {
         boolean left = packet.readBoolean();
         boolean right = packet.readBoolean();
-        var vehicle = Main.entityById(vehicleEntityId);
+        var vehicle = Main.INSTANCE.entityById(vehicleEntityId);
         if (vehicle.isEmpty()) {
             return;
         }
@@ -1568,7 +1568,7 @@ public class Player extends Entity {
         var status = packet.read();
         isCreativeFlying = (status & 0x02) != 0;
         isElytraFlying = false;
-        Main.forEachPlayer(player -> player.sendPlayerEntityMetadata(this));
+        Main.INSTANCE.forEachPlayer(player -> player.sendPlayerEntityMetadata(this));
     }
 
     public void sendExplosion(Position position, float strength, Collection<Location> boomBlocks, Velocity playerKick) {

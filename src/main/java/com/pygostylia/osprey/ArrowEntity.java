@@ -1,6 +1,5 @@
 package com.pygostylia.osprey;
 
-import java.io.IOException;
 import java.time.Duration;
 import java.util.Collection;
 import java.util.concurrent.ScheduledFuture;
@@ -38,8 +37,8 @@ public class ArrowEntity extends ObjectEntity {
     @Override
     public void spawn() {
         super.spawn();
-        tick = Main.scheduler.submitForEachTick(this::stepPhysics);
-        Main.scheduler.submit(this::destroy, 30, TimeUnit.SECONDS);
+        tick = Main.INSTANCE.getScheduler().submitForEachTick(this::stepPhysics);
+        Main.INSTANCE.getScheduler().submit(this::destroy, 30, TimeUnit.SECONDS);
         if (critical) {
             for (Player player : playersWithLoaded) {
                 player.sendEntityMetadata(this, 7, 0, (byte) 1);
@@ -74,7 +73,7 @@ public class ArrowEntity extends ObjectEntity {
     }
 
     private boolean intersectingBlock() {
-        return Main.world.block(location()) != 0;
+        return Main.INSTANCE.getWorld().block(location()) != 0;
     }
 
     private void stepPhysics() {
@@ -112,7 +111,7 @@ public class ArrowEntity extends ObjectEntity {
         if (explode) {
             Collection<Location> boomBlocks = Explosion.generateBoomBlocks(location(), 5.5f);
             for (Location boomBlock : boomBlocks) {
-                Main.world.setBlock(boomBlock, 0);
+                Main.INSTANCE.getWorld().setBlock(boomBlock, 0);
             }
             playersWithLoaded.forEach(player -> player.sendExplosion(position, 5.5f, boomBlocks, Velocity.zero()));
         }

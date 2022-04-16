@@ -19,6 +19,6 @@ abstract public class ObjectEntity extends Entity {
     }
 
     public void spawn() {
-        Main.playersWithin(64, position.location()).forEach(this::spawnForPlayer);
+        Main.INSTANCE.playersWithin(64, position.location()).forEach(this::spawnForPlayer);
     }
 }

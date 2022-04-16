@@ -29,7 +29,7 @@ public class Commands {
             sender.sendError("Not enough arguments");
             return;
         }
-        Player target = Main.playerByName(args[1]);
+        Player target = Main.INSTANCE.playerByName(args[1]);
         if (target == null) {
             sender.sendError(String.format("%s is not online", args[1]));
         }
@@ -75,10 +75,10 @@ public class Commands {
             for (int z = Integer.min(l1.z(), l2.z()); z <= Integer.max(l1.z(), l2.z()); z++) {
                 for (int x = Integer.min(l1.x(), l2.x()); x <= Integer.max(l1.x(), l2.x()); x++) {
                     var location = new Location(x, y, z);
-                    Main.world.setBlock(location, blockId);
+                    Main.INSTANCE.getWorld().setBlock(location, blockId);
                     count++;
                     int finalBlockId = blockId;
-                    Main.forEachPlayer((player) -> {
+                    Main.INSTANCE.forEachPlayer((player) -> {
                         player.sendBlockChange(location, finalBlockId);
                     });
                 }
@@ -89,7 +89,7 @@ public class Commands {
 
     @Command("lag")
     public static void lag(Player sender, String[] args) {
-        Main.forEachPlayer((player) -> {
+        Main.INSTANCE.forEachPlayer((player) -> {
             player.sendNotification(String.format("%s thought there was some lag", sender.name()));
         });
         sender.kick();
@@ -105,7 +105,7 @@ public class Commands {
     public static void save(Player sender, String[] args) {
         var now = Instant.now();
         if (sender.isAdmin())
-            Main.world.save();
+            Main.INSTANCE.getWorld().save();
         var then = Instant.now();
         var took = Duration.between(now, then);
         sender.sendNotification(String.format("Saved world! (%fms)",
@@ -128,7 +128,7 @@ public class Commands {
     public static void gameState(Player sender, String[] args) {
         var reason = Byte.parseByte(args[1]);
         var value = Float.parseFloat(args[2]);
-        Main.forEachPlayer((player) -> {
+        Main.INSTANCE.forEachPlayer((player) -> {
             player.sendChangeGameState(reason, value);
         });
     }
@@ -156,15 +156,15 @@ public class Commands {
     @Command(value = "entitystatus", args = {"id: integer", "status: integer(0,255)"})
     @CommandAlias("es")
     public static void entityStatus(Player sender, String[] args) {
-        Main.forEachPlayer(player -> {
+        Main.INSTANCE.forEachPlayer(player -> {
             player.sendEntityStatus(Integer.parseInt(args[1]), Byte.parseByte(args[2]));
         });
     }
 
     @Command("cloud")
     public static void cloud(Player sender, String[] args) {
-        var future = Main.scheduler.submitForEachTick(() -> {
-            Main.forEachPlayer(player -> player.sendEntityStatus(sender.id(), (byte) 43));
+        var future = Main.INSTANCE.getScheduler().submitForEachTick(() -> {
+            Main.INSTANCE.forEachPlayer(player -> player.sendEntityStatus(sender.id(), (byte) 43));
         });
         sender.addFuture(future);
     }
@@ -179,7 +179,7 @@ public class Commands {
 
     @Command("followlightining")
     public static void followLightning(Player sender, String[] args) {
-        var future = Main.scheduler.submitForEachTick(() -> {
+        var future = Main.INSTANCE.getScheduler().submitForEachTick(() -> {
             Position position;
             if (sender.isSneaking()) {
                 position = sender.position().offset(0, 1.5, 0);
@@ -187,7 +187,7 @@ public class Commands {
                 position = sender.position().offset(0, 1.8, 0);
             }
             var bolt = new LightningEntity(position);
-            Main.forEachPlayer(player -> player.sendSpawnEntity(bolt));
+            Main.INSTANCE.forEachPlayer(player -> player.sendSpawnEntity(bolt));
             bolt.destroy();
         });
         sender.addFuture(future);
@@ -195,7 +195,7 @@ public class Commands {
 
     @Command(value = "kick", args = {"target: player"})
     public static void kick(Player sender, String[] args) {
-        Player target = Main.playerByName(args[1]);
+        Player target = Main.INSTANCE.playerByName(args[1]);
         if (target == null) {
             sender.sendError(args[1] + " is not online");
             return;
