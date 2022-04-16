@@ -76,9 +76,7 @@ public class Connection {
                 }
             }
         }
-        Packet packet = new Packet(data, originalLen);
-        packet.type = packet.readVarInt();
-        return packet;
+        return new Packet(data, originalLen);
     }
 
     void sendPacket(int type, PacketBuilderLambda closure) throws IOException {

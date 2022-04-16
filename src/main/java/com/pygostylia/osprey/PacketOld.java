@@ -3,12 +3,12 @@ package com.pygostylia.osprey;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 
-public class Packet extends ByteArrayInputStream {
+public class PacketOld extends ByteArrayInputStream {
     public int type;
     public int originalLen;
     public int compressedLen;
 
-    public Packet(byte[] buf, int len) throws IOException {
+    public PacketOld(byte[] buf, int len) throws IOException {
         super(buf);
         originalLen = len;
     }

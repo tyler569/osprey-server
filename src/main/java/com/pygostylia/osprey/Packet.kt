@@ -1,0 +1,61 @@
+package com.pygostylia.osprey
+
+import java.io.ByteArrayInputStream
+
+class Packet private constructor(buf: ByteArray) : ByteArrayInputStream(buf) {
+    @kotlin.jvm.JvmField
+    var originalLen: Int = 0
+
+    @kotlin.jvm.JvmField
+    var type: Int = 0
+
+    constructor(buf: ByteArray, len: Int) : this(buf) {
+        originalLen = len
+        type = readVarInt()
+    }
+
+    fun readVarInt(): Int {
+        return VarInt.read(this)
+    }
+
+    fun readInteger(): Int {
+        return Protocol.readInteger(this)
+    }
+
+    fun readLong(): Long {
+        return Protocol.readLong(this)
+    }
+
+    fun readShort(): Short {
+        return Protocol.readShort(this)
+    }
+
+    fun readString(): String {
+        return Protocol.readString(this)
+    }
+
+    fun readBoolean(): Boolean {
+        return read() != 0
+    }
+
+    fun readFloat(): Float {
+        return Protocol.readFloat(this)
+    }
+
+    fun readDouble(): Double {
+        return Protocol.readDouble(this)
+    }
+
+    fun readLocation(): Location {
+        return Location(Protocol.readLong(this))
+    }
+
+    fun readPosition(): Position {
+        val x = readDouble()
+        val y = readDouble()
+        val z = readDouble()
+        val yaw = readFloat()
+        val pitch = readFloat()
+        return Position(x, y, z, yaw, pitch)
+    }
+}
