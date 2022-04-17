@@ -10,7 +10,6 @@ import com.pygostylia.osprey.commands.CommandAlias
 import java.io.IOException
 import java.time.Duration
 import java.time.Instant
-import java.util.*
 
 object Commands {
     @Command(value = "teleport", args = ["destination: vec3"])
@@ -22,7 +21,7 @@ object Commands {
         }
         val destination = relativeLocation(
             sender.location(),
-            Arrays.copyOfRange(args, 1, 4)
+            args.copyOfRange(1, 4)
         )
         sender.teleport(destination)
     }

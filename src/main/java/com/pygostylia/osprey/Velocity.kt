@@ -1,6 +1,7 @@
 package com.pygostylia.osprey
 
 import java.io.IOException
+import kotlin.math.*
 
 /*
 The protocol representation of velocity is as a triple of Shorts,
@@ -38,10 +39,10 @@ data class Velocity(val x: Float, val y: Float, val z: Float) {
 
         @JvmStatic
         fun directionMagnitude(entityPosition: EntityPosition, speed: Float): Velocity {
-            var x = -Math.sin(entityPosition.yawRadians().toDouble())
-            var z = Math.cos(entityPosition.yawRadians().toDouble())
-            val yH = -Math.sin(entityPosition.pitchRadians().toDouble())
-            val yXZ = Math.cos(entityPosition.pitchRadians().toDouble())
+            var x = -sin(entityPosition.yaw)
+            var z = cos(entityPosition.yaw)
+            val yH = -sin(entityPosition.pitch)
+            val yXZ = cos(entityPosition.pitch)
             x *= yXZ
             z *= yXZ
             return Velocity(

@@ -27,7 +27,7 @@ abstract class EntityX(val registryName: String, val collider: Collider) : Entit
     override fun type(): Int = typex
     override fun uuid(): UUID = uuidx
 
-    fun blockPosition() = entityPosition.blockPosition
+    val blockPosition: BlockPosition get() = entityPosition.blockPosition
 
     open fun spawnForPlayer(p: PlayerX) {
         playersWithLoadedx.add(p)
@@ -35,7 +35,7 @@ abstract class EntityX(val registryName: String, val collider: Collider) : Entit
 
     fun spawn() {
         BackgroundJob.queueHighPriority {
-            Main.playersWithin(64, blockPosition()).forEach { player ->
+            Main.playersWithin(64, blockPosition).forEach { player ->
                 spawnForPlayer(player)
             }
         }
@@ -44,9 +44,9 @@ abstract class EntityX(val registryName: String, val collider: Collider) : Entit
     open fun doAIUpdate() {}
 }
 
-private class LightningX: EntityX("minecraft:lightning_bolt", Collider(y = 0F, xz = 0F))
+private class LightningX : EntityX("minecraft:lightning_bolt", Collider(y = 0F, xz = 0F))
 
-private class PigX: EntityX("minecraft:pig", Collider(y = 1F, xz = 1F)) {
+private class PigX : EntityX("minecraft:pig", Collider(y = 1F, xz = 1F)) {
     override fun doAIUpdate() {
         // Do some super advanced pig AI
     }

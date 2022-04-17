@@ -42,8 +42,8 @@ class PlayerX(private val connection: Connection) : EntityX("minecraft:player", 
                 handlePacket(p)
             } catch (e: SocketException) {
                 println("Exception! ${e.message};  Last packet was ${connection.lastPacketType}")
-                e.printStackTrace();
-                connection.close();
+                e.printStackTrace()
+                connection.close()
             }
         }
     }
@@ -87,7 +87,7 @@ class PlayerX(private val connection: Connection) : EntityX("minecraft:player", 
     private fun handleChatMessage(p: Packet) {
         val message = p.readString()
         BackgroundJob.queueHighPriority {
-            Main.allPlayers().forEach { it?.sendChat(asPlayer(), message) }
+            Main.forEachPlayer { it.sendChat(asPlayer(), message) }
         }
     }
 
@@ -95,7 +95,7 @@ class PlayerX(private val connection: Connection) : EntityX("minecraft:player", 
         val onGround: Boolean = p.readBoolean()
 
         BackgroundJob.queueHighPriority {
-            Main.allPlayers().forEach { it?.sendEntityTeleport(asPlayer().id, EntityPosition()) }
+            Main.forEachPlayer { it.sendEntityTeleport(asPlayer().id, EntityPosition()) }
         }
 
         BackgroundJob.queue {
@@ -103,7 +103,7 @@ class PlayerX(private val connection: Connection) : EntityX("minecraft:player", 
         }
 
         BackgroundJob.queue {
-            Main.allPlayers().forEach { it?.sendNotification("message") }
+            Main.forEachPlayer { it.sendNotification("message") }
         }
     }
 

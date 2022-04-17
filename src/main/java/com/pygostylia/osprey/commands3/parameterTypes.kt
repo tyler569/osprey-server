@@ -4,6 +4,6 @@ interface ParameterType
 
 @JvmInline
 value class Player(val s: String) : ParameterType {
-    companion object {}
+    companion object
 }
 

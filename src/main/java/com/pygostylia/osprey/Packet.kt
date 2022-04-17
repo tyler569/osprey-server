@@ -3,10 +3,10 @@ package com.pygostylia.osprey
 import java.io.ByteArrayInputStream
 
 class Packet private constructor(buf: ByteArray) : ByteArrayInputStream(buf) {
-    @kotlin.jvm.JvmField
+    @JvmField
     var originalLen: Int = 0
 
-    @kotlin.jvm.JvmField
+    @JvmField
     var type: Int = 0
 
     constructor(buf: ByteArray, len: Int) : this(buf) {
