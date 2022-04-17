@@ -1,18 +1,14 @@
 package com.pygostylia.osprey
 
 import java.io.ByteArrayOutputStream
+import java.io.DataOutputStream
 import java.nio.ByteBuffer
 import java.util.*
 
-class PacketBuilder : ByteArrayOutputStream() {
+class PacketBuilder : DataOutputStream(ByteArrayOutputStream()) {
     fun writeString(str: String) {
         VarInt.write(this, str.length)
-        writeBytes(str.toByteArray())
-    }
-
-    fun writeString0(str: String) {
-        writeBytes(str.toByteArray())
-        write(0)
+        write(str.toByteArray())
     }
 
     fun writeVarInt(number: Int) {
@@ -21,46 +17,6 @@ class PacketBuilder : ByteArrayOutputStream() {
 
     fun writeByte(b: Byte) {
         write(b.toInt())
-    }
-
-    fun writeBoolean(b: Boolean) {
-        write(if (b) 1 else 0)
-    }
-
-    fun writeShort(v: Short) {
-        val buffer = ByteBuffer.allocate(java.lang.Long.BYTES)
-        buffer.putShort(v)
-        write(buffer.array(), 0, java.lang.Short.BYTES)
-    }
-
-    fun writeShort(v: Int) {
-        val buffer = ByteBuffer.allocate(java.lang.Long.BYTES)
-        buffer.putShort(v.toShort())
-        write(buffer.array(), 0, java.lang.Short.BYTES)
-    }
-
-    fun writeInt(v: Int) {
-        val buffer = ByteBuffer.allocate(java.lang.Long.BYTES)
-        buffer.putInt(v)
-        write(buffer.array(), 0, Integer.BYTES)
-    }
-
-    fun writeLong(v: Long) {
-        val buffer = ByteBuffer.allocate(java.lang.Long.BYTES)
-        buffer.putLong(v)
-        write(buffer.array(), 0, java.lang.Long.BYTES)
-    }
-
-    fun writeFloat(v: Float) {
-        val buffer = ByteBuffer.allocate(java.lang.Long.BYTES)
-        buffer.putFloat(v)
-        write(buffer.array(), 0, java.lang.Float.BYTES)
-    }
-
-    fun writeDouble(v: Double) {
-        val buffer = ByteBuffer.allocate(java.lang.Long.BYTES)
-        buffer.putDouble(v)
-        write(buffer.array(), 0, java.lang.Double.BYTES)
     }
 
     fun writeUUID(uuid: UUID) {
@@ -84,4 +40,6 @@ class PacketBuilder : ByteArrayOutputStream() {
         writeByte(entityPosition.pitchAngle())
         writeByte(entityPosition.yawAngle())
     }
+
+    fun toByteArray(): ByteArray = (out as ByteArrayOutputStream).toByteArray()
 }

@@ -56,8 +56,8 @@ data class Velocity(val x: Float, val y: Float, val z: Float) {
             return protocol / 400f
         }
 
-        private fun blockPerSecondToProtocol(blockPerSecond: Float): Short {
-            return (blockPerSecond * 400f).toInt().toShort()
+        private fun blockPerSecondToProtocol(blockPerSecond: Float): Int {
+            return (blockPerSecond * 400f).toInt()
         }
     }
 }

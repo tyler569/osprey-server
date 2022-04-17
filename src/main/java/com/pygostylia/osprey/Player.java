@@ -313,9 +313,9 @@ public class Player extends Entity {
             p.writeString("server id not short");
             var encodedKey = Main.INSTANCE.getEncryptionKey().getPublic().getEncoded();
             p.writeVarInt(encodedKey.length);
-            p.writeBytes(encodedKey);
+            p.write(encodedKey);
             p.writeVarInt(encryptionToken.length);
-            p.writeBytes(encryptionToken);
+            p.write(encryptionToken);
         });
     }
 
@@ -803,7 +803,7 @@ public class Player extends Entity {
         updatePosition(pitch, yaw, onGround);
     }
 
-    private void handleMovement(Packet packet) {
+    private void handleMovement(Packet packet) throws IOException {
         boolean onGround = packet.readBoolean();
         otherPlayers(player -> player.sendEntityTeleport(id, entityPosition));
         updatePosition(onGround);
@@ -1251,11 +1251,11 @@ public class Player extends Entity {
     public void sendCUIEvent(int selection, BlockPosition blockPosition, long volume) {
         if (selection == -1) {
             sendPluginMessage("worldedit:cui", p -> {
-                p.writeBytes("s|cuboid".getBytes());
+                p.write("s|cuboid".getBytes());
             });
         } else {
             sendPluginMessage("worldedit:cui", p -> {
-                p.writeBytes(String.format("p|%d|%d|%d|%d|%d", selection, blockPosition.getX(), blockPosition.getY(), blockPosition.getZ(), volume).getBytes());
+                p.write(String.format("p|%d|%d|%d|%d|%d", selection, blockPosition.getX(), blockPosition.getY(), blockPosition.getZ(), volume).getBytes());
             });
         }
     }
@@ -1500,7 +1500,7 @@ public class Player extends Entity {
         otherPlayers(player -> player.sendEntityTeleport(vehicleEntityId, entityPosition));
     }
 
-    private void handleSteerBoat(Packet packet) {
+    private void handleSteerBoat(Packet packet) throws IOException {
         boolean left = packet.readBoolean();
         boolean right = packet.readBoolean();
         var vehicle = Main.INSTANCE.entityById(vehicleEntityId);
@@ -1532,7 +1532,7 @@ public class Player extends Entity {
         }
     }
 
-    private void handleIsFlying(Packet packet) {
+    private void handleIsFlying(Packet packet) throws IOException {
         var status = packet.read();
         isCreativeFlying = (status & 0x02) != 0;
         isElytraFlying = false;

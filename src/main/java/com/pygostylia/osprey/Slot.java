@@ -14,7 +14,7 @@ public record Slot(boolean empty, int itemId, int count, NBTCompound data) {
         this(false, itemId, count, null);
     }
 
-    public void encode(PacketBuilder p) {
+    public void encode(PacketBuilder p) throws IOException {
         if (empty) {
             p.writeBoolean(false);
         } else {

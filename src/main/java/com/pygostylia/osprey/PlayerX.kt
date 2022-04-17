@@ -58,11 +58,18 @@ class PlayerX(private val connection: Connection) : EntityX("minecraft:player", 
 
     private fun handleStatusPacket(p: Packet) {
         when (p.type) {
+            // 0 -> handleHandshake(p)
+            // 1 -> handlePing(p)
             else -> handleUnknownPacket(p)
         }
     }
 
     private fun handleLoginPacket(p: Packet) {
+        when (p.type) {
+            // 0 -> handleLoginStart(p)
+            // 1 -> handleEncryptionResponse(p)
+            else -> handleUnknownPacket(p)
+        }
     }
 
     private val playPacketHandlers: HashMap<Int, Function<Unit>> = hashMapOf(
@@ -70,6 +77,26 @@ class PlayerX(private val connection: Connection) : EntityX("minecraft:player", 
         1 to ::handleQueryBlockNBT,
         2 to ::handleSetDifficulty,
         3 to ::handleChatMessage,
+        // 4 to ::handleClientStatus,
+        // 5 to ::handleSettings,
+        // 11 to ::handlePluginMessage,
+        // 14 to ::handleInteractEntity,
+        // 16 to ::handleKeepAlive,
+        // 18 to ::handlePosition,
+        19 to ::handlePositionAndRotation,
+        // 20 to ::handleRotation,
+        21 to ::handleMovement,
+        // 22 to ::handleVehicleMove,
+        // 23 to ::handleSteerBoat,
+        // 26 to ::handleIsFlying,
+        // 27 to ::handlePlayerAction,
+        // 28 to ::handleEntityAction,
+        // 29 to ::handleSteerVehicle,
+        // 37 to ::handleHeldItemChange,
+        // 40 to ::handleCreativeInventoryAction,
+        // 44 to ::handleAnimation,
+        // 46 to ::handlePlayerPlaceBlock,
+        // 47 to ::handlePlayerUseItem,
     )
 
     private fun handlePlayPacket(p: Packet) {
@@ -92,18 +119,12 @@ class PlayerX(private val connection: Connection) : EntityX("minecraft:player", 
     }
 
     private fun handleMovement(p: Packet) {
-        val onGround: Boolean = p.readBoolean()
-
         BackgroundJob.queueHighPriority {
             Main.forEachPlayer { it.sendEntityTeleport(asPlayer().id, EntityPosition()) }
         }
 
         BackgroundJob.queue {
             // updateChunks()
-        }
-
-        BackgroundJob.queue {
-            Main.forEachPlayer { it.sendNotification("message") }
         }
     }
 

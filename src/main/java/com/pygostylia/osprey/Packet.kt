@@ -1,15 +1,16 @@
 package com.pygostylia.osprey
 
 import java.io.ByteArrayInputStream
+import java.io.DataInputStream
 
-class Packet private constructor(buf: ByteArray) : ByteArrayInputStream(buf) {
+class Packet(buf: ByteArray, len: Int) : DataInputStream(ByteArrayInputStream(buf)) {
     @JvmField
     var originalLen: Int = 0
 
     @JvmField
     var type: Int = 0
 
-    constructor(buf: ByteArray, len: Int) : this(buf) {
+    init {
         originalLen = len
         type = readVarInt()
     }
@@ -18,32 +19,8 @@ class Packet private constructor(buf: ByteArray) : ByteArrayInputStream(buf) {
         return VarInt.read(this)
     }
 
-    fun readInteger(): Int {
-        return Protocol.readInteger(this)
-    }
-
-    fun readLong(): Long {
-        return Protocol.readLong(this)
-    }
-
-    fun readShort(): Short {
-        return Protocol.readShort(this)
-    }
-
     fun readString(): String {
         return Protocol.readString(this)
-    }
-
-    fun readBoolean(): Boolean {
-        return read() != 0
-    }
-
-    fun readFloat(): Float {
-        return Protocol.readFloat(this)
-    }
-
-    fun readDouble(): Double {
-        return Protocol.readDouble(this)
     }
 
     fun readLocation(): BlockPosition {
