@@ -45,35 +45,14 @@ object Main {
         entities.remove(entity.id())
     }
 
-    fun allPlayers(): Collection<Player?> {
-        return players.values
-    }
+    fun allPlayers(): Collection<Player> = players.values
+    fun playerByName(name: String): Player? = players.values.firstOrNull { it.name == name }
+    fun playerByEntityId(entityId: Int): Player? = players[entityId]
+    fun entityById(entityId: Int): Optional<Entity> = Optional.ofNullable(entities[entityId])
+    fun forEachPlayer(lambda: Consumer<Player>) = players.values.forEach(lambda)
 
-    fun playerByName(name: String): Player? {
-        return players.values.stream()
-            .filter { player: Player? -> player!!.name == name }
-            .findFirst()
-            .orElse(null)
-    }
-
-    fun playerByEntityId(entityId: Int): Player? {
-        return players[entityId]
-    }
-
-    fun entityById(entityId: Int): Optional<Entity> {
-        return Optional.ofNullable(entities[entityId])
-    }
-
-    fun forEachPlayer(lambda: Consumer<Player>) {
-        for (player in players.values) {
-            lambda.accept(player)
-        }
-    }
-
-    fun playersWithin(radius: Int, blockPosition: BlockPosition): Stream<Player> {
-        return players.values.stream()
-            .filter { player: Player? -> player!!.location().withinRadiusOf(radius, blockPosition) }
-    }
+    fun playersWithin(radius: Int, blockPosition: BlockPosition): Stream<Player> =
+        players.values.stream().filter { player -> player.location().withinRadiusOf(radius, blockPosition) }
 
     fun handshakeJson(): String {
         val result = JSONObject()
@@ -102,6 +81,7 @@ object Main {
     @JvmStatic
     fun main(args: Array<String>) {
         Registry.setup("generated")
+
         BlockState.setup()
 
         commands.register(Commands.javaClass)
