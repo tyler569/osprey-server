@@ -161,7 +161,7 @@ public class CommandBucket {
         }
         method = element.method;
         try {
-            method.invoke(null, sender, args);
+            method.invoke(Commands.INSTANCE, sender, args);
         } catch (Exception e) {
             var cause = e.getCause();
             if (cause != null) {
