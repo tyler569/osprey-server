@@ -17,12 +17,14 @@ object Main {
     private val players: MutableMap<Int, Player> = ConcurrentHashMap()
     private val entities: MutableMap<Int, Entity> = ConcurrentHashMap()
 
-    val encryptionKey: KeyPair by lazy {
+    val encryptionKey: KeyPair
+    init {
         val kpg = KeyPairGenerator.getInstance("RSA")
-        kpg.generateKeyPair()
+        encryptionKey = kpg.generateKeyPair()
     }
 
-    val world: World by lazy { World.open("world.db") }
+    // val world: World by lazy { World.open("world.db") }
+    val world: World = World.open("world.db")
     val commands: CommandBucket = CommandBucket()
 
     private var nextEntityId = 1
