@@ -487,7 +487,7 @@ public class Player extends Entity {
     }
 
     public void sendSpawnPosition() {
-        sendPacket(0x42, p -> p.writeLocation(0, 32, 0));
+        sendPacket(0x42, p -> p.writeBlockPosition(0, 32, 0));
     }
 
     void initialSpawnPlayer() {
@@ -919,7 +919,7 @@ public class Player extends Entity {
                 case 7 -> p.write(((Boolean) value) ? 1 : 0);
                 case 9 -> {
                     if (value instanceof EntityPosition entityPosition) {
-                        p.writeLong(entityPosition.location().encode());
+                        p.writeLong(entityPosition.blockPosition().encode());
                     } else if (value instanceof BlockPosition blockPosition) {
                         p.writeLong(blockPosition.encode());
                     } else {
@@ -970,7 +970,7 @@ public class Player extends Entity {
     public void sendBlockBreakParticles(BlockPosition blockPosition, short blockId) {
         sendPacket(0x21, p -> {
             p.writeInt(2001);
-            p.writeLocation(blockPosition);
+            p.writeBlockPosition(blockPosition);
             p.writeInt(blockId);
             p.writeBoolean(false);
         });
@@ -1567,7 +1567,7 @@ public class Player extends Entity {
             p.writeFloat((float) entityPosition.getZ());
             p.writeFloat(strength);
             p.writeInt(boomBlocks.size());
-            BlockPosition center = entityPosition.location();
+            BlockPosition center = entityPosition.blockPosition();
             for (var block : boomBlocks) {
                 p.writeByte((byte) (block.getX() - center.getX()));
                 p.writeByte((byte) (block.getY() - center.getY()));

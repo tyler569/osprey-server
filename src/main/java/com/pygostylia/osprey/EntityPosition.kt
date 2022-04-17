@@ -34,7 +34,7 @@ data class EntityPosition(
         return z.toInt() shr 4
     }
 
-    fun location(): BlockPosition {
+    fun blockPosition(): BlockPosition {
         return BlockPosition(Math.floor(x).toInt(), Math.floor(y).toInt(), Math.floor(z).toInt())
     }
 

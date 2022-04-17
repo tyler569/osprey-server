@@ -22,12 +22,10 @@ object Main {
         kpg.generateKeyPair()
     }
 
-    val world: World by lazy {
-        World.open("world.db")
-    }
+    val world: World by lazy { World.open("world.db") }
+    val commands: CommandBucket = CommandBucket()
 
-    var commands: CommandBucket? = null
-    var nextEntityId = 1
+    private var nextEntityId = 1
     var scheduler = Scheduler()
     fun addPlayer(player: Player) {
         players[player.id()] = player
@@ -72,7 +70,7 @@ object Main {
         }
     }
 
-    fun playersWithin(radius: Int, blockPosition: BlockPosition): Stream<Player?> {
+    fun playersWithin(radius: Int, blockPosition: BlockPosition): Stream<Player> {
         return players.values.stream()
             .filter { player: Player? -> player!!.location().withinRadiusOf(radius, blockPosition) }
     }
@@ -85,7 +83,7 @@ object Main {
         val playerSample = JSONArray()
         version.put("name", "1.16.5")
         version.put("protocol", 754)
-        forEachPlayer { player: Player ->
+        forEachPlayer { player ->
             val playerJson = JSONObject()
             playerJson.put("name", player.name())
             playerJson.put("id", player.uuid())
@@ -106,8 +104,7 @@ object Main {
         Registry.setup("generated")
         BlockState.setup()
 
-        commands = CommandBucket()
-        commands!!.register(Commands::class.java)
+        commands.register(Commands.javaClass)
 
         Thread(scheduler).start()
         Thread(BackgroundJob).start()
