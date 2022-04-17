@@ -54,8 +54,8 @@ class Packet private constructor(buf: ByteArray) : ByteArrayInputStream(buf) {
         val x = readDouble()
         val y = readDouble()
         val z = readDouble()
-        val yaw = readFloat()
-        val pitch = readFloat()
+        val yaw = readFloat().toDouble()
+        val pitch = readFloat().toDouble()
         return EntityPosition(x, y, z, yaw, pitch)
     }
 }

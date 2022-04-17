@@ -27,7 +27,7 @@ abstract class EntityX(val registryName: String, val collider: Collider) : Entit
     override fun type(): Int = typex
     override fun uuid(): UUID = uuidx
 
-    fun blockPosition() = entityPosition.blockPosition()
+    fun blockPosition() = entityPosition.blockPosition
 
     open fun spawnForPlayer(p: PlayerX) {
         playersWithLoadedx.add(p)

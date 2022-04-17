@@ -1,16 +1,24 @@
 package com.pygostylia.osprey
 
 import java.time.Duration
+import kotlin.math.*
 
 data class EntityPosition(
     var x: Double = 0.5,
     var y: Double = 32.0,
     var z: Double = 0.5,
-    var pitch: Float = 0f,
-    var yaw: Float = 0f,
+    var pitch: Double = 0.0,
+    var yaw: Double = 0.0,
     var onGround: Boolean = false,
 ) {
-    constructor(blockPosition: BlockPosition) : this(blockPosition.x.toDouble(), blockPosition.y.toDouble(), blockPosition.z.toDouble())
+    constructor(blockPosition: BlockPosition) : this(
+        blockPosition.x.toDouble(), blockPosition.y.toDouble(), blockPosition.z.toDouble()
+    )
+
+    val pitchDegrees: Double get() = Math.toDegrees(pitch)
+    val yawDegrees: Double get() = Math.toDegrees(yaw)
+    fun pitchAngle(): Byte = (pitchDegrees / 360 * 256).toInt().toByte()
+    fun yawAngle(): Byte = (yawDegrees / 360 * 256).toInt().toByte()
 
     fun moveTo(blockPosition: BlockPosition) {
         x = blockPosition.x + 0.5
@@ -18,37 +26,23 @@ data class EntityPosition(
         z = blockPosition.z + 0.5
     }
 
-    fun yawAngle(): Byte {
-        return (yaw / 360 * 256).toInt().toByte()
-    }
+    val chunkX: Int get() = x.toInt() shr 4
+    val chunkZ: Int get() = z.toInt() shr 4
+    val chunkPosition: ChunkPosition get() = ChunkPosition(chunkX, chunkZ)
+    val blockPosition: BlockPosition get() = BlockPosition(floor(x).toInt(), floor(y).toInt(), floor(z).toInt())
 
-    fun pitchAngle(): Byte {
-        return (pitch / 360 * 256).toInt().toByte()
-    }
-
-    fun chunkX(): Int {
-        return x.toInt() shr 4
-    }
-
-    fun chunkZ(): Int {
-        return z.toInt() shr 4
-    }
-
-    fun blockPosition(): BlockPosition {
-        return BlockPosition(Math.floor(x).toInt(), Math.floor(y).toInt(), Math.floor(z).toInt())
-    }
-
-    fun chunkPosition(): ChunkPosition {
-        return ChunkPosition(chunkX(), chunkZ())
-    }
-
-    fun pitchRadians(): Float {
-        return Math.toRadians(pitch.toDouble()).toFloat()
-    }
-
-    fun yawRadians(): Float {
-        return Math.toRadians(yaw.toDouble()).toFloat()
-    }
+    @Deprecated("Use the pitch parameter", ReplaceWith("pitch"))
+    fun pitchRadians(): Double = pitch
+    @Deprecated("Use the yaw parameter", ReplaceWith("yaw"))
+    fun yawRadians(): Double = yaw
+    @Deprecated("Move to parameter chunkX", ReplaceWith("chunkX"))
+    fun chunkX(): Int = chunkX
+    @Deprecated("Move to parameter chunkZ", ReplaceWith("chunkZ"))
+    fun chunkZ(): Int = chunkZ
+    @Deprecated("Move to parameter chunkPosition", ReplaceWith("chunkPosition"))
+    fun chunkPosition() = chunkPosition
+    @Deprecated("Move to parameter blockPosition", ReplaceWith("blockPosition"))
+    fun blockPosition() = blockPosition
 
     fun moveBy(dx: Double, dy: Double, dz: Double) {
         x += dx
@@ -63,12 +57,12 @@ data class EntityPosition(
     }
 
     fun updateFacing(dx: Double, dy: Double, dz: Double) {
-        yaw = Math.toDegrees(Math.atan2(dx, dz)).toFloat()
-        pitch = Math.toDegrees(Math.atan2(dy, Math.hypot(dx, dz))).toFloat()
+        yaw = Math.toDegrees(atan2(dx, dz))
+        pitch = Math.toDegrees(atan2(dy, hypot(dx, dz)))
     }
 
     fun stepVelocity(velocity: Velocity, timeStep: Duration) {
-        val factor = timeStep.toNanos().toDouble() / 1000000000
+        val factor = timeStep.toNanos().toDouble() / 1_000_000_000
         x += velocity.x / factor
         y += velocity.y / factor
         z += velocity.z / factor
@@ -85,7 +79,7 @@ data class EntityPosition(
         }
 
         @JvmStatic
-        fun orientation(yaw: Float, pitch: Float): EntityPosition {
+        fun orientation(yaw: Double, pitch: Double): EntityPosition {
             val entityPosition = EntityPosition()
             entityPosition.yaw = yaw
             entityPosition.pitch = pitch
