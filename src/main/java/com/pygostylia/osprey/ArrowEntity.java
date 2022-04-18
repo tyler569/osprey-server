@@ -53,7 +53,7 @@ public class ArrowEntity extends ObjectEntity {
     }
 
     @Override
-    int type() {
+    public int type() {
         return TYPE;
     }
 

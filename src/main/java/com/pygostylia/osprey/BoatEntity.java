@@ -14,7 +14,7 @@ public class BoatEntity extends ObjectEntity {
     }
 
     @Override
-    int type() {
+    public int type() {
         return TYPE;
     }
 

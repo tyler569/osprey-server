@@ -22,7 +22,7 @@ abstract public class Entity {
         this.entityPosition = entityPosition;
     }
 
-    abstract int type();
+    public abstract int type();
 
     void spawnForPlayer(Player player) {
         playersWithLoaded.add(player);

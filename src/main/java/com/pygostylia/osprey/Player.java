@@ -1,5 +1,8 @@
 package com.pygostylia.osprey;
 
+import com.pygostylia.osprey.packets.ClientBoundPacket;
+import com.pygostylia.osprey.packets.ClientBoundPacketID;
+import com.pygostylia.osprey.packets.ProtocolVersion;
 import org.json.JSONObject;
 
 import javax.crypto.Cipher;
@@ -50,6 +53,8 @@ public class Player extends Entity {
     int vehicleEntityId;
     Instant startedUsing;
 
+    ProtocolVersion protocolVersion = ProtocolVersion.Companion.getV754();
+
     // fun stuff
     public boolean placeFalling;
     public boolean boom;
@@ -74,7 +79,7 @@ public class Player extends Entity {
     }
 
     @Override
-    int type() {
+    public int type() {
         return 106;
     }
 
@@ -145,6 +150,16 @@ public class Player extends Entity {
             connection.sendPacket(type, closure);
         } catch (IOException e) {
             printf("Failed to send packet type %#02x%n", type);
+            e.printStackTrace();
+            disconnect();
+        }
+    }
+
+    public void sendPacket(ClientBoundPacket cbp) {
+        try {
+            connection.sendPacket(cbp);
+        } catch (IOException e) {
+            printf("Failed to send packet type %#02x%n", cbp.getType());
             e.printStackTrace();
             disconnect();
         }
@@ -1370,14 +1385,16 @@ public class Player extends Entity {
     // spawn entity
 
     public void sendSpawnEntity(ObjectEntity entity, int data) {
-        sendPacket(0, p -> {
-            p.writeVarInt(entity.id);
-            p.writeUUID(entity.uuid);
-            p.writeVarInt(entity.type());
-            p.writePosition(entity.entityPosition);
-            p.writeInt(data); // TODO data
-            entity.velocity.write(p);
-        });
+        // sendPacket(0, p -> {
+        //     p.writeVarInt(entity.id);
+        //     p.writeUUID(entity.uuid);
+        //     p.writeVarInt(entity.type());
+        //     p.writePosition(entity.entityPosition);
+        //     p.writeInt(data); // TODO data
+        //     entity.velocity.write(p);
+        // });
+        var packet = protocolVersion.make(ClientBoundPacketID.SpawnEntity, entity);
+        sendPacket(packet);
     }
 
     public void sendSpawnEntity(ObjectEntity entity) {

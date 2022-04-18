@@ -1,5 +1,9 @@
 package com.pygostylia.osprey
 
+import com.pygostylia.osprey.packets.ClientBoundPacket
+import com.pygostylia.osprey.packets.ClientBoundPacketID
+import com.pygostylia.osprey.packets.ProtocolVersion
+import java.io.ByteArrayOutputStream
 import java.net.SocketException
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.time.Duration
@@ -22,6 +26,8 @@ class PlayerX(private val connection: Connection) : EntityX("minecraft:player", 
     val dispatchedChunks: Set<ChunkPosition> = ConcurrentHashMap.newKeySet()
     var renderDistance: Int = 10
     val editorBlockPositions: Array<BlockPosition?> = arrayOf(null, null)
+
+    val protocolVersion = ProtocolVersion.V754
 
     private var isCreativeFlying: Boolean = false
     private var isElytraFlying: Boolean = false

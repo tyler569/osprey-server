@@ -1,5 +1,6 @@
 package com.pygostylia.osprey
 
+import com.pygostylia.osprey.streams.MinecraftOutputStream
 import java.io.IOException
 import kotlin.math.*
 
@@ -13,7 +14,7 @@ convert on-demand when encoding to the protocol layer.
  */
 data class Velocity(val x: Float, val y: Float, val z: Float) {
     @Throws(IOException::class)
-    fun write(os: PacketBuilder) {
+    fun write(os: MinecraftOutputStream) {
         os.writeShort(blockPerSecondToProtocol(x))
         os.writeShort(blockPerSecondToProtocol(y))
         os.writeShort(blockPerSecondToProtocol(z))
