@@ -68,7 +68,7 @@ public class ArrowEntity extends ObjectEntity {
     }
 
     @Override
-    int spawnData() {
+    public int spawnData() {
         return shooterId + 1;
     }
 

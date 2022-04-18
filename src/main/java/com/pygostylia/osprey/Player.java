@@ -590,15 +590,7 @@ public class Player extends Entity {
     }
 
     public void sendSpawnPlayer(Player player) {
-        sendPacket(4, p -> {
-            p.writeVarInt(player.id);
-            p.writeUUID(player.uuid);
-            p.writeDouble(player.entityPosition.getX());
-            p.writeDouble(player.entityPosition.getY());
-            p.writeDouble(player.entityPosition.getZ());
-            p.writeByte(player.entityPosition.yawAngle());
-            p.writeByte(player.entityPosition.pitchAngle());
-        });
+        sendPacket(protocolVersion.makeSpawnPlayer(player));
     }
 
     public void sendRemovePlayer(Player player) {
@@ -1382,23 +1374,11 @@ public class Player extends Entity {
         });
     }
 
-    // spawn entity
-
-    public void sendSpawnEntity(ObjectEntity entity, int data) {
-        // sendPacket(0, p -> {
-        //     p.writeVarInt(entity.id);
-        //     p.writeUUID(entity.uuid);
-        //     p.writeVarInt(entity.type());
-        //     p.writePosition(entity.entityPosition);
-        //     p.writeInt(data); // TODO data
-        //     entity.velocity.write(p);
-        // });
-        var packet = protocolVersion.make(ClientBoundPacketID.SpawnEntity, entity);
-        sendPacket(packet);
-    }
+    // entity management
 
     public void sendSpawnEntity(ObjectEntity entity) {
-        sendSpawnEntity(entity, 0);
+        var packet = protocolVersion.makeSpawnEntity(entity);
+        sendPacket(packet);
     }
 
     public void sendDestroyEntity(Entity entity) {
