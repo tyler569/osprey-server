@@ -24,19 +24,12 @@ class ProtocolVersion(
     }
 
     fun make(name: ClientBoundPacketID, vararg args: Any): ClientBoundPacket? {
-        // val types = args.map { it.javaClass }.toTypedArray()
         val pair = clientBoundPackets[name] ?: return null
-        // val packet = pair.second.getConstructor(*types)?.newInstance(*args)
         val packet = pair.second.constructors[0].newInstance(*args) as ClientBoundPacket
         packet.type = pair.first
         return packet
     }
 
-    fun makeSpawnEntity(e: ObjectEntity): ClientBoundPacket {
-        return make(ClientBoundPacketID.SpawnEntity, e)!!
-    }
-
-    fun makeSpawnPlayer(p: Player): ClientBoundPacket {
-        return make(ClientBoundPacketID.SpawnPlayer, p)!!
-    }
+    fun makeSpawnEntity(e: ObjectEntity): ClientBoundPacket = make(ClientBoundPacketID.SpawnEntity, e)!!
+    fun makeSpawnPlayer(p: Player): ClientBoundPacket = make(ClientBoundPacketID.SpawnPlayer, p)!!
 }
