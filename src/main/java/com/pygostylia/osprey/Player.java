@@ -1,7 +1,6 @@
 package com.pygostylia.osprey;
 
 import com.pygostylia.osprey.packets.ClientBoundPacket;
-import com.pygostylia.osprey.packets.ClientBoundPacketID;
 import com.pygostylia.osprey.packets.ProtocolVersion;
 import org.json.JSONObject;
 

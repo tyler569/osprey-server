@@ -56,7 +56,7 @@ public class CommandParameter {
         };
     }
 
-    static Pattern argRegex = Pattern.compile("(\\w+)(?::\s+(\\w+)(?:\\((.*)\\))?)?");
+    static Pattern argRegex = Pattern.compile("(\\w+)(?::\\s+(\\w+)(?:\\((.*)\\))?)?");
 
     static CommandParameter fromArg(String arg) {
         Matcher argMatcher = argRegex.matcher(arg);
