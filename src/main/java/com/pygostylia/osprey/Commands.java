@@ -67,8 +67,12 @@ public class Commands {
         try {
             blockId = Integer.parseInt(args[1]);
         } catch (NumberFormatException ignored) {
-            var state = new BlockState(args[1]);
-            blockId = state.protocolId();
+            var state = BlockState.fromString(args[1]);
+            if (state.isEmpty()) {
+                sender.sendError(args[1] + " is not a valid block ID or state");
+                return;
+            }
+            blockId = state.get().protocolId();
         }
         int count = 0;
         for (int y = Integer.min(l1.y(), l2.y()); y <= Integer.max(l1.y(), l2.y()); y++) {

@@ -22,7 +22,6 @@ public class Main {
     static final String brand = "Osprey";
     private static final Map<Integer, Player> players = new ConcurrentHashMap<>();
     private static final Map<Integer, Entity> entities = new ConcurrentHashMap<>();
-    static ChunkDispatcher chunkDispatcher = new ChunkDispatcher();
     static KeyPair encryptionKey;
     public static World world;
     public static CommandBucket commands;
@@ -114,11 +113,10 @@ public class Main {
         encryptionKey = kpg.generateKeyPair();
 
         Registry.setup("generated");
-        BlockState.setup();
         commands = new CommandBucket();
         commands.register(Commands.class);
 
-        new Thread(chunkDispatcher).start();
+        BackgroundJobRunner.start();
         new Thread(scheduler).start();
 
         final var socket = new ServerSocket(25565);

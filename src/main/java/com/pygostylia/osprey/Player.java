@@ -724,8 +724,13 @@ public class Player extends Entity {
         shouldLoad.removeAll(loadedChunks);
         shouldLoad.removeAll(dispatchedChunks);
         dispatchedChunks.addAll(shouldLoad);
-        Main.chunkDispatcher.dispatch(this, shouldLoad.stream()
-                .sorted(Comparator.comparingDouble(a -> a.distanceFrom(position.chunkLocation()))));
+        var stream = shouldLoad.stream()
+                .sorted(Comparator.comparingDouble(a -> a.distanceFrom(position.chunkLocation())));
+
+        BackgroundJobRunner.queue(() -> {
+            stream.forEachOrdered(this::sendChunk);
+            return null;
+        });
     }
 
     public boolean isAdmin() {
@@ -1535,8 +1540,8 @@ public class Player extends Entity {
             return;
         }
         if (vehicle.get() instanceof BoatEntity boat) {
-            boat.turningLeft = left;
-            boat.turningRight = right;
+            boat.turningLeft_$eq(left);
+            boat.turningRight_$eq(right);
             otherPlayers(player -> player.sendEntityMetadata(boat, 11, 7, left));
             otherPlayers(player -> player.sendEntityMetadata(boat, 12, 7, right));
         }

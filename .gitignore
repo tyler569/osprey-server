@@ -2,3 +2,5 @@
 *.iml
 generated
 world.db
+/target
+/logs
