@@ -42,7 +42,7 @@ final case class EntityPosition(var onGround: Boolean, var x: Double = 0.0, var 
 
   def location = new BlockPosition(Math.floor(x).toInt, Math.floor(y).toInt, Math.floor(z).toInt)
 
-  def chunkLocation = new ChunkLocation(chunkX, chunkZ)
+  def chunkLocation = new ChunkPosition(chunkX, chunkZ)
 
   def chunkX: Int = x.toInt >> 4
 

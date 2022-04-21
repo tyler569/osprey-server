@@ -20,7 +20,7 @@ final case class BlockPosition(x: Int, y: Int, z: Int) {
     this((protocolLocation >> 38).toInt, (protocolLocation & 0xFFF).toInt, ((protocolLocation << 26) >> 38).toInt)
   }
 
-  def chunkLocation = new ChunkLocation(chunkX, chunkZ)
+  def chunkLocation = new ChunkPosition(chunkX, chunkZ)
 
   def chunkX: Int = x >> 4
 

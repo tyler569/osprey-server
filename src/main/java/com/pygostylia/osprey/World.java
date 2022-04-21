@@ -9,7 +9,7 @@ import java.util.HashMap;
 
 public class World {
     String databaseURL;
-    HashMap<ChunkLocation, Chunk> loadedChunks;
+    HashMap<ChunkPosition, Chunk> loadedChunks;
 
     private World() {
         loadedChunks = new HashMap<>();
@@ -28,7 +28,7 @@ public class World {
         return world;
     }
 
-    Chunk load(ChunkLocation location) {
+    Chunk load(ChunkPosition location) {
         var chunk = loadedChunks.get(location);
         if (chunk == null) {
             try {
@@ -48,10 +48,10 @@ public class World {
     }
 
     Chunk load(int x, int z) throws IOException {
-        return load(new ChunkLocation(x, z));
+        return load(new ChunkPosition(x, z));
     }
 
-    void saveChunk(ChunkLocation location) throws SQLException, IOException {
+    void saveChunk(ChunkPosition location) throws SQLException, IOException {
         if (!loadedChunks.containsKey(location)) {
             return;
         }
@@ -71,7 +71,7 @@ public class World {
         }
     }
 
-    void saveChunkSafe(ChunkLocation location) {
+    void saveChunkSafe(ChunkPosition location) {
         try {
             saveChunk(location);
         } catch (Exception e) {
@@ -81,7 +81,7 @@ public class World {
         }
     }
 
-    Chunk loadFromDisk(ChunkLocation location) throws SQLException {
+    Chunk loadFromDisk(ChunkPosition location) throws SQLException {
         String sql = """
                 SELECT data FROM chunks
                 WHERE x = ? AND z = ?;
@@ -189,7 +189,7 @@ public class World {
     }
 
     public void save() {
-        for (ChunkLocation location : loadedChunks.keySet()) {
+        for (ChunkPosition location : loadedChunks.keySet()) {
             if (loadedChunks.get(location).modified) {
                 saveChunkSafe(location);
                 loadedChunks.get(location).modified = false;

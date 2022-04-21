@@ -38,8 +38,8 @@ public class Player extends Entity {
     Integer playerId;
     Inventory inventory;
     int selectedHotbarSlot;
-    Set<ChunkLocation> loadedChunks = ConcurrentHashMap.newKeySet();
-    Set<ChunkLocation> dispatchedChunks = ConcurrentHashMap.newKeySet();
+    Set<ChunkPosition> loadedChunks = ConcurrentHashMap.newKeySet();
+    Set<ChunkPosition> dispatchedChunks = ConcurrentHashMap.newKeySet();
     int renderDistance = 10;
 
     BlockPosition[] editorBlockPositions = new BlockPosition[2];
@@ -689,31 +689,31 @@ public class Player extends Entity {
         });
     }
 
-    public void sendChunk(ChunkLocation chunkLocation) {
+    public void sendChunk(ChunkPosition chunkPosition) {
         sendPacket(0x20, p -> {
-            p.writeInt(chunkLocation.x());
-            p.writeInt(chunkLocation.z());
-            Main.world.load(chunkLocation).encodePacket(p);
+            p.writeInt(chunkPosition.x());
+            p.writeInt(chunkPosition.z());
+            Main.world.load(chunkPosition).encodePacket(p);
         });
-        loadedChunks.add(chunkLocation);
-        dispatchedChunks.remove(chunkLocation);
+        loadedChunks.add(chunkPosition);
+        dispatchedChunks.remove(chunkPosition);
     }
 
-    void unloadChunk(ChunkLocation chunkLocation) {
+    void unloadChunk(ChunkPosition chunkPosition) {
         sendPacket(0x1c, p -> {
-            p.writeInt(chunkLocation.x());
-            p.writeInt(chunkLocation.z());
+            p.writeInt(chunkPosition.x());
+            p.writeInt(chunkPosition.z());
         });
-        loadedChunks.remove(chunkLocation);
-        dispatchedChunks.remove(chunkLocation);
+        loadedChunks.remove(chunkPosition);
+        dispatchedChunks.remove(chunkPosition);
         // TODO: cancel any pending dispatches in ChunkDispatcher
     }
 
     void loadCorrectChunks(int chunkX, int chunkZ) {
-        Set<ChunkLocation> shouldLoad = new HashSet<>();
+        Set<ChunkPosition> shouldLoad = new HashSet<>();
         for (int cx = chunkX - renderDistance; cx <= chunkX + renderDistance; cx++) {
             for (int cz = chunkZ - renderDistance; cz <= chunkZ + renderDistance; cz++) {
-                shouldLoad.add(new ChunkLocation(cx, cz));
+                shouldLoad.add(new ChunkPosition(cx, cz));
             }
         }
         var unloadChunks = new HashSet<>(loadedChunks);
