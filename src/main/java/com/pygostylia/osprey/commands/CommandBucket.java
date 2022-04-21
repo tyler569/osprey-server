@@ -4,8 +4,6 @@ import com.pygostylia.osprey.*;
 
 import java.io.IOException;
 import java.lang.reflect.Method;
-import java.time.Duration;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -198,7 +196,7 @@ public class CommandBucket {
         return first;
     }
 
-    int encodeBrigadier(int index, int depth, CommandElement node, PacketBuilder p) throws IOException {
+    int encodeBrigadier(int index, int depth, CommandElement node, MinecraftOutputStream p) throws IOException {
         for (var child : node.children) {
             index = encodeBrigadier(index, depth + 1, child, p);
         }
@@ -256,7 +254,7 @@ public class CommandBucket {
         return index + 1;
     }
 
-    int encodeBrigadier(PacketBuilder p) throws IOException {
+    int encodeBrigadier(MinecraftOutputStream p) throws IOException {
         for (var flatCommand : flatCommands) {
             var node = insertBrigadier(rootNode, flatCommand.parameters, 0, flatCommand.method);
 
@@ -269,8 +267,8 @@ public class CommandBucket {
     }
 
     byte[] brigadierPacket() throws IOException {
-        PacketBuilder p = new PacketBuilder();
-        var tmp = new PacketBuilder();
+        MinecraftOutputStream p = new MinecraftOutputStream();
+        var tmp = new MinecraftOutputStream();
         var length = encodeBrigadier(tmp);
 
         p.writeVarInt(length);

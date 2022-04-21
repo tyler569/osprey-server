@@ -30,7 +30,7 @@ object Velocity {
 }
 
 final case class Velocity(x: Float, y: Float, z: Float) {
-  def write(os: PacketBuilder): Unit = {
+  def write(os: MinecraftOutputStream): Unit = {
     os.writeShort(Velocity.blockPerSecondToProtocol(x))
     os.writeShort(Velocity.blockPerSecondToProtocol(y))
     os.writeShort(Velocity.blockPerSecondToProtocol(z))

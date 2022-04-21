@@ -10,9 +10,9 @@ object Slot {
     var count = 0
     val data = null
     if (hasEntry) {
-      itemId = packet.readVarInt
-      count = packet.read
-      val nbtEnd = packet.read
+      itemId = packet.readVarInt()
+      count = packet.read()
+      val nbtEnd = packet.read()
       if (nbtEnd != 0) System.out.println("You got an item with NBT! Better implement deserialization!")
       // TODO: data = packet.readNBT();
     }
@@ -27,7 +27,7 @@ final case class Slot(empty: Boolean, itemId: Int = 0, count: Int = 0, data: NBT
 
   def this() = this(true)
 
-  def encode(p: PacketBuilder): Unit = {
+  def encode(p: MinecraftOutputStream): Unit = {
     if (empty) p.writeBoolean(false)
     else {
       p.writeBoolean(true)

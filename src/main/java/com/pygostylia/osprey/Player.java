@@ -223,11 +223,11 @@ public class Player extends Entity {
     }
 
     void unknownPacket(Packet packet) {
-        printf("Unknown packet type %d %#x in state %s%n", packet.type, packet.type, state);
+        printf("Unknown packet type %d %#x in state %s%n", packet.type(), packet.type(), state);
     }
 
     private void handleStatusPacket(Packet packet) throws IOException {
-        switch (packet.type) {
+        switch (packet.type()) {
             case 0 -> handleHandshake(packet);
             case 1 -> handlePing(packet);
             default -> unknownPacket(packet);
@@ -235,7 +235,7 @@ public class Player extends Entity {
     }
 
     private void handleLoginPacket(Packet packet) throws IOException {
-        switch (packet.type) {
+        switch (packet.type()) {
             case 0 -> handleLoginStart(packet);
             case 1 -> handleEncryptionResponse(packet);
             default -> unknownPacket(packet);
@@ -243,7 +243,7 @@ public class Player extends Entity {
     }
 
     private void handlePlayPacket(Packet packet) throws IOException {
-        switch (packet.type) {
+        switch (packet.type()) {
             case 3 -> handleChat(packet);
             case 4 -> handleClientStatus(packet);
             case 5 -> handleSettings(packet);
@@ -289,7 +289,7 @@ public class Player extends Entity {
     // handle Status packets
 
     private void handleHandshake(Packet packet) throws IOException {
-        if (packet.originalLen > 2) {
+        if (packet.originalLen() > 2) {
             int protocolVersion = packet.readVarInt();
             String address = packet.readString();
             short port = packet.readShort();
@@ -810,7 +810,7 @@ public class Player extends Entity {
         updatePosition(pitch, yaw, onGround);
     }
 
-    private void handleMovement(Packet packet) {
+    private void handleMovement(Packet packet) throws IOException {
         boolean onGround = packet.readBoolean();
         otherPlayers(player -> player.sendEntityTeleport(id, position));
         updatePosition(onGround);
@@ -1532,7 +1532,7 @@ public class Player extends Entity {
         otherPlayers(player -> player.sendEntityTeleport(vehicleEntityId, position));
     }
 
-    private void handleSteerBoat(Packet packet) {
+    private void handleSteerBoat(Packet packet) throws IOException {
         boolean left = packet.readBoolean();
         boolean right = packet.readBoolean();
         var vehicle = Main.entityById(vehicleEntityId);
@@ -1564,7 +1564,7 @@ public class Player extends Entity {
         }
     }
 
-    private void handleIsFlying(Packet packet) {
+    private void handleIsFlying(Packet packet) throws IOException {
         var status = packet.read();
         isCreativeFlying = (status & 0x02) != 0;
         isElytraFlying = false;
