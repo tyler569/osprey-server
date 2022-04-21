@@ -29,8 +29,7 @@ object Velocity {
   private def blockPerSecondToProtocol(blockPerSecond: Float) = (blockPerSecond * 400f).toShort
 }
 
-final class Velocity(val x: Float, val y: Float, val z: Float) {
-  @throws[IOException]
+final case class Velocity(x: Float, y: Float, z: Float) {
   def write(os: PacketBuilder): Unit = {
     os.writeShort(Velocity.blockPerSecondToProtocol(x))
     os.writeShort(Velocity.blockPerSecondToProtocol(y))

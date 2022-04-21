@@ -20,7 +20,7 @@ object Slot {
   }
 }
 
-final class Slot(val empty: Boolean, val itemId: Int = 0, val count: Int = 0, val data: NBTCompound = null) {
+final case class Slot(empty: Boolean, itemId: Int = 0, count: Int = 0, data: NBTCompound = null) {
   def this(itemId: Int, count: Int) {
     this(false, itemId, count, null)
   }

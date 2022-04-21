@@ -15,7 +15,7 @@ object Location {
   }.toInt
 }
 
-final class Location(val x: Int, val y: Int, val z: Int) {
+final case class Location(x: Int, y: Int, z: Int) {
   def this(protocolLocation: Long) {
     this((protocolLocation >> 38).toInt, (protocolLocation & 0xFFF).toInt, ((protocolLocation << 26) >> 38).toInt)
   }
