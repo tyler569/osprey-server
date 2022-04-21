@@ -6,7 +6,7 @@ import java.nio.file.{Files, Path}
 import scala.jdk.CollectionConverters.{IterableHasAsScala, IteratorHasAsScala}
 
 object BlockState {
-  def blockInit(): Map[String, Int] = {
+  private def blockInit(): Map[String, Int] = {
     val registry = new JSONObject(Files.readString(Path.of("generated/reports/registries.json")));
     val blockIds = registry.getJSONObject("minecraft:block").getJSONObject("entries");
     blockIds.keys().asScala.map({blockName =>
@@ -14,7 +14,7 @@ object BlockState {
     }).toMap
   }
 
-  def init(): Seq[BlockState] = {
+  private def init(): Seq[BlockState] = {
     val blocks = new JSONObject(Files.readString(Path.of("generated/reports/blocks.json")));
 
     blocks.keys().asScala.flatMap({ key =>
@@ -23,14 +23,14 @@ object BlockState {
     }).toSeq
   }
 
-  def importBlock(name: String, block: JSONObject): Seq[BlockState] = {
+  private def importBlock(name: String, block: JSONObject): Seq[BlockState] = {
     val blockStates = block.getJSONArray("states")
     blockStates.asScala.map({state =>
       importState(name, state.asInstanceOf[JSONObject])
     }).toSeq
   }
 
-  def importState(name: String, state: JSONObject): BlockState = {
+  private def importState(name: String, state: JSONObject): BlockState = {
     val props = if (state.has("properties")) {
       val properties = state.getJSONObject("properties")
       properties.keys().asScala.map({ key =>
