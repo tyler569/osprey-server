@@ -110,7 +110,7 @@ public class ArrowEntity extends ObjectEntity {
         stuck = true;
         tick.cancel(false);
         if (explode) {
-            Collection<Location> boomBlocks = Explosion.generateBoomBlocks(location(), 5.5f);
+            Collection<Location> boomBlocks = Explosion.generateBoomBlocks(location(), 5.5f, 20);
             for (Location boomBlock : boomBlocks) {
                 Main.world.setBlock(boomBlock, 0);
             }
