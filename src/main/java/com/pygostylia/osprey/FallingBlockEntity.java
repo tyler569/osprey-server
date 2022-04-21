@@ -7,7 +7,7 @@ public class FallingBlockEntity extends ObjectEntity {
 
     int blockType;
 
-    public FallingBlockEntity(Position position, int blockType) {
+    public FallingBlockEntity(EntityPosition position, int blockType) {
         super(position);
         this.blockType = blockType;
     }

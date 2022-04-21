@@ -5,7 +5,7 @@ public class ItemEntity extends ObjectEntity {
 
     Slot itemInfo;
 
-    public ItemEntity(Position position, Velocity velocity, Slot itemInfo) {
+    public ItemEntity(EntityPosition position, Velocity velocity, Slot itemInfo) {
         super(position, velocity);
         this.itemInfo = itemInfo;
     }

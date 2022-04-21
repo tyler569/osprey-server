@@ -7,7 +7,7 @@ import scala.jdk.CollectionConverters.IterableHasAsJava
 object Explosion {
   private[osprey] val rng = new Random
 
-  def generateBoomBlocks(center: Location, power: Float, maxRadius: Int = 20): util.Collection[Location] = {
+  def generateBoomBlocks(center: BlockPosition, power: Float, maxRadius: Int = 20): util.Collection[BlockPosition] = {
     var points = for (x <- -maxRadius to maxRadius;
                       y <- -maxRadius to maxRadius;
                       z <- -maxRadius to maxRadius) yield center.offset(x, y, z)

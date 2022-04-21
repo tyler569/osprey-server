@@ -6,7 +6,7 @@ object BoatEntity {
   private[osprey] val TYPE = Registry.entity("minecraft:boat")
 }
 
-final class BoatEntity(p: Position) extends ObjectEntity(p) {
+final class BoatEntity(p: EntityPosition) extends ObjectEntity(p) {
   private[osprey] val passengers = new util.ArrayList[Entity]
   var turningLeft = false
   var turningRight = false

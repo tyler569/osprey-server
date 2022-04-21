@@ -197,15 +197,15 @@ public class World {
         }
     }
 
-    public void setBlock(Location location, int blockId) {
-        var affectedChunkLocation = location.chunkLocation();
+    public void setBlock(BlockPosition blockPosition, int blockId) {
+        var affectedChunkLocation = blockPosition.chunkLocation();
         var affectedChunk = load(affectedChunkLocation);
-        affectedChunk.setBlock(location.positionInChunk(), blockId);
+        affectedChunk.setBlock(blockPosition.positionInChunk(), blockId);
     }
 
-    public short block(Location location) {
-        var affectedChunkLocation = location.chunkLocation();
+    public short block(BlockPosition blockPosition) {
+        var affectedChunkLocation = blockPosition.chunkLocation();
         var affectedChunk = load(affectedChunkLocation);
-        return affectedChunk.block(location.positionInChunk());
+        return affectedChunk.block(blockPosition.positionInChunk());
     }
 }

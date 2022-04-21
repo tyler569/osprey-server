@@ -1,6 +1,5 @@
 package com.pygostylia.osprey;
 
-import java.io.IOException;
 import java.time.Duration;
 import java.util.Collection;
 import java.util.concurrent.ScheduledFuture;
@@ -16,16 +15,16 @@ public class ArrowEntity extends ObjectEntity {
     boolean bulletTime;
     ScheduledFuture<?> tick;
 
-    public ArrowEntity(Entity shooter, Position position, Velocity velocity) {
+    public ArrowEntity(Entity shooter, EntityPosition position, Velocity velocity) {
         super(position, velocity);
         noCollision = true;
         shooterId = shooter.id;
         // Are arrows backwards or is Position backwards?
-        position.pitch = -position.pitch;
-        position.yaw = -position.yaw;
+        position.pitch_$eq(-position.pitch());
+        position.yaw_$eq(-position.yaw());
     }
 
-    public ArrowEntity(Entity shooter, Position position, Duration pullTime) {
+    public ArrowEntity(Entity shooter, EntityPosition position, Duration pullTime) {
         this(shooter, position, Velocity.directionMagnitude(
                 position,
                 Math.min(30f, pullTime.toMillis() / 1000f * 30)
@@ -110,8 +109,8 @@ public class ArrowEntity extends ObjectEntity {
         stuck = true;
         tick.cancel(false);
         if (explode) {
-            Collection<Location> boomBlocks = Explosion.generateBoomBlocks(location(), 5.5f, 20);
-            for (Location boomBlock : boomBlocks) {
+            Collection<BlockPosition> boomBlocks = Explosion.generateBoomBlocks(location(), 5.5f, 20);
+            for (BlockPosition boomBlock : boomBlocks) {
                 Main.world.setBlock(boomBlock, 0);
             }
             playersWithLoaded.forEach(player -> player.sendExplosion(position, 5.5f, boomBlocks, Velocity.zero()));

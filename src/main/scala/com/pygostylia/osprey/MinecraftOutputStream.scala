@@ -27,15 +27,15 @@ class MinecraftOutputStream(os: OutputStream) extends DataOutputStream(os) {
     writeLong(uuid.getLeastSignificantBits)
   }
 
-  def writeLocation(location: Location): Unit = {
+  def writeLocation(location: BlockPosition): Unit = {
     writeLong(location.encode)
   }
 
   def writeLocation(x: Int, y: Int, z: Int): Unit = {
-    writeLocation(new Location(x, y, z))
+    writeLocation(new BlockPosition(x, y, z))
   }
 
-  def writePosition(position: Position): Unit = {
+  def writePosition(position: EntityPosition): Unit = {
     writeDouble(position.x)
     writeDouble(position.y)
     writeDouble(position.z)

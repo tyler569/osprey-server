@@ -14,7 +14,7 @@ convert on-demand when encoding to the protocol layer.
 object Velocity {
   def zero = new Velocity(0, 0, 0)
 
-  def directionMagnitude(position: Position, speed: Float): Velocity = {
+  def directionMagnitude(position: EntityPosition, speed: Float): Velocity = {
     var x = -Math.sin(position.yawRadians)
     var z = Math.cos(position.yawRadians)
     val yH = -Math.sin(position.pitchRadians)

@@ -26,16 +26,16 @@ class MinecraftInputStream(is: InputStream) extends DataInputStream(is) {
     new String(bytes)
   }
 
-  def readLocation(): Location = {
-    new Location(readLong())
+  def readLocation(): BlockPosition = {
+    new BlockPosition(readLong())
   }
 
-  def readPosition(): Position = {
+  def readPosition(): EntityPosition = {
     val x = readDouble()
     val y = readDouble()
     val z = readDouble()
     val yaw = readFloat()
     val pitch = readFloat()
-    new Position(x, y, z, yaw, pitch)
+    new EntityPosition(x, y, z, yaw, pitch)
   }
 }

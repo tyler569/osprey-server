@@ -7,7 +7,7 @@ import java.util.UUID;
 abstract public class Entity {
     int id;
     UUID uuid;
-    Position position;
+    EntityPosition position;
     List<Player> playersWithLoaded;
     boolean noCollision;
 
@@ -17,7 +17,7 @@ abstract public class Entity {
         id = Main.addEntity(this);
     }
 
-    Entity(Position position) {
+    Entity(EntityPosition position) {
         this();
         this.position = position;
     }
@@ -43,11 +43,11 @@ abstract public class Entity {
         return uuid;
     }
 
-    public Position position() {
+    public EntityPosition position() {
         return position;
     }
 
-    public Location location() {
+    public BlockPosition location() {
         return position.location();
     }
 
@@ -69,15 +69,15 @@ abstract public class Entity {
 
     abstract float colliderY();
 
-    boolean collides(Position point) {
+    boolean collides(EntityPosition point) {
         float ex = colliderXZ() / 2;
         float ey = colliderY();
-        if (position.x + ex < point.x || point.x < position.x - ex) return false;
-        if (position.z + ex < point.z || point.z < position.z - ex) return false;
-        return !(position.y + ey < point.y) && !(point.y <= position.y);
+        if (position.x() + ex < point.x() || point.x() < position.x() - ex) return false;
+        if (position.z() + ex < point.z() || point.z() < position.z() - ex) return false;
+        return !(position.y() + ey < point.y()) && !(point.y() <= position.y());
     }
 
-    boolean collides(Location block) {
+    boolean collides(BlockPosition block) {
         return false;
     }
 

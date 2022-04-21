@@ -3,12 +3,12 @@ package com.pygostylia.osprey;
 abstract public class ObjectEntity extends Entity {
     Velocity velocity;
 
-    public ObjectEntity(Position position) {
+    public ObjectEntity(EntityPosition position) {
         super(position);
         this.velocity = Velocity.zero();
     }
 
-    public ObjectEntity(Position position, Velocity velocity) {
+    public ObjectEntity(EntityPosition position, Velocity velocity) {
         super(position);
         this.velocity = velocity;
     }
