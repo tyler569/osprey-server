@@ -3,7 +3,9 @@ package com.pygostylia.osprey
 import java.util.concurrent.PriorityBlockingQueue
 
 object BackgroundJobRunner extends Runnable {
-  case class BackgroundJob(val priority: Int, fn: () => Unit)
+  case class BackgroundJob(priority: Int, fn: () => Unit) extends Comparable[BackgroundJob] {
+    override def compareTo(o: BackgroundJob): Int = priority.compareTo(o.priority)
+  }
 
   private val queue = new PriorityBlockingQueue[BackgroundJob]()
 
