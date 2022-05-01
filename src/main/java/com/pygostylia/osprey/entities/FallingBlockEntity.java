@@ -1,7 +1,7 @@
 package com.pygostylia.osprey.entities;
 
+import com.pygostylia.osprey.EntityPosition;
 import com.pygostylia.osprey.Main;
-import com.pygostylia.osprey.Position;
 import com.pygostylia.osprey.Registry;
 
 import java.util.concurrent.TimeUnit;
@@ -11,8 +11,8 @@ public class FallingBlockEntity extends ObjectEntity {
 
     int blockType;
 
-    public FallingBlockEntity(Position position, int blockType) {
-        super(position);
+    public FallingBlockEntity(EntityPosition entityPosition, int blockType) {
+        super(entityPosition);
         this.blockType = blockType;
     }
 

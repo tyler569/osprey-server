@@ -18,7 +18,7 @@ public class Commands {
             sender.sendError("Not enough arguments");
             return;
         }
-        Location destination = Location.relativeLocation(
+        BlockPosition destination = BlockPosition.relativeLocation(
                 sender.location(),
                 Arrays.copyOfRange(args, 1, 4)
         );
@@ -76,7 +76,7 @@ public class Commands {
         for (int y = Integer.min(l1.y(), l2.y()); y <= Integer.max(l1.y(), l2.y()); y++) {
             for (int z = Integer.min(l1.z(), l2.z()); z <= Integer.max(l1.z(), l2.z()); z++) {
                 for (int x = Integer.min(l1.x(), l2.x()); x <= Integer.max(l1.x(), l2.x()); x++) {
-                    var location = new Location(x, y, z);
+                    var location = new BlockPosition(x, y, z);
                     Main.world.setBlock(location, blockId);
                     count++;
                     int finalBlockId = blockId;
@@ -152,7 +152,7 @@ public class Commands {
 
     @Command("spawn")
     public static void spawn(Player sender, String[] args) throws IOException {
-        sender.teleport(new Location(0, 32, 0));
+        sender.teleport(new BlockPosition(0, 32, 0));
     }
 
     @Command(value = "entitystatus", args = {"id: integer", "status: integer(0,255)"})
@@ -182,13 +182,13 @@ public class Commands {
     @Command("followlightining")
     public static void followLightning(Player sender, String[] args) {
         var future = Main.scheduler.submitForEachTick(() -> {
-            Position position;
+            EntityPosition entityPosition;
             if (sender.isSneaking()) {
-                position = sender.position().offset(0, 1.5, 0);
+                entityPosition = sender.position().offset(0, 1.5, 0);
             } else {
-                position = sender.position().offset(0, 1.8, 0);
+                entityPosition = sender.position().offset(0, 1.8, 0);
             }
-            var bolt = new LightningEntity(position);
+            var bolt = new LightningEntity(entityPosition);
             Main.forEachPlayer(player -> player.sendSpawnEntity(bolt));
             bolt.destroy();
         });

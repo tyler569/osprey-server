@@ -1,7 +1,7 @@
 package com.pygostylia.osprey.commands;
 
+import com.pygostylia.osprey.BlockPosition;
 import com.pygostylia.osprey.BlockState;
-import com.pygostylia.osprey.Location;
 import com.pygostylia.osprey.entities.Entity;
 import com.pygostylia.osprey.entities.Player;
 
@@ -126,7 +126,7 @@ public class CommandParameter {
             flags = 0x03;
         } else if (argumentType == BlockState.class) {
             type = Type.BlockState;
-        } else if (argumentType == Location.class) {
+        } else if (argumentType == BlockPosition.class) {
             type = Type.Vec3;
         } else {
             throw new IllegalStateException(argumentType + " cannot be a command argument");

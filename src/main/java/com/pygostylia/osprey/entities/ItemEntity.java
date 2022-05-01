@@ -1,6 +1,6 @@
 package com.pygostylia.osprey.entities;
 
-import com.pygostylia.osprey.Position;
+import com.pygostylia.osprey.EntityPosition;
 import com.pygostylia.osprey.Registry;
 import com.pygostylia.osprey.Slot;
 import com.pygostylia.osprey.Velocity;
@@ -10,8 +10,8 @@ public class ItemEntity extends ObjectEntity {
 
     Slot itemInfo;
 
-    public ItemEntity(Position position, Velocity velocity, Slot itemInfo) {
-        super(position, velocity);
+    public ItemEntity(EntityPosition entityPosition, Velocity velocity, Slot itemInfo) {
+        super(entityPosition, velocity);
         this.itemInfo = itemInfo;
     }
 

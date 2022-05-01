@@ -1,13 +1,13 @@
 package com.pygostylia.osprey.entities;
 
-import com.pygostylia.osprey.Position;
+import com.pygostylia.osprey.EntityPosition;
 import com.pygostylia.osprey.Registry;
 
 public class LightningEntity extends ObjectEntity {
     static final int TYPE = Registry.entity("minecraft:lightning_bolt");
 
-    public LightningEntity(Position position) {
-        super(position);
+    public LightningEntity(EntityPosition entityPosition) {
+        super(entityPosition);
     }
 
     @Override

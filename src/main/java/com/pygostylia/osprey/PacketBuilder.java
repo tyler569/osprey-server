@@ -73,15 +73,15 @@ public class PacketBuilder extends ByteArrayOutputStream {
         writeLong(encoded);
     }
 
-    public void writeLocation(Location location) {
-        writeLocation(location.x(), location.y(), location.z());
+    public void writeLocation(BlockPosition blockPosition) {
+        writeLocation(blockPosition.x(), blockPosition.y(), blockPosition.z());
     }
 
-    public void writePosition(Position position) {
-        writeDouble(position.x);
-        writeDouble(position.y);
-        writeDouble(position.z);
-        writeByte(position.pitchAngle());
-        writeByte(position.yawAngle());
+    public void writePosition(EntityPosition entityPosition) {
+        writeDouble(entityPosition.x);
+        writeDouble(entityPosition.y);
+        writeDouble(entityPosition.z);
+        writeByte(entityPosition.pitchAngle());
+        writeByte(entityPosition.yawAngle());
     }
 }

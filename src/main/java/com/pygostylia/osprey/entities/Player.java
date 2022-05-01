@@ -39,11 +39,11 @@ public class Player extends Entity {
     Integer playerId;
     Inventory inventory;
     int selectedHotbarSlot;
-    Set<ChunkLocation> loadedChunks = ConcurrentHashMap.newKeySet();
-    Set<ChunkLocation> dispatchedChunks = ConcurrentHashMap.newKeySet();
+    Set<ChunkPosition> loadedChunks = ConcurrentHashMap.newKeySet();
+    Set<ChunkPosition> dispatchedChunks = ConcurrentHashMap.newKeySet();
     int renderDistance = 10;
 
-    Location[] editorLocations = new Location[2];
+    BlockPosition[] editorBlockPositions = new BlockPosition[2];
     boolean isElytraFlying;
 
     boolean isCreativeFlying;
@@ -90,8 +90,8 @@ public class Player extends Entity {
         return ping;
     }
 
-    public Location[] getEditorLocations() {
-        return editorLocations;
+    public BlockPosition[] getEditorLocations() {
+        return editorBlockPositions;
     }
 
     public boolean isElytraFlying() {
@@ -203,15 +203,15 @@ public class Player extends Entity {
         println("Leaving handleConnection");
     }
 
-    public void teleport(Location location) {
-        position.moveTo(location);
+    public void teleport(BlockPosition blockPosition) {
+        entityPosition.moveTo(blockPosition);
         teleport();
     }
 
     public void teleport() {
         sendPositionLook();
         sendUpdateChunkPosition();
-        otherPlayers(player -> player.sendEntityTeleport(id, position));
+        otherPlayers(player -> player.sendEntityTeleport(id, entityPosition));
         loadCorrectChunks();
     }
 
@@ -400,15 +400,15 @@ public class Player extends Entity {
         initialSpawnPlayer();
     }
 
-    public void sendEntityTeleport(int entityId, Position position) {
+    public void sendEntityTeleport(int entityId, EntityPosition entityPosition) {
         sendPacket(0x56, p -> {
             p.writeVarInt(entityId);
-            p.writeDouble(position.x);
-            p.writeDouble(position.y);
-            p.writeDouble(position.z);
-            p.writeByte(position.yawAngle());
-            p.writeByte(position.pitchAngle());
-            p.writeBoolean(position.onGround);
+            p.writeDouble(entityPosition.x);
+            p.writeDouble(entityPosition.y);
+            p.writeDouble(entityPosition.z);
+            p.writeByte(entityPosition.yawAngle());
+            p.writeByte(entityPosition.pitchAngle());
+            p.writeBoolean(entityPosition.onGround);
         });
     }
 
@@ -467,11 +467,11 @@ public class Player extends Entity {
 
     public void sendPositionLook() {
         sendPacket(0x34, p -> {
-            p.writeDouble(position.x);
-            p.writeDouble(position.y);
-            p.writeDouble(position.z);
-            p.writeFloat(position.yaw);
-            p.writeFloat(position.pitch);
+            p.writeDouble(entityPosition.x);
+            p.writeDouble(entityPosition.y);
+            p.writeDouble(entityPosition.z);
+            p.writeFloat(entityPosition.yaw);
+            p.writeFloat(entityPosition.pitch);
             p.writeByte((byte) 0);
             p.writeVarInt(0);
         });
@@ -485,7 +485,7 @@ public class Player extends Entity {
     }
 
     public void sendUpdateChunkPosition() {
-        sendUpdateChunkPosition(position.chunkX(), position.chunkZ());
+        sendUpdateChunkPosition(entityPosition.chunkX(), entityPosition.chunkZ());
     }
 
     public void sendSpawnPosition() {
@@ -578,11 +578,11 @@ public class Player extends Entity {
         sendPacket(4, p -> {
             p.writeVarInt(player.id);
             p.writeUUID(player.uuid);
-            p.writeDouble(player.position.x);
-            p.writeDouble(player.position.y);
-            p.writeDouble(player.position.z);
-            p.writeByte(player.position.yawAngle());
-            p.writeByte(player.position.pitchAngle());
+            p.writeDouble(player.entityPosition.x);
+            p.writeDouble(player.entityPosition.y);
+            p.writeDouble(player.entityPosition.z);
+            p.writeByte(player.entityPosition.yawAngle());
+            p.writeByte(player.entityPosition.pitchAngle());
         });
     }
 
@@ -661,7 +661,7 @@ public class Player extends Entity {
 
     // movement
 
-    public void sendEntityPositionAndRotation(int entityId, double dx, double dy, double dz, Position position) {
+    public void sendEntityPositionAndRotation(int entityId, double dx, double dy, double dz, EntityPosition entityPosition) {
         short protocol_dx = (short) (dx * 4096);
         short protocol_dy = (short) (dy * 4096);
         short protocol_dz = (short) (dz * 4096);
@@ -670,13 +670,13 @@ public class Player extends Entity {
             p.writeShort(protocol_dx);
             p.writeShort(protocol_dy);
             p.writeShort(protocol_dz);
-            p.writeByte(position.yawAngle());
-            p.writeByte(position.pitchAngle());
-            p.writeBoolean(position.onGround);
+            p.writeByte(entityPosition.yawAngle());
+            p.writeByte(entityPosition.pitchAngle());
+            p.writeBoolean(entityPosition.onGround);
         });
         sendPacket(0x3A, p -> {
             p.writeVarInt(entityId);
-            p.writeByte(position.yawAngle());
+            p.writeByte(entityPosition.yawAngle());
         });
     }
 
@@ -690,31 +690,31 @@ public class Player extends Entity {
         });
     }
 
-    public void sendChunk(ChunkLocation chunkLocation) {
+    public void sendChunk(ChunkPosition chunkPosition) {
         sendPacket(0x20, p -> {
-            p.writeInt(chunkLocation.x());
-            p.writeInt(chunkLocation.z());
-            Main.world.load(chunkLocation).encodePacket(p);
+            p.writeInt(chunkPosition.x());
+            p.writeInt(chunkPosition.z());
+            Main.world.load(chunkPosition).encodePacket(p);
         });
-        loadedChunks.add(chunkLocation);
-        dispatchedChunks.remove(chunkLocation);
+        loadedChunks.add(chunkPosition);
+        dispatchedChunks.remove(chunkPosition);
     }
 
-    void unloadChunk(ChunkLocation chunkLocation) {
+    void unloadChunk(ChunkPosition chunkPosition) {
         sendPacket(0x1c, p -> {
-            p.writeInt(chunkLocation.x());
-            p.writeInt(chunkLocation.z());
+            p.writeInt(chunkPosition.x());
+            p.writeInt(chunkPosition.z());
         });
-        loadedChunks.remove(chunkLocation);
-        dispatchedChunks.remove(chunkLocation);
+        loadedChunks.remove(chunkPosition);
+        dispatchedChunks.remove(chunkPosition);
         // TODO: cancel any pending dispatches in ChunkDispatcher
     }
 
     void loadCorrectChunks(int chunkX, int chunkZ) {
-        Set<ChunkLocation> shouldLoad = new HashSet<>();
+        Set<ChunkPosition> shouldLoad = new HashSet<>();
         for (int cx = chunkX - renderDistance; cx <= chunkX + renderDistance; cx++) {
             for (int cz = chunkZ - renderDistance; cz <= chunkZ + renderDistance; cz++) {
-                shouldLoad.add(new ChunkLocation(cx, cz));
+                shouldLoad.add(new ChunkPosition(cx, cz));
             }
         }
         var unloadChunks = new HashSet<>(loadedChunks);
@@ -726,7 +726,7 @@ public class Player extends Entity {
         shouldLoad.removeAll(dispatchedChunks);
         dispatchedChunks.addAll(shouldLoad);
         Main.chunkDispatcher.dispatch(this, shouldLoad.stream()
-                .sorted(Comparator.comparingDouble(a -> a.distanceFrom(position.chunkLocation()))));
+                .sorted(Comparator.comparingDouble(a -> a.distanceFrom(entityPosition.chunkLocation()))));
     }
 
     public boolean isAdmin() {
@@ -734,13 +734,13 @@ public class Player extends Entity {
     }
 
     void loadCorrectChunks() {
-        loadCorrectChunks(position.chunkX(), position.chunkZ());
+        loadCorrectChunks(entityPosition.chunkX(), entityPosition.chunkZ());
     }
 
     void checkChunkPosition(double x, double z) {
         int chunkX = (int) x >> 4;
         int chunkZ = (int) z >> 4;
-        if (chunkX != position.chunkX() || chunkZ != position.chunkZ()) {
+        if (chunkX != entityPosition.chunkX() || chunkZ != entityPosition.chunkZ()) {
             sendUpdateChunkPosition(chunkX, chunkZ);
             printf("new chunk %d %d%n", chunkX, chunkZ);
             loadCorrectChunks(chunkX, chunkZ);
@@ -748,17 +748,17 @@ public class Player extends Entity {
     }
 
     void updatePosition(double x, double y, double z, float pitch, float yaw, boolean onGround) {
-        double delta_x = x - position.x;
-        double delta_y = y - position.y;
-        double delta_z = z - position.z;
+        double delta_x = x - entityPosition.x;
+        double delta_y = y - entityPosition.y;
+        double delta_z = z - entityPosition.z;
         checkChunkPosition(x, z);
-        position.x = x;
-        position.y = y;
-        position.z = z;
-        position.pitch = pitch;
-        position.yaw = yaw;
-        position.onGround = onGround;
-        otherPlayers(player -> player.sendEntityPositionAndRotation(id, delta_x, delta_y, delta_z, position));
+        entityPosition.x = x;
+        entityPosition.y = y;
+        entityPosition.z = z;
+        entityPosition.pitch = pitch;
+        entityPosition.yaw = yaw;
+        entityPosition.onGround = onGround;
+        otherPlayers(player -> player.sendEntityPositionAndRotation(id, delta_x, delta_y, delta_z, entityPosition));
         if (isElytraFlying && onGround) {
             isElytraFlying = false;
             Main.forEachPlayer(player -> player.sendPlayerEntityMetadata(this));
@@ -766,15 +766,15 @@ public class Player extends Entity {
     }
 
     void updatePosition(double x, double y, double z, boolean onGround) {
-        updatePosition(x, y, z, position.pitch, position.yaw, onGround);
+        updatePosition(x, y, z, entityPosition.pitch, entityPosition.yaw, onGround);
     }
 
     void updatePosition(float pitch, float yaw, boolean onGround) {
-        updatePosition(position.x, position.y, position.z, pitch, yaw, onGround);
+        updatePosition(entityPosition.x, entityPosition.y, entityPosition.z, pitch, yaw, onGround);
     }
 
     void updatePosition(boolean onGround) {
-        updatePosition(position.x, position.y, position.z, position.pitch, position.yaw, onGround);
+        updatePosition(entityPosition.x, entityPosition.y, entityPosition.z, entityPosition.pitch, entityPosition.yaw, onGround);
     }
 
     private void handlePosition(Packet packet) throws IOException {
@@ -795,8 +795,8 @@ public class Player extends Entity {
         updatePosition(x, y, z, pitch, yaw, onGround);
     }
 
-    public Position eyes() {
-        return position.offset(0, 1.6, 0);
+    public EntityPosition eyes() {
+        return entityPosition.offset(0, 1.6, 0);
     }
 
     private void handleRotation(Packet packet) throws IOException {
@@ -808,14 +808,14 @@ public class Player extends Entity {
 
     private void handleMovement(Packet packet) {
         boolean onGround = packet.readBoolean();
-        otherPlayers(player -> player.sendEntityTeleport(id, position));
+        otherPlayers(player -> player.sendEntityTeleport(id, entityPosition));
         updatePosition(onGround);
     }
 
-    boolean intersectsLocation(Location location) {
-        if (position.x + 0.3 < location.x() || location.x() + 1 < position.x - 0.3) return false;
-        if (position.z + 0.3 < location.z() || location.z() + 1 < position.z - 0.3) return false;
-        return !(position.y + 1.8 < location.y()) && !(location.y() + 1 <= position.y);
+    boolean intersectsLocation(BlockPosition blockPosition) {
+        if (entityPosition.x + 0.3 < blockPosition.x() || blockPosition.x() + 1 < entityPosition.x - 0.3) return false;
+        if (entityPosition.z + 0.3 < blockPosition.z() || blockPosition.z() + 1 < entityPosition.z - 0.3) return false;
+        return !(entityPosition.y + 1.8 < blockPosition.y()) && !(blockPosition.y() + 1 <= entityPosition.y);
     }
 
     // animation
@@ -834,13 +834,13 @@ public class Player extends Entity {
         });
     }
 
-    public void sendSoundEffect(int soundEffect, int category, Location location) {
+    public void sendSoundEffect(int soundEffect, int category, BlockPosition blockPosition) {
         sendPacket(0x51, p -> {
             p.writeVarInt(soundEffect);
             p.writeVarInt(category);
-            p.writeInt(location.x());
-            p.writeInt(location.y());
-            p.writeInt(location.z());
+            p.writeInt(blockPosition.x());
+            p.writeInt(blockPosition.y());
+            p.writeInt(blockPosition.z());
             p.writeFloat(1);
             p.writeFloat(1);
         });
@@ -921,12 +921,12 @@ public class Player extends Entity {
                 case 6 -> ((Slot) value).encode(p);
                 case 7 -> p.write(((Boolean) value) ? 1 : 0);
                 case 9 -> {
-                    if (value instanceof Position position) {
-                        p.writeLong(position.location().encode());
-                    } else if (value instanceof Location location) {
-                        p.writeLong(location.encode());
+                    if (value instanceof EntityPosition entityPosition) {
+                        p.writeLong(entityPosition.location().encode());
+                    } else if (value instanceof BlockPosition blockPosition) {
+                        p.writeLong(blockPosition.encode());
                     } else {
-                        throw new IllegalStateException("Illegal Position");
+                        throw new IllegalStateException("Illegal EntityPosition");
                     }
                 }
                 case 17 -> {
@@ -955,7 +955,7 @@ public class Player extends Entity {
         if ((flags & 0x02) != 0) {
             if (vehicle.get() instanceof BoatEntity boat) {
                 boat.dismount(this);
-                position.moveBy(0, 1, 0);
+                entityPosition.moveBy(0, 1, 0);
                 teleport();
             }
         }
@@ -963,17 +963,17 @@ public class Player extends Entity {
 
     // block place & remove
 
-    public void sendBlockChange(Location location, int blockId) {
+    public void sendBlockChange(BlockPosition blockPosition, int blockId) {
         sendPacket(0xB, p -> {
-            p.writeLong(location.encode());
+            p.writeLong(blockPosition.encode());
             p.writeVarInt(blockId);
         });
     }
 
-    public void sendBlockBreakParticles(Location location, short blockId) {
+    public void sendBlockBreakParticles(BlockPosition blockPosition, short blockId) {
         sendPacket(0x21, p -> {
             p.writeInt(2001);
-            p.writeLocation(location);
+            p.writeLocation(blockPosition);
             p.writeInt(blockId);
             p.writeBoolean(false);
         });
@@ -1015,7 +1015,7 @@ public class Player extends Entity {
                 }
                 Slot drop = selectedItem().one();
                 Slot rest = selectedItem().decrement();
-                ItemEntity item = new ItemEntity(eyes(), Velocity.directionMagnitude(position, 10f), drop);
+                ItemEntity item = new ItemEntity(eyes(), Velocity.directionMagnitude(entityPosition, 10f), drop);
                 item.spawn();
                 setSelectedItem(rest);
             }
@@ -1068,7 +1068,7 @@ public class Player extends Entity {
         boolean insideBlock = packet.readBoolean();
 
         if (isHoldingFirework(hand)) {
-            Position target = new Position(originalLocation);
+            EntityPosition target = new EntityPosition(originalLocation);
             target.x += cursorX;
             target.y += cursorY;
             target.z += cursorZ;
@@ -1078,11 +1078,11 @@ public class Player extends Entity {
         }
 
         if (isHoldingBoat(hand)) {
-            Position target = new Position(originalLocation);
+            EntityPosition target = new EntityPosition(originalLocation);
             target.x += cursorX;
             target.y += cursorY;
             target.z += cursorZ;
-            target.yaw = position.yaw;
+            target.yaw = entityPosition.yaw;
             BoatEntity boat = new BoatEntity(target);
             boat.spawn();
             return;
@@ -1091,7 +1091,7 @@ public class Player extends Entity {
         if (placeFalling) {
             System.out.println("Spawn falling block");
             final int sandBlock = Registry.itemToBlockDefault(selectedItem().itemId());
-            final Position target = Position.middle(location);
+            final EntityPosition target = EntityPosition.middle(location);
             FallingBlockEntity block = new FallingBlockEntity(target, sandBlock);
             sendBlockChange(location, current);
             block.spawn();
@@ -1162,7 +1162,7 @@ public class Player extends Entity {
         }
 
         if (isHoldingFirework(hand)) {
-            FireworkEntity firework = new FireworkEntity(position, Velocity.zero());
+            FireworkEntity firework = new FireworkEntity(entityPosition, Velocity.zero());
             firework.spawnWithRider(id);
         }
 
@@ -1231,40 +1231,40 @@ public class Player extends Entity {
     // worldedit
 
     long selectionVolume() {
-        if (editorLocations[0] == null || editorLocations[1] == null) {
+        if (editorBlockPositions[0] == null || editorBlockPositions[1] == null) {
             return 0;
         }
-        return ((long) Math.abs(editorLocations[0].x() - editorLocations[1].x()) + 1) *
-                ((long) Math.abs(editorLocations[0].y() - editorLocations[1].y()) + 1) *
-                ((long) Math.abs(editorLocations[0].z() - editorLocations[1].z()) + 1);
+        return ((long) Math.abs(editorBlockPositions[0].x() - editorBlockPositions[1].x()) + 1) *
+                ((long) Math.abs(editorBlockPositions[0].y() - editorBlockPositions[1].y()) + 1) *
+                ((long) Math.abs(editorBlockPositions[0].z() - editorBlockPositions[1].z()) + 1);
     }
 
-    public void setEditorLocation(int n, Location location) {
-        editorLocations[n] = location;
-        String message = String.format("Position %d set to ", n + 1);
+    public void setEditorLocation(int n, BlockPosition blockPosition) {
+        editorBlockPositions[n] = blockPosition;
+        String message = String.format("EntityPosition %d set to ", n + 1);
         var volume = selectionVolume();
         if (volume == 0) {
-            sendEditorNotification(String.format("%s %s", message, editorLocations[n]));
+            sendEditorNotification(String.format("%s %s", message, editorBlockPositions[n]));
         } else {
             sendEditorNotification(String.format(
                     "%s %s (%d block%s)",
                     message,
-                    editorLocations[n],
+                    editorBlockPositions[n],
                     volume,
                     volume == 1 ? "" : "s"
             ));
         }
-        sendCUIEvent(n, location, selectionVolume());
+        sendCUIEvent(n, blockPosition, selectionVolume());
     }
 
     public void unsetEditorSelection() {
-        editorLocations[0] = null;
-        editorLocations[1] = null;
+        editorBlockPositions[0] = null;
+        editorBlockPositions[1] = null;
         sendCUIEvent(-1, null, 0);
         sendEditorNotification("Selection cleared");
     }
 
-    public void sendCUIEvent(int selection, Location location, long volume) {
+    public void sendCUIEvent(int selection, BlockPosition blockPosition, long volume) {
         if (selection == -1) {
             sendPluginMessage("worldedit:cui", p -> {
                 p.writeBytes("s|cuboid".getBytes());
@@ -1275,9 +1275,9 @@ public class Player extends Entity {
                         String.format(
                                 "p|%d|%d|%d|%d|%d",
                                 selection,
-                                location.x(),
-                                location.y(),
-                                location.z(),
+                                blockPosition.x(),
+                                blockPosition.y(),
+                                blockPosition.z(),
                                 volume
                         ).getBytes()
                 );
@@ -1298,14 +1298,14 @@ public class Player extends Entity {
             if (!results.isClosed()) {
                 playerId = results.getInt(1);
                 selectedHotbarSlot = results.getInt(2);
-                position = new Position();
+                entityPosition = new EntityPosition();
                 var xTmp = results.getDouble(3);
                 if (!results.wasNull()) {
-                    position.x = xTmp;
-                    position.y = results.getDouble(4);
-                    position.z = results.getDouble(5);
-                    position.pitch = results.getFloat(6);
-                    position.yaw = results.getFloat(7);
+                    entityPosition.x = xTmp;
+                    entityPosition.y = results.getDouble(4);
+                    entityPosition.z = results.getDouble(5);
+                    entityPosition.pitch = results.getFloat(6);
+                    entityPosition.yaw = results.getFloat(7);
                 }
             }
         } catch (SQLException e) {
@@ -1358,11 +1358,11 @@ public class Player extends Entity {
         try (var connection = Main.world.connect();
              var statement = connection.prepareStatement(sql)) {
             statement.setInt(1, selectedHotbarSlot);
-            statement.setDouble(2, position.x);
-            statement.setDouble(3, position.y);
-            statement.setDouble(4, position.z);
-            statement.setDouble(5, position.pitch);
-            statement.setDouble(6, position.yaw);
+            statement.setDouble(2, entityPosition.x);
+            statement.setDouble(3, entityPosition.y);
+            statement.setDouble(4, entityPosition.z);
+            statement.setDouble(5, entityPosition.pitch);
+            statement.setDouble(6, entityPosition.yaw);
             statement.setInt(7, playerId);
             statement.execute();
             connection.commit();
@@ -1402,7 +1402,7 @@ public class Player extends Entity {
             p.writeVarInt(entity.id);
             p.writeUUID(entity.uuid);
             p.writeVarInt(entity.type());
-            p.writePosition(entity.position);
+            p.writePosition(entity.entityPosition);
             p.writeInt(data); // TODO data
             entity.velocity.write(p);
         });
@@ -1442,12 +1442,12 @@ public class Player extends Entity {
     //
 
     Direction facing() {
-        if (position.pitch > 45) {
+        if (entityPosition.pitch > 45) {
             return Direction.Down;
-        } else if (position.pitch < -45) {
+        } else if (entityPosition.pitch < -45) {
             return Direction.Up;
         }
-        var yaw = (position.yaw + 45.0) % 360.0;
+        var yaw = (entityPosition.yaw + 45.0) % 360.0;
         if (yaw < 0) yaw += 360;
         if (yaw < 90) {
             return Direction.South;
@@ -1518,14 +1518,14 @@ public class Player extends Entity {
     }
 
     private void handleVehicleMove(Packet packet) throws IOException {
-        Position position = packet.readPosition();
-        this.position = position;
+        EntityPosition entityPosition = packet.readPosition();
+        this.entityPosition = entityPosition;
         var vehicle = Main.entityById(vehicleEntityId);
         if (vehicle.isEmpty()) {
             return;
         }
-        vehicle.get().position = position;
-        otherPlayers(player -> player.sendEntityTeleport(vehicleEntityId, position));
+        vehicle.get().entityPosition = entityPosition;
+        otherPlayers(player -> player.sendEntityTeleport(vehicleEntityId, entityPosition));
     }
 
     private void handleSteerBoat(Packet packet) {
@@ -1567,14 +1567,14 @@ public class Player extends Entity {
         Main.forEachPlayer(player -> player.sendPlayerEntityMetadata(this));
     }
 
-    public void sendExplosion(Position position, float strength, Collection<Location> boomBlocks, Velocity playerKick) {
+    public void sendExplosion(EntityPosition entityPosition, float strength, Collection<BlockPosition> boomBlocks, Velocity playerKick) {
         sendPacket(0x1B, p -> {
-            p.writeFloat((float) position.x);
-            p.writeFloat((float) position.y);
-            p.writeFloat((float) position.z);
+            p.writeFloat((float) entityPosition.x);
+            p.writeFloat((float) entityPosition.y);
+            p.writeFloat((float) entityPosition.z);
             p.writeFloat(strength);
             p.writeInt(boomBlocks.size());
-            Location center = position.location();
+            BlockPosition center = entityPosition.location();
             for (var block : boomBlocks) {
                 p.writeByte((byte) (block.x() - center.x()));
                 p.writeByte((byte) (block.y() - center.y()));

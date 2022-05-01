@@ -21,11 +21,11 @@ public record Velocity(float x, float y, float z) {
         os.writeShort(blockPerSecondToProtocol(z));
     }
 
-    public static Velocity directionMagnitude(Position position, float speed) {
-        var x = -Math.sin(position.yawRadians());
-        var z = Math.cos(position.yawRadians());
-        var yH = -Math.sin(position.pitchRadians());
-        var yXZ = Math.cos(position.pitchRadians());
+    public static Velocity directionMagnitude(EntityPosition entityPosition, float speed) {
+        var x = -Math.sin(entityPosition.yawRadians());
+        var z = Math.cos(entityPosition.yawRadians());
+        var yH = -Math.sin(entityPosition.pitchRadians());
+        var yXZ = Math.cos(entityPosition.pitchRadians());
         x *= yXZ;
         z *= yXZ;
         return new Velocity(

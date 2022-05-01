@@ -45,16 +45,16 @@ public class Packet extends ByteArrayInputStream {
         return Protocol.readDouble(this);
     }
 
-    public Location readLocation() throws IOException {
-        return new Location(Protocol.readLong(this));
+    public BlockPosition readLocation() throws IOException {
+        return new BlockPosition(Protocol.readLong(this));
     }
 
-    public Position readPosition() throws IOException {
+    public EntityPosition readPosition() throws IOException {
         var x = readDouble();
         var y = readDouble();
         var z = readDouble();
         var yaw = readFloat();
         var pitch = readFloat();
-        return new Position(x, y, z, yaw, pitch);
+        return new EntityPosition(x, y, z, yaw, pitch);
     }
 }

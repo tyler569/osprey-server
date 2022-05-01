@@ -2,25 +2,25 @@ package com.pygostylia.osprey;
 
 import java.time.Duration;
 
-public class Position {
+public class EntityPosition {
     public boolean onGround;
     public double x, y, z;
     public float pitch;
     public float yaw;
 
-    public Position() {
+    public EntityPosition() {
         x = 0.5;
         z = 0.5;
         y = 32;
     }
 
-    public Position(Location location) {
-        x = location.x();
-        y = location.y();
-        z = location.z();
+    public EntityPosition(BlockPosition blockPosition) {
+        x = blockPosition.x();
+        y = blockPosition.y();
+        z = blockPosition.z();
     }
 
-    public Position(double x, double y, double z, float yaw, float pitch) {
+    public EntityPosition(double x, double y, double z, float yaw, float pitch) {
         this.x = x;
         this.y = y;
         this.z = z;
@@ -28,34 +28,34 @@ public class Position {
         this.pitch = pitch;
     }
 
-    public Position(Position position) {
-        this.x = position.x;
-        this.y = position.y;
-        this.z = position.z;
-        this.yaw = position.yaw;
-        this.pitch = position.pitch;
-        this.onGround = position.onGround;
+    public EntityPosition(EntityPosition entityPosition) {
+        this.x = entityPosition.x;
+        this.y = entityPosition.y;
+        this.z = entityPosition.z;
+        this.yaw = entityPosition.yaw;
+        this.pitch = entityPosition.pitch;
+        this.onGround = entityPosition.onGround;
     }
 
-    public static Position middle(Location location) {
-        Position p = new Position();
-        p.x = location.x() + 0.5;
-        p.y = location.y();
-        p.z = location.z() + 0.5;
+    public static EntityPosition middle(BlockPosition blockPosition) {
+        EntityPosition p = new EntityPosition();
+        p.x = blockPosition.x() + 0.5;
+        p.y = blockPosition.y();
+        p.z = blockPosition.z() + 0.5;
         return p;
     }
 
-    public static Position orientation(float yaw, float pitch) {
-        var position = new Position();
+    public static EntityPosition orientation(float yaw, float pitch) {
+        var position = new EntityPosition();
         position.yaw = yaw;
         position.pitch = pitch;
         return position;
     }
 
-    public void moveTo(Location location) {
-        x = location.x() + 0.5;
-        y = location.y();
-        z = location.z() + 0.5;
+    public void moveTo(BlockPosition blockPosition) {
+        x = blockPosition.x() + 0.5;
+        y = blockPosition.y();
+        z = blockPosition.z() + 0.5;
     }
 
     public byte yawAngle() {
@@ -74,20 +74,20 @@ public class Position {
         return (int) z >> 4;
     }
 
-    public Location location() {
-        return new Location(
+    public BlockPosition location() {
+        return new BlockPosition(
                 (int) Math.floor(x),
                 (int) Math.floor(y),
                 (int) Math.floor(z)
         );
     }
 
-    public ChunkLocation chunkLocation() {
-        return new ChunkLocation(chunkX(), chunkZ());
+    public ChunkPosition chunkLocation() {
+        return new ChunkPosition(chunkX(), chunkZ());
     }
 
     public String toString() {
-        return String.format("Position[x=%f, y=%f, z=%f, pitch=%f, yaw=%f]", x, y, z, pitch, yaw);
+        return String.format("EntityPosition[x=%f, y=%f, z=%f, pitch=%f, yaw=%f]", x, y, z, pitch, yaw);
     }
 
     public float pitchRadians() {
@@ -104,8 +104,8 @@ public class Position {
         z += dz;
     }
 
-    public Position offset(double dx, double dy, double dz) {
-        Position p = new Position(this);
+    public EntityPosition offset(double dx, double dy, double dz) {
+        EntityPosition p = new EntityPosition(this);
         p.moveBy(dx, dy, dz);
         return p;
     }

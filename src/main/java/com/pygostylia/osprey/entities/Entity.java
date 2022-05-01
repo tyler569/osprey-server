@@ -1,8 +1,8 @@
 package com.pygostylia.osprey.entities;
 
-import com.pygostylia.osprey.Location;
+import com.pygostylia.osprey.BlockPosition;
+import com.pygostylia.osprey.EntityPosition;
 import com.pygostylia.osprey.Main;
-import com.pygostylia.osprey.Position;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -11,7 +11,7 @@ import java.util.UUID;
 abstract public class Entity {
     int id;
     UUID uuid;
-    Position position;
+    EntityPosition entityPosition;
     List<Player> playersWithLoaded;
     boolean noCollision;
 
@@ -21,9 +21,9 @@ abstract public class Entity {
         id = Main.addEntity(this);
     }
 
-    Entity(Position position) {
+    Entity(EntityPosition entityPosition) {
         this();
-        this.position = position;
+        this.entityPosition = entityPosition;
     }
 
     abstract int type();
@@ -47,12 +47,12 @@ abstract public class Entity {
         return uuid;
     }
 
-    public Position position() {
-        return position;
+    public EntityPosition position() {
+        return entityPosition;
     }
 
-    public Location location() {
-        return position.location();
+    public BlockPosition location() {
+        return entityPosition.location();
     }
 
     public int id() {
@@ -73,15 +73,15 @@ abstract public class Entity {
 
     abstract float colliderY();
 
-    boolean collides(Position point) {
+    boolean collides(EntityPosition point) {
         float ex = colliderXZ() / 2;
         float ey = colliderY();
-        if (position.x + ex < point.x || point.x < position.x - ex) return false;
-        if (position.z + ex < point.z || point.z < position.z - ex) return false;
-        return !(position.y + ey < point.y) && !(point.y <= position.y);
+        if (entityPosition.x + ex < point.x || point.x < entityPosition.x - ex) return false;
+        if (entityPosition.z + ex < point.z || point.z < entityPosition.z - ex) return false;
+        return !(entityPosition.y + ey < point.y) && !(point.y <= entityPosition.y);
     }
 
-    boolean collides(Location block) {
+    boolean collides(BlockPosition block) {
         return false;
     }
 

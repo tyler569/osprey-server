@@ -1,19 +1,19 @@
 package com.pygostylia.osprey.entities;
 
+import com.pygostylia.osprey.EntityPosition;
 import com.pygostylia.osprey.Main;
-import com.pygostylia.osprey.Position;
 import com.pygostylia.osprey.Velocity;
 
 abstract public class ObjectEntity extends Entity {
     Velocity velocity;
 
-    public ObjectEntity(Position position) {
-        super(position);
+    public ObjectEntity(EntityPosition entityPosition) {
+        super(entityPosition);
         this.velocity = Velocity.zero();
     }
 
-    public ObjectEntity(Position position, Velocity velocity) {
-        super(position);
+    public ObjectEntity(EntityPosition entityPosition, Velocity velocity) {
+        super(entityPosition);
         this.velocity = velocity;
     }
 
@@ -23,6 +23,6 @@ abstract public class ObjectEntity extends Entity {
     }
 
     public void spawn() {
-        Main.playersWithin(64, position.location()).forEach(this::spawnForPlayer);
+        Main.playersWithin(64, entityPosition.location()).forEach(this::spawnForPlayer);
     }
 }

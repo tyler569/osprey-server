@@ -1,6 +1,6 @@
 package com.pygostylia.osprey.entities;
 
-import com.pygostylia.osprey.Position;
+import com.pygostylia.osprey.EntityPosition;
 import com.pygostylia.osprey.Registry;
 
 import java.util.ArrayList;
@@ -12,8 +12,8 @@ public class BoatEntity extends ObjectEntity {
     public boolean turningRight;
     ArrayList<Entity> passengers = new ArrayList<>();
 
-    public BoatEntity(Position position) {
-        super(position);
+    public BoatEntity(EntityPosition entityPosition) {
+        super(entityPosition);
     }
 
     @Override

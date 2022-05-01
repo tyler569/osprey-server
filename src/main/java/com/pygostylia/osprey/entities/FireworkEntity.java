@@ -1,7 +1,7 @@
 package com.pygostylia.osprey.entities;
 
+import com.pygostylia.osprey.EntityPosition;
 import com.pygostylia.osprey.Main;
-import com.pygostylia.osprey.Position;
 import com.pygostylia.osprey.Registry;
 import com.pygostylia.osprey.Velocity;
 
@@ -12,8 +12,8 @@ public class FireworkEntity extends ObjectEntity {
 
     int ridingEntity;
 
-    public FireworkEntity(Position position, Velocity velocity) {
-        super(position, velocity);
+    public FireworkEntity(EntityPosition entityPosition, Velocity velocity) {
+        super(entityPosition, velocity);
         noCollision = true;
     }
 
