@@ -4,5 +4,5 @@ import java.io.IOException;
 
 @FunctionalInterface
 public interface PacketBuilderLambda {
-    void apply(PacketBuilder p) throws IOException;
+    void apply(MinecraftOutputStream p) throws IOException;
 }

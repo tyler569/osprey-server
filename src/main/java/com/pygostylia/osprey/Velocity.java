@@ -15,7 +15,7 @@ public record Velocity(float x, float y, float z) {
         return new Velocity(0, 0, 0);
     }
 
-    public void write(PacketBuilder os) throws IOException {
+    public void write(MinecraftOutputStream os) throws IOException {
         os.writeShort(blockPerSecondToProtocol(x));
         os.writeShort(blockPerSecondToProtocol(y));
         os.writeShort(blockPerSecondToProtocol(z));

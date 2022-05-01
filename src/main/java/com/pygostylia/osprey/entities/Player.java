@@ -192,7 +192,7 @@ public class Player extends Entity {
     private void handleConnection() throws IOException {
         while (!connection.isClosed()) {
             try {
-                Packet p = connection.readPacket();
+                MinecraftInputStream p = connection.readPacket();
                 handlePacket(p);
             } catch (SocketException e) {
                 printf("Exception! %s;  Last packet was %#02x%n", e.getMessage(), connection.lastPacketType);
@@ -215,7 +215,7 @@ public class Player extends Entity {
         loadCorrectChunks();
     }
 
-    private void handlePacket(Packet packet) throws IOException {
+    private void handlePacket(MinecraftInputStream packet) throws IOException {
         switch (state) {
             case Status -> handleStatusPacket(packet);
             case Login -> handleLoginPacket(packet);
@@ -223,11 +223,11 @@ public class Player extends Entity {
         }
     }
 
-    void unknownPacket(Packet packet) {
+    void unknownPacket(MinecraftInputStream packet) {
         printf("Unknown packet type %d %#x in state %s%n", packet.type, packet.type, state);
     }
 
-    private void handleStatusPacket(Packet packet) throws IOException {
+    private void handleStatusPacket(MinecraftInputStream packet) throws IOException {
         switch (packet.type) {
             case 0 -> handleHandshake(packet);
             case 1 -> handlePing(packet);
@@ -235,7 +235,7 @@ public class Player extends Entity {
         }
     }
 
-    private void handleLoginPacket(Packet packet) throws IOException {
+    private void handleLoginPacket(MinecraftInputStream packet) throws IOException {
         switch (packet.type) {
             case 0 -> handleLoginStart(packet);
             case 1 -> handleEncryptionResponse(packet);
@@ -243,7 +243,7 @@ public class Player extends Entity {
         }
     }
 
-    private void handlePlayPacket(Packet packet) throws IOException {
+    private void handlePlayPacket(MinecraftInputStream packet) throws IOException {
         switch (packet.type) {
             case 3 -> handleChat(packet);
             case 4 -> handleClientStatus(packet);
@@ -289,7 +289,7 @@ public class Player extends Entity {
 
     // handle Status packets
 
-    private void handleHandshake(Packet packet) throws IOException {
+    private void handleHandshake(MinecraftInputStream packet) throws IOException {
         if (packet.originalLen > 2) {
             int protocolVersion = packet.readVarInt();
             String address = packet.readString();
@@ -306,7 +306,7 @@ public class Player extends Entity {
         }
     }
 
-    private void handlePing(Packet packet) throws IOException {
+    private void handlePing(MinecraftInputStream packet) throws IOException {
         long number = packet.readLong();
         writePingResponse(number);
     }
@@ -318,13 +318,13 @@ public class Player extends Entity {
             p.writeString("server id not short");
             var encodedKey = Main.encryptionKey.getPublic().getEncoded();
             p.writeVarInt(encodedKey.length);
-            p.writeBytes(encodedKey);
+            p.write(encodedKey);
             p.writeVarInt(encryptionToken.length);
-            p.writeBytes(encryptionToken);
+            p.write(encryptionToken);
         });
     }
 
-    private void handleLoginStart(Packet packet) throws IOException {
+    private void handleLoginStart(MinecraftInputStream packet) throws IOException {
         name = packet.readString();
         uuid = UUID.nameUUIDFromBytes(String.format("OfflinePlayer:%s", name).getBytes());
         printf("UUID: %s%n", uuid);
@@ -412,7 +412,7 @@ public class Player extends Entity {
         });
     }
 
-    private void handleEncryptionResponse(Packet packet) throws IOException {
+    private void handleEncryptionResponse(MinecraftInputStream packet) throws IOException {
         int secretLength = packet.readVarInt();
         byte[] secret = packet.readNBytes(secretLength);
         int tokenLength = packet.readVarInt();
@@ -499,7 +499,7 @@ public class Player extends Entity {
         loadCorrectChunks();
     }
 
-    private void handleSettings(Packet packet) throws IOException {
+    private void handleSettings(MinecraftInputStream packet) throws IOException {
         String locale = packet.readString();
         renderDistance = packet.read();
         if (renderDistance > maxRenderDistance) renderDistance = maxRenderDistance;
@@ -510,7 +510,7 @@ public class Player extends Entity {
         loadCorrectChunks();
     }
 
-    private void handlePluginMessage(Packet packet) throws IOException {
+    private void handlePluginMessage(MinecraftInputStream packet) throws IOException {
         String channel = packet.readString();
         switch (channel) {
             case "minecraft:brand" -> printf("client brand: %s%n", packet.readString());
@@ -518,7 +518,7 @@ public class Player extends Entity {
         }
     }
 
-    private void handleKeepAlive(Packet packet) throws IOException {
+    private void handleKeepAlive(MinecraftInputStream packet) throws IOException {
         long keepAlive = packet.readLong();
         if (!connection.validateKeepAlive(keepAlive)) {
             println("Keepalives did not match!");
@@ -643,7 +643,7 @@ public class Player extends Entity {
         });
     }
 
-    private void handleChat(Packet packet) throws IOException {
+    private void handleChat(MinecraftInputStream packet) throws IOException {
         String message = packet.readString();
         printf("[chat] %s%n", message);
         if (message.startsWith("/")) {
@@ -777,7 +777,7 @@ public class Player extends Entity {
         updatePosition(entityPosition.x, entityPosition.y, entityPosition.z, entityPosition.pitch, entityPosition.yaw, onGround);
     }
 
-    private void handlePosition(Packet packet) throws IOException {
+    private void handlePosition(MinecraftInputStream packet) throws IOException {
         double x = packet.readDouble();
         double y = packet.readDouble();
         double z = packet.readDouble();
@@ -785,7 +785,7 @@ public class Player extends Entity {
         updatePosition(x, y, z, onGround);
     }
 
-    private void handlePositionAndRotation(Packet packet) throws IOException {
+    private void handlePositionAndRotation(MinecraftInputStream packet) throws IOException {
         double x = packet.readDouble();
         double y = packet.readDouble();
         double z = packet.readDouble();
@@ -799,14 +799,14 @@ public class Player extends Entity {
         return entityPosition.offset(0, 1.6, 0);
     }
 
-    private void handleRotation(Packet packet) throws IOException {
+    private void handleRotation(MinecraftInputStream packet) throws IOException {
         float yaw = packet.readFloat();
         float pitch = packet.readFloat();
         boolean onGround = packet.readBoolean();
         updatePosition(pitch, yaw, onGround);
     }
 
-    private void handleMovement(Packet packet) {
+    private void handleMovement(MinecraftInputStream packet) throws IOException {
         boolean onGround = packet.readBoolean();
         otherPlayers(player -> player.sendEntityTeleport(id, entityPosition));
         updatePosition(onGround);
@@ -846,7 +846,7 @@ public class Player extends Entity {
         });
     }
 
-    private void handleEntityAction(Packet packet) throws IOException {
+    private void handleEntityAction(MinecraftInputStream packet) throws IOException {
         int entity = packet.readVarInt();
         if (entity != id) {
             println("I got an update for not me");
@@ -864,7 +864,7 @@ public class Player extends Entity {
         otherPlayers(player -> player.sendPlayerEntityMetadata(this));
     }
 
-    private void handleAnimation(Packet packet) throws IOException {
+    private void handleAnimation(MinecraftInputStream packet) throws IOException {
         var hand = packet.readVarInt();
         otherPlayers(player -> player.sendEntityAnimation(this.id, 0));
     }
@@ -942,7 +942,7 @@ public class Player extends Entity {
         });
     }
 
-    private void handleSteerVehicle(Packet packet) throws IOException {
+    private void handleSteerVehicle(MinecraftInputStream packet) throws IOException {
         float sideways = packet.readFloat();
         float forward = packet.readFloat();
         int flags = packet.read();
@@ -979,7 +979,7 @@ public class Player extends Entity {
         });
     }
 
-    private void handlePlayerAction(Packet packet) throws IOException {
+    private void handlePlayerAction(MinecraftInputStream packet) throws IOException {
         var status = packet.readVarInt();
         var location = packet.readLocation();
         var face = packet.read();
@@ -1044,7 +1044,7 @@ public class Player extends Entity {
         }
     }
 
-    private void handlePlayerPlaceBlock(Packet packet) throws IOException {
+    private void handlePlayerPlaceBlock(MinecraftInputStream packet) throws IOException {
         var hand = packet.readVarInt();
         var originalLocation = packet.readLocation();
         if (selectedItem().itemId() == 586 && hand == 0) {
@@ -1150,7 +1150,7 @@ public class Player extends Entity {
         return isHoldingItem(bow, hand);
     }
 
-    private void handlePlayerUseItem(Packet packet) throws IOException {
+    private void handlePlayerUseItem(MinecraftInputStream packet) throws IOException {
         int hand = packet.readVarInt();
         printf("Use %d %s%n", hand, selectedItem());
 
@@ -1177,7 +1177,7 @@ public class Player extends Entity {
 
     // inventory
 
-    private void handleCreativeInventoryAction(Packet packet) throws IOException {
+    private void handleCreativeInventoryAction(MinecraftInputStream packet) throws IOException {
         var slotNumber = packet.readShort();
         var slot = Slot.from(packet);
         inventory.put(slotNumber, slot);
@@ -1190,7 +1190,7 @@ public class Player extends Entity {
         }
     }
 
-    private void handleHeldItemChange(Packet packet) throws IOException {
+    private void handleHeldItemChange(MinecraftInputStream packet) throws IOException {
         selectedHotbarSlot = packet.readShort();
         printf("Select %d %s%n", selectedHotbarSlot, selectedItem());
         otherPlayers(player -> player.sendEquipment(this));
@@ -1267,7 +1267,7 @@ public class Player extends Entity {
     public void sendCUIEvent(int selection, BlockPosition blockPosition, long volume) {
         if (selection == -1) {
             sendPluginMessage("worldedit:cui", p -> {
-                p.writeBytes("s|cuboid".getBytes());
+                p.writeBytes("s|cuboid");
             });
         } else {
             sendPluginMessage("worldedit:cui", p -> {
@@ -1279,7 +1279,7 @@ public class Player extends Entity {
                                 blockPosition.y(),
                                 blockPosition.z(),
                                 volume
-                        ).getBytes()
+                        )
                 );
             });
         }
@@ -1475,7 +1475,7 @@ public class Player extends Entity {
         lambda.apply(maybeVehicle.get());
     }
 
-    private void handleInteractEntity(Packet packet) throws IOException {
+    private void handleInteractEntity(MinecraftInputStream packet) throws IOException {
         int entityId = packet.readVarInt();
         int type = packet.readVarInt();
         if (type == 2) {
@@ -1517,7 +1517,7 @@ public class Player extends Entity {
         });
     }
 
-    private void handleVehicleMove(Packet packet) throws IOException {
+    private void handleVehicleMove(MinecraftInputStream packet) throws IOException {
         EntityPosition entityPosition = packet.readPosition();
         this.entityPosition = entityPosition;
         var vehicle = Main.entityById(vehicleEntityId);
@@ -1528,7 +1528,7 @@ public class Player extends Entity {
         otherPlayers(player -> player.sendEntityTeleport(vehicleEntityId, entityPosition));
     }
 
-    private void handleSteerBoat(Packet packet) {
+    private void handleSteerBoat(MinecraftInputStream packet) throws IOException {
         boolean left = packet.readBoolean();
         boolean right = packet.readBoolean();
         var vehicle = Main.entityById(vehicleEntityId);
@@ -1554,13 +1554,13 @@ public class Player extends Entity {
         });
     }
 
-    private void handleClientStatus(Packet packet) throws IOException {
+    private void handleClientStatus(MinecraftInputStream packet) throws IOException {
         var action = packet.readVarInt();
         if (action == 0) { // perform respawn
         }
     }
 
-    private void handleIsFlying(Packet packet) {
+    private void handleIsFlying(MinecraftInputStream packet) throws IOException {
         var status = packet.read();
         isCreativeFlying = (status & 0x02) != 0;
         isElytraFlying = false;

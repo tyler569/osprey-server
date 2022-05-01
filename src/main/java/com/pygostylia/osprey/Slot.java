@@ -13,7 +13,7 @@ public record Slot(boolean empty, int itemId, int count, NBTCompound data) {
         this(false, itemId, count, null);
     }
 
-    public void encode(PacketBuilder p) {
+    public void encode(MinecraftOutputStream p) throws IOException {
         if (empty) {
             p.writeBoolean(false);
         } else {
@@ -28,7 +28,7 @@ public record Slot(boolean empty, int itemId, int count, NBTCompound data) {
         }
     }
 
-    public static Slot from(Packet packet) throws IOException {
+    public static Slot from(MinecraftInputStream packet) throws IOException {
         boolean hasEntry = packet.readBoolean();
         int itemId = 0;
         int count = 0;

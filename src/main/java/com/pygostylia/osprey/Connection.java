@@ -44,7 +44,7 @@ public class Connection {
         return socket.isClosed();
     }
 
-    public Packet readPacket() throws IOException {
+    public MinecraftInputStream readPacket() throws IOException {
         byte[] data;
         int originalLen;
         int compressedLen;
@@ -72,17 +72,17 @@ public class Connection {
                 var inflater = new InflaterInputStream(stream);
                 data = inflater.readAllBytes();
                 if (data.length != originalLen) {
-                    System.err.printf("Packet had unexpected length: %d %d%n", originalLen, data.length);
+                    System.err.printf("MinecraftInputStream had unexpected length: %d %d%n", originalLen, data.length);
                 }
             }
         }
-        Packet packet = new Packet(data, originalLen);
+        MinecraftInputStream packet = new MinecraftInputStream(data, originalLen);
         packet.type = packet.readVarInt();
         return packet;
     }
 
     public void sendPacket(int type, PacketBuilderLambda closure) throws IOException {
-        var m = new PacketBuilder();
+        var m = new MinecraftOutputStream();
         m.writeVarInt(type);
         closure.apply(m);
         if (!compressionEnabled) {
