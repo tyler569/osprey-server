@@ -11,7 +11,7 @@ import java.util.UUID;
 abstract public class Entity {
     int id;
     UUID uuid;
-    EntityPosition entityPosition;
+    public EntityPosition entityPosition;
     List<Player> playersWithLoaded;
     boolean noCollision;
 
@@ -26,7 +26,7 @@ abstract public class Entity {
         this.entityPosition = entityPosition;
     }
 
-    abstract int type();
+    abstract public int type();
 
     void spawnForPlayer(Player player) {
         playersWithLoaded.add(player);
@@ -65,13 +65,13 @@ abstract public class Entity {
     public void attack(Player sender) {
     }
 
-    int spawnData() {
+    public int spawnData() {
         return 0;
     }
 
-    abstract float colliderXZ();
+    abstract public float colliderXZ();
 
-    abstract float colliderY();
+    abstract public float colliderY();
 
     boolean collides(EntityPosition point) {
         float ex = colliderXZ() / 2;

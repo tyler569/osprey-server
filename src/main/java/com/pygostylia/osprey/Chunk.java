@@ -27,7 +27,7 @@ public class Chunk {
     Chunk() {
     }
 
-    static int diamond = Registry.blockDefaultId("minecraft:diamond_ore");
+    static Integer diamond = Registry.blockDefaultId("minecraft:diamond_ore");
 
     static Chunk defaultGeneration() {
         var random = new Random();
@@ -76,8 +76,8 @@ public class Chunk {
         return blockArray.get(blockPosition.blockIndex());
     }
 
-    void encodeMap(OutputStream chunkData) throws IOException {
-        final var buffer = new ByteArrayOutputStream();
+    void encodeMap(MinecraftOutputStream chunkData) throws IOException {
+        final var buffer = new MinecraftOutputStream();
         final var bitsPerBlock = 15;
         final int blocksPerLong = Long.SIZE / bitsPerBlock;
         for (int chunkSectionY = 0; chunkSectionY < 16; chunkSectionY++) {
@@ -93,15 +93,15 @@ public class Chunk {
                 acc |= block << (index * bitsPerBlock);
                 index += 1;
                 if (index >= blocksPerLong) {
-                    Protocol.writeLong(buffer, acc);
+                    buffer.writeLong(acc);
                     acc = 0;
                     index = 0;
                 }
             }
-            Protocol.writeShort(chunkData, count); // blocks in chunk section
-            Protocol.writeByte(chunkData, bitsPerBlock);
-            Protocol.writeVarInt(chunkData, 1024);
-            Protocol.writeBytes(chunkData, buffer.toByteArray());
+            chunkData.writeShort(count); // blocks in chunk section
+            chunkData.writeByte(bitsPerBlock);
+            chunkData.writeVarInt(1024);
+            chunkData.write(buffer.toByteArray());
             buffer.reset();
         }
     }
@@ -127,7 +127,7 @@ public class Chunk {
     }
 
     byte[] encodeChunkData() throws IOException {
-        var data = new ByteArrayOutputStream();
+        var data = new MinecraftOutputStream();
         encodeMap(data);
         return data.toByteArray();
     }
@@ -137,21 +137,21 @@ public class Chunk {
             m.write(cachedPacket);
             return;
         }
-        var buffer = new ByteArrayOutputStream();
+        var buffer = new MinecraftOutputStream();
 
         byte[] chunkData = encodeChunkData();
         var heightmap = heightMapNBT();
 
-        Protocol.writeBoolean(buffer, true);
-        Protocol.writeVarInt(buffer, 0xFFFF); // primary bitmask
+        buffer.writeBoolean(true);
+        buffer.writeVarInt(0xFFFF); // primary bitmask
         heightmap.write(buffer);
-        Protocol.writeVarInt(buffer, 1024);
+        buffer.writeVarInt(1024);
         for (int i = 0; i < 1024; i++) {
-            Protocol.writeVarInt(buffer, 0);
+            buffer.writeVarInt(0);
         }
-        Protocol.writeVarInt(buffer, chunkData.length);
-        Protocol.writeBytes(buffer, chunkData);
-        Protocol.writeVarInt(buffer, 0);
+        buffer.writeVarInt(chunkData.length);
+        buffer.write(chunkData);
+        buffer.writeVarInt(0);
         // Array of NBT containing block entities
 
         cachedPacket = buffer.toByteArray();

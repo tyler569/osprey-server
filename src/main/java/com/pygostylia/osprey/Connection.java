@@ -1,6 +1,6 @@
 package com.pygostylia.osprey;
 
-import com.pygostylia.osprey.clientboundpacket.ClientBoundPacket;
+import com.pygostylia.osprey.packets.clientbound.ClientBoundPacket;
 
 import javax.crypto.Cipher;
 import javax.crypto.CipherInputStream;
@@ -91,30 +91,27 @@ public class Connection {
                 outstream.flush();
             }
         } else {
+            var originalSize = 0;
+            var finalSize = data.length;
+
             if (data.length > maxUncompressedPacket) {
-                var originalSize = data.length;
+                originalSize = finalSize;
+
                 var inner = new ByteArrayOutputStream();
                 var stream = new DeflaterOutputStream(inner);
                 stream.write(data);
                 stream.finish();
-                var compressedSize = inner.size();
-                synchronized (socket) {
-                    Protocol.writeVarInt(outstream, compressedSize + VarInt.len(originalSize));
-                    Protocol.writeVarInt(outstream, originalSize);
+                data = inner.toByteArray();
+                finalSize = data.length;
+            }
 
-                    outstream.write(inner.toByteArray());
-                    outstream.flush();
-                }
-            } else {
-                synchronized (socket) {
-                    VarInt.write(outstream, data.length + VarInt.len(0));
-                    VarInt.write(outstream, 0);
-                    outstream.write(data);
-                    outstream.flush();
-                }
+            synchronized (socket) {
+                VarInt.write(outstream, finalSize + VarInt.len(originalSize));
+                VarInt.write(outstream, originalSize);
+                outstream.write(data);
+                outstream.flush();
             }
         }
-
     }
 
     public void sendPacket(int type, PacketBuilderLambda closure) throws IOException {
@@ -125,12 +122,16 @@ public class Connection {
         lastPacketType = type;
     }
 
-    public void sendPacket(int type, ClientBoundPacket p) throws IOException {
-        var m = new MinecraftOutputStream();
-        m.writeVarInt(type);
-        p.encode(m);
-        sendPacketRaw(m.toByteArray());
-        lastPacketType = type;
+    public void sendPacket2(int type, ClientBoundPacket p) {
+        try {
+            var m = new MinecraftOutputStream();
+            m.writeVarInt(type);
+            p.encode(m);
+            sendPacketRaw(m.toByteArray());
+            lastPacketType = type;
+        } catch (IOException ignored) {
+            // do something
+        }
     }
 
 

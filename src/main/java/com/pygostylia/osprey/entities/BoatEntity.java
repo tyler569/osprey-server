@@ -17,17 +17,17 @@ public class BoatEntity extends ObjectEntity {
     }
 
     @Override
-    int type() {
+    public int type() {
         return TYPE;
     }
 
     @Override
-    float colliderXZ() {
+    public float colliderXZ() {
         return 1.375f;
     }
 
     @Override
-    float colliderY() {
+    public float colliderY() {
         return 0.5625f;
     }
 

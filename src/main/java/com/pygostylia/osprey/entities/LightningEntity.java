@@ -11,17 +11,17 @@ public class LightningEntity extends ObjectEntity {
     }
 
     @Override
-    int type() {
+    public int type() {
         return TYPE;
     }
 
     @Override
-    float colliderXZ() {
+    public float colliderXZ() {
         return 0;
     }
 
     @Override
-    float colliderY() {
+    public float colliderY() {
         return 0;
     }
 }

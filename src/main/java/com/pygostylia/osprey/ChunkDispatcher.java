@@ -7,7 +7,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.stream.Stream;
 
 public class ChunkDispatcher implements Runnable {
-    static record Pair(Player player, ChunkPosition chunkPosition) {
+    record Pair(Player player, ChunkPosition chunkPosition) {
     }
 
     BlockingQueue<Pair> queue = new LinkedBlockingQueue<>();

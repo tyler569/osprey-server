@@ -1,7 +1,6 @@
-package com.pygostylia.osprey.severboundpacket;
+package com.pygostylia.osprey.packets.serverbound;
 
 import com.pygostylia.osprey.MinecraftInputStream;
-import com.pygostylia.osprey.MinecraftOutputStream;
 
 import java.io.IOException;
 

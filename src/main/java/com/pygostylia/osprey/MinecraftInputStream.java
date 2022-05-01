@@ -31,7 +31,7 @@ public class MinecraftInputStream extends DataInputStream {
     }
 
     public BlockPosition readLocation() throws IOException {
-        return new BlockPosition(Protocol.readLong(this));
+        return new BlockPosition(readLong());
     }
 
     public EntityPosition readPosition() throws IOException {

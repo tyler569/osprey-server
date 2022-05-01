@@ -18,17 +18,17 @@ public class FireworkEntity extends ObjectEntity {
     }
 
     @Override
-    int type() {
+    public int type() {
         return TYPE;
     }
 
     @Override
-    float colliderXZ() {
+    public float colliderXZ() {
         return 0.25f;
     }
 
     @Override
-    float colliderY() {
+    public float colliderY() {
         return 0.25f;
     }
 

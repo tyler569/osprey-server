@@ -35,13 +35,13 @@ public class MinecraftOutputStream extends DataOutputStream {
         writeLong(uuid.getLeastSignificantBits());
     }
 
-    public void writeLocation(int x, int y, int z) throws IOException {
+    public void writePosition(int x, int y, int z) throws IOException {
         long encoded = (((long) x & 0x3FFFFFF) << 38) | (((long) z & 0x3FFFFFF) << 12) | (y & 0xFFF);
         writeLong(encoded);
     }
 
-    public void writeLocation(BlockPosition blockPosition) throws IOException {
-        writeLocation(blockPosition.x(), blockPosition.y(), blockPosition.z());
+    public void writePosition(BlockPosition blockPosition) throws IOException {
+        writePosition(blockPosition.x(), blockPosition.y(), blockPosition.z());
     }
 
     public void writePosition(EntityPosition entityPosition) throws IOException {
@@ -52,11 +52,21 @@ public class MinecraftOutputStream extends DataOutputStream {
         writeByte(entityPosition.yawAngle());
     }
 
+    public void writeVelocity(Velocity velocity) throws IOException {
+        velocity.write(this);
+    }
+
     public byte[] toByteArray() {
         if (out instanceof ByteArrayOutputStream bout) {
             return bout.toByteArray();
         } else {
             return null;
+        }
+    }
+
+    public void reset() {
+        if (out instanceof ByteArrayOutputStream bout) {
+            bout.reset();
         }
     }
 }

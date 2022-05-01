@@ -5,7 +5,7 @@ import com.pygostylia.osprey.Main;
 import com.pygostylia.osprey.Velocity;
 
 abstract public class ObjectEntity extends Entity {
-    Velocity velocity;
+    public Velocity velocity;
 
     public ObjectEntity(EntityPosition entityPosition) {
         super(entityPosition);

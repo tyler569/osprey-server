@@ -78,7 +78,7 @@ public class Player extends Entity {
     }
 
     @Override
-    int type() {
+    public int type() {
         return 106;
     }
 
@@ -112,6 +112,10 @@ public class Player extends Entity {
 
     public boolean isShielding() {
         return isShielding;
+    }
+
+    public EntityPosition entityPosition() {
+        return entityPosition;
     }
 
     public static void runThread(Socket sock) throws IOException {
@@ -173,12 +177,12 @@ public class Player extends Entity {
     }
 
     @Override
-    float colliderXZ() {
+    public float colliderXZ() {
         return 0.6f;
     }
 
     @Override
-    float colliderY() {
+    public float colliderY() {
         return 1.8f;
     }
 
@@ -489,7 +493,7 @@ public class Player extends Entity {
     }
 
     public void sendSpawnPosition() {
-        sendPacket(0x42, p -> p.writeLocation(0, 32, 0));
+        sendPacket(0x42, p -> p.writePosition(0, 32, 0));
     }
 
     void initialSpawnPlayer() {
@@ -973,7 +977,7 @@ public class Player extends Entity {
     public void sendBlockBreakParticles(BlockPosition blockPosition, short blockId) {
         sendPacket(0x21, p -> {
             p.writeInt(2001);
-            p.writeLocation(blockPosition);
+            p.writePosition(blockPosition);
             p.writeInt(blockId);
             p.writeBoolean(false);
         });
