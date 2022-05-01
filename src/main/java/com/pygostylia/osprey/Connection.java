@@ -1,5 +1,7 @@
 package com.pygostylia.osprey;
 
+import com.pygostylia.osprey.clientboundpacket.ClientBoundPacket;
+
 import javax.crypto.Cipher;
 import javax.crypto.CipherInputStream;
 import javax.crypto.CipherOutputStream;
@@ -81,23 +83,19 @@ public class Connection {
         return packet;
     }
 
-    public void sendPacket(int type, PacketBuilderLambda closure) throws IOException {
-        var m = new MinecraftOutputStream();
-        m.writeVarInt(type);
-        closure.apply(m);
+    private void sendPacketRaw(byte[] data) throws IOException {
         if (!compressionEnabled) {
-            var data = m.toByteArray();
             synchronized (socket) {
                 VarInt.write(outstream, data.length);
                 outstream.write(data);
                 outstream.flush();
             }
         } else {
-            if (m.size() > maxUncompressedPacket) {
-                var originalSize = m.size();
+            if (data.length > maxUncompressedPacket) {
+                var originalSize = data.length;
                 var inner = new ByteArrayOutputStream();
                 var stream = new DeflaterOutputStream(inner);
-                stream.write(m.toByteArray());
+                stream.write(data);
                 stream.finish();
                 var compressedSize = inner.size();
                 synchronized (socket) {
@@ -106,19 +104,33 @@ public class Connection {
 
                     outstream.write(inner.toByteArray());
                     outstream.flush();
-                    lastPacketType = type;
                 }
             } else {
-                var data = m.toByteArray();
                 synchronized (socket) {
                     VarInt.write(outstream, data.length + VarInt.len(0));
                     VarInt.write(outstream, 0);
                     outstream.write(data);
                     outstream.flush();
-                    lastPacketType = type;
                 }
             }
         }
+
+    }
+
+    public void sendPacket(int type, PacketBuilderLambda closure) throws IOException {
+        var m = new MinecraftOutputStream();
+        m.writeVarInt(type);
+        closure.apply(m);
+        sendPacketRaw(m.toByteArray());
+        lastPacketType = type;
+    }
+
+    public void sendPacket(int type, ClientBoundPacket p) throws IOException {
+        var m = new MinecraftOutputStream();
+        m.writeVarInt(type);
+        p.encode(m);
+        sendPacketRaw(m.toByteArray());
+        lastPacketType = type;
     }
 
 
