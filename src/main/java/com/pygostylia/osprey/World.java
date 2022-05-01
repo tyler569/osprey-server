@@ -9,7 +9,7 @@ import java.util.HashMap;
 
 public class World {
     String databaseURL;
-    HashMap<ChunkPosition, Chunk> loadedChunks;
+    HashMap<ChunkLocation, Chunk> loadedChunks;
 
     private World() {
         loadedChunks = new HashMap<>();
@@ -28,66 +28,68 @@ public class World {
         return world;
     }
 
-    Chunk load(ChunkPosition position) {
-        var chunk = loadedChunks.get(position);
+    Chunk load(ChunkLocation location) {
+        var chunk = loadedChunks.get(location);
         if (chunk == null) {
             try {
-                chunk = loadFromDisk(position);
-                loadedChunks.put(position, chunk);
+                chunk = loadFromDisk(location);
+                loadedChunks.put(location, chunk);
             } catch (SQLException e) {
-                System.out.printf("Failed to load %s from disk%n", position);
+                System.out.printf("Failed to load %s from disk%n", location);
                 System.out.println(e.getMessage());
                 e.printStackTrace(System.out);
             }
         }
         if (chunk == null) {
             chunk = Chunk.defaultGeneration();
-            loadedChunks.put(position, chunk);
+            loadedChunks.put(location, chunk);
         }
         return chunk;
     }
 
     Chunk load(int x, int z) throws IOException {
-        return load(new ChunkPosition(x, z));
+        return load(new ChunkLocation(x, z));
     }
 
-    void saveChunk(ChunkPosition position) throws SQLException, IOException {
-        if (!loadedChunks.containsKey(position)) {
+    void saveChunk(ChunkLocation location) throws SQLException, IOException {
+        if (!loadedChunks.containsKey(location)) {
             return;
         }
-        var chunk = loadedChunks.get(position);
+        var chunk = loadedChunks.get(location);
         var chunkBlob = chunk.encodeBlob();
         String sql = """
                 INSERT OR REPLACE INTO chunks (x, z, data)
                 VALUES (?, ?, ?);
                 """;
-        try (var connection = connect(); var statement = connection.prepareStatement(sql)) {
-            statement.setInt(1, position.getX());
-            statement.setInt(2, position.getZ());
+        try (var connection = connect();
+             var statement = connection.prepareStatement(sql)) {
+            statement.setInt(1, location.x());
+            statement.setInt(2, location.z());
             statement.setBytes(3, chunkBlob);
             statement.execute();
             connection.commit();
         }
     }
 
-    void saveChunkSafe(ChunkPosition position) {
+    void saveChunkSafe(ChunkLocation location) {
         try {
-            saveChunk(position);
+            saveChunk(location);
         } catch (Exception e) {
-            System.out.printf("Failed to save %s%n", position);
+            System.out.printf("Failed to save %s%n", location);
             System.out.println(e.getMessage());
             e.printStackTrace();
         }
     }
 
-    Chunk loadFromDisk(ChunkPosition position) throws SQLException {
+    Chunk loadFromDisk(ChunkLocation location) throws SQLException {
         String sql = """
                 SELECT data FROM chunks
                 WHERE x = ? AND z = ?;
                 """;
-        try (var connection = connect(); var statement = connection.prepareStatement(sql)) {
-            statement.setInt(1, position.getX());
-            statement.setInt(2, position.getZ());
+        try (var connection = connect();
+             var statement = connection.prepareStatement(sql)) {
+            statement.setInt(1, location.x());
+            statement.setInt(2, location.z());
             var results = statement.executeQuery();
             if (results.isClosed()) return null;
             byte[] blob = results.getBytes(1);
@@ -123,7 +125,8 @@ public class World {
                     id INTEGER NOT NULL PRIMARY KEY
                 );
                 """;
-        try (var connection = connect(); var statement = connection.prepareStatement(sql)) {
+        try (var connection = connect();
+             var statement = connection.prepareStatement(sql)) {
             statement.execute();
             connection.commit();
         }
@@ -131,7 +134,8 @@ public class World {
         sql = """
                 SELECT MAX(id) FROM schema_migrations;
                 """;
-        try (var connection = connect(); var statement = connection.prepareStatement(sql)) {
+        try (var connection = connect();
+             var statement = connection.prepareStatement(sql)) {
             var results = statement.executeQuery();
             version = results.getInt(1);
             System.out.printf("Found world version %d%n", version);
@@ -146,25 +150,27 @@ public class World {
                             data BLOB,
                             PRIMARY KEY(x, z)
                         );
-                        """);
+                        """
+                );
             case 1:
                 migrationStep(2, """
-                        CREATE TABLE players (
-                            id INTEGER NOT NULL PRIMARY KEY,
-                            uuid STRING,
-                            name STRING
-                        );
-                        """, """
-                        CREATE TABLE inventory_slots (
-                            id INTEGER NOT NULL PRIMARY KEY,
-                            player_id INTEGER NOT NULL,
-                            slot_number INTEGER NOT NULL,
-                            item_id INTEGER NOT NULL,
-                            stack_count INTEGER NOT NULL,
-                            extra_data BLOB,
-                            FOREIGN KEY(player_id) REFERENCES players(id)
-                        );
-                        """);
+                                CREATE TABLE players (
+                                    id INTEGER NOT NULL PRIMARY KEY,
+                                    uuid STRING,
+                                    name STRING
+                                );
+                                """,
+                        """
+                                CREATE TABLE inventory_slots (
+                                    id INTEGER NOT NULL PRIMARY KEY,
+                                    player_id INTEGER NOT NULL,
+                                    slot_number INTEGER NOT NULL,
+                                    item_id INTEGER NOT NULL,
+                                    stack_count INTEGER NOT NULL,
+                                    extra_data BLOB,
+                                    FOREIGN KEY(player_id) REFERENCES players(id)
+                                );
+                                """);
             case 2:
                 migrationStep(3, """
                         ALTER TABLE players
@@ -178,29 +184,28 @@ public class World {
                         "ALTER TABLE players ADD COLUMN pitch REAL;",
                         "ALTER TABLE players ADD COLUMN yaw REAL;"
                 );
-
             default:
         }
     }
 
     public void save() {
-        for (ChunkPosition position : loadedChunks.keySet()) {
-            if (loadedChunks.get(position).modified) {
-                saveChunkSafe(position);
-                loadedChunks.get(position).modified = false;
+        for (ChunkLocation location : loadedChunks.keySet()) {
+            if (loadedChunks.get(location).modified) {
+                saveChunkSafe(location);
+                loadedChunks.get(location).modified = false;
             }
         }
     }
 
-    public void setBlock(BlockPosition blockPosition, int blockId) {
-        var affectedChunkPosition = blockPosition.chunkPosition();
-        var affectedChunk = load(affectedChunkPosition);
-        affectedChunk.setBlock(blockPosition.positionInChunk(), blockId);
+    public void setBlock(Location location, int blockId) {
+        var affectedChunkLocation = location.chunkLocation();
+        var affectedChunk = load(affectedChunkLocation);
+        affectedChunk.setBlock(location.positionInChunk(), blockId);
     }
 
-    public short block(BlockPosition blockPosition) {
-        var affectedChunkPosition = blockPosition.chunkPosition();
-        var affectedChunk = load(affectedChunkPosition);
-        return affectedChunk.block(blockPosition.positionInChunk());
+    public short block(Location location) {
+        var affectedChunkLocation = location.chunkLocation();
+        var affectedChunk = load(affectedChunkLocation);
+        return affectedChunk.block(location.positionInChunk());
     }
 }

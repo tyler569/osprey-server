@@ -1,5 +1,6 @@
 package com.pygostylia.osprey;
 
+import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
 public class FireworkEntity extends ObjectEntity {
@@ -7,13 +8,13 @@ public class FireworkEntity extends ObjectEntity {
 
     int ridingEntity;
 
-    public FireworkEntity(EntityPosition entityPosition, Velocity velocity) {
-        super(entityPosition, velocity);
+    public FireworkEntity(Position position, Velocity velocity) {
+        super(position, velocity);
         noCollision = true;
     }
 
     @Override
-    public int type() {
+    int type() {
         return TYPE;
     }
 
@@ -30,7 +31,7 @@ public class FireworkEntity extends ObjectEntity {
     @Override
     public void spawn() {
         super.spawn();
-        Main.INSTANCE.getScheduler().submit(this::destroy, 1, TimeUnit.SECONDS);
+        Main.scheduler.submit(this::destroy, 1, TimeUnit.SECONDS);
     }
 
     public void spawnWithRider(int ridingEntity) {

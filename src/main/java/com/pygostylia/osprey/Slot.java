@@ -1,9 +1,9 @@
 package com.pygostylia.osprey;
 
 import com.pygostylia.osprey.nbt.NBTCompound;
-import com.pygostylia.osprey.streams.MinecraftOutputStream;
 
 import java.io.IOException;
+import java.io.OutputStream;
 
 public record Slot(boolean empty, int itemId, int count, NBTCompound data) {
     public Slot() {
@@ -14,7 +14,7 @@ public record Slot(boolean empty, int itemId, int count, NBTCompound data) {
         this(false, itemId, count, null);
     }
 
-    public void encode(MinecraftOutputStream p) throws IOException {
+    public void encode(PacketBuilder p) {
         if (empty) {
             p.writeBoolean(false);
         } else {

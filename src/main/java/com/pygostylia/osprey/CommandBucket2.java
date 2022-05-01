@@ -1,9 +1,5 @@
-package com.pygostylia.osprey.commands2;
+package com.pygostylia.osprey;
 
-import com.pygostylia.osprey.BlockPosition;
-import com.pygostylia.osprey.BlockState;
-import com.pygostylia.osprey.Entity;
-import com.pygostylia.osprey.Player;
 import com.pygostylia.osprey.nbt.NBTCompound;
 
 import java.lang.reflect.Method;
@@ -43,7 +39,7 @@ public class CommandBucket2 {
                     return new PlayerParameter(name);
                 } else if (argumentType == BlockState.class) {
                     return new BlockStateParameter(name);
-                } else if (argumentType == BlockPosition.class) {
+                } else if (argumentType == Location.class) {
                     return new LocationParameter(name);
                 } else if (argumentType == NBTCompound.class) {
                     return new NBTParameter(name);
@@ -234,8 +230,8 @@ public class CommandBucket2 {
         sender.teleport(target.location());
     }
 
-    @Command2("/tp <blockPosition>")
-    void teleportLocation(Player sender, BlockPosition blockPosition) {
-        sender.teleport(blockPosition);
+    @Command2("/tp <location>")
+    void teleportLocation(Player sender, Location location) {
+        sender.teleport(location);
     }
 }

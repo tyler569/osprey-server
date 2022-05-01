@@ -2,7 +2,3 @@
 *.iml
 generated
 world.db
-
-/.idea
-/target
-/logs

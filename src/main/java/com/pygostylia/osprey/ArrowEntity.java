@@ -1,5 +1,6 @@
 package com.pygostylia.osprey;
 
+import java.io.IOException;
 import java.time.Duration;
 import java.util.Collection;
 import java.util.concurrent.ScheduledFuture;
@@ -15,18 +16,18 @@ public class ArrowEntity extends ObjectEntity {
     boolean bulletTime;
     ScheduledFuture<?> tick;
 
-    public ArrowEntity(Entity shooter, EntityPosition entityPosition, Velocity velocity) {
-        super(entityPosition, velocity);
+    public ArrowEntity(Entity shooter, Position position, Velocity velocity) {
+        super(position, velocity);
         noCollision = true;
         shooterId = shooter.id;
-        // Are arrows backwards or is EntityPosition backwards?
-        entityPosition.setPitch(-entityPosition.getPitch());
-        entityPosition.setYaw(-entityPosition.getYaw());
+        // Are arrows backwards or is Position backwards?
+        position.pitch = -position.pitch;
+        position.yaw = -position.yaw;
     }
 
-    public ArrowEntity(Entity shooter, EntityPosition entityPosition, Duration pullTime) {
-        this(shooter, entityPosition, Velocity.directionMagnitude(
-                entityPosition,
+    public ArrowEntity(Entity shooter, Position position, Duration pullTime) {
+        this(shooter, position, Velocity.directionMagnitude(
+                position,
                 Math.min(30f, pullTime.toMillis() / 1000f * 30)
         ));
         if (pullTime.compareTo(Duration.ofSeconds(1)) > 0) {
@@ -37,8 +38,8 @@ public class ArrowEntity extends ObjectEntity {
     @Override
     public void spawn() {
         super.spawn();
-        tick = Main.INSTANCE.getScheduler().submitForEachTick(this::stepPhysics);
-        Main.INSTANCE.getScheduler().submit(this::destroy, 30, TimeUnit.SECONDS);
+        tick = Main.scheduler.submitForEachTick(this::stepPhysics);
+        Main.scheduler.submit(this::destroy, 30, TimeUnit.SECONDS);
         if (critical) {
             for (Player player : playersWithLoaded) {
                 player.sendEntityMetadata(this, 7, 0, (byte) 1);
@@ -53,7 +54,7 @@ public class ArrowEntity extends ObjectEntity {
     }
 
     @Override
-    public int type() {
+    int type() {
         return TYPE;
     }
 
@@ -68,12 +69,12 @@ public class ArrowEntity extends ObjectEntity {
     }
 
     @Override
-    public int spawnData() {
+    int spawnData() {
         return shooterId + 1;
     }
 
     private boolean intersectingBlock() {
-        return Main.INSTANCE.getWorld().block(location()) != 0;
+        return Main.world.block(location()) != 0;
     }
 
     private void stepPhysics() {
@@ -85,18 +86,18 @@ public class ArrowEntity extends ObjectEntity {
         }
 
         if (!stuck) {
-            velocity = new Velocity(velocity.getX(), velocity.getY() + gravity, velocity.getZ());
+            velocity = new Velocity(velocity.x(), velocity.y() + gravity, velocity.z());
         }
         double dx, dy, dz;
-        dx = velocity.getX() / tick;
-        dy = velocity.getY() / tick;
-        dz = velocity.getZ() / tick;
-        entityPosition.moveBy(dx, dy, dz);
+        dx = velocity.x() / tick;
+        dy = velocity.y() / tick;
+        dz = velocity.z() / tick;
+        position.moveBy(dx, dy, dz);
         if (!stuck) {
-            entityPosition.updateFacing(dx, dy, dz);
+            position.updateFacing(dx, dy, dz);
         }
         for (Player player : playersWithLoaded) {
-            player.sendEntityPositionAndRotation(id, dx, dy, dz, entityPosition);
+            player.sendEntityPositionAndRotation(id, dx, dy, dz, position);
             player.sendEntityVelocity(this, velocity.divide(10));
         }
         if (intersectingBlock()) {
@@ -109,11 +110,11 @@ public class ArrowEntity extends ObjectEntity {
         stuck = true;
         tick.cancel(false);
         if (explode) {
-            Collection<BlockPosition> boomBlocks = Explosion.generateBoomBlocks(location(), 5.5f);
-            for (BlockPosition boomBlock : boomBlocks) {
-                Main.INSTANCE.getWorld().setBlock(boomBlock, 0);
+            Collection<Location> boomBlocks = Explosion.generateBoomBlocks(location(), 5.5f);
+            for (Location boomBlock : boomBlocks) {
+                Main.world.setBlock(boomBlock, 0);
             }
-            playersWithLoaded.forEach(player -> player.sendExplosion(entityPosition, 5.5f, boomBlocks, Velocity.zero()));
+            playersWithLoaded.forEach(player -> player.sendExplosion(position, 5.5f, boomBlocks, Velocity.zero()));
         }
     }
 }

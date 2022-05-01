@@ -2,7 +2,7 @@ package com.pygostylia.osprey.commands;
 
 import com.pygostylia.osprey.BlockState;
 import com.pygostylia.osprey.Entity;
-import com.pygostylia.osprey.BlockPosition;
+import com.pygostylia.osprey.Location;
 import com.pygostylia.osprey.Player;
 
 import java.lang.reflect.Parameter;
@@ -56,7 +56,7 @@ public class CommandParameter {
         };
     }
 
-    static Pattern argRegex = Pattern.compile("(\\w+)(?::\\s+(\\w+)(?:\\((.*)\\))?)?");
+    static Pattern argRegex = Pattern.compile("(\\w+)(?::\s+(\\w+)(?:\\((.*)\\))?)?");
 
     static CommandParameter fromArg(String arg) {
         Matcher argMatcher = argRegex.matcher(arg);
@@ -126,7 +126,7 @@ public class CommandParameter {
             flags = 0x03;
         } else if (argumentType == BlockState.class) {
             type = Type.BlockState;
-        } else if (argumentType == BlockPosition.class) {
+        } else if (argumentType == Location.class) {
             type = Type.Vec3;
         } else {
             throw new IllegalStateException(argumentType + " cannot be a command argument");

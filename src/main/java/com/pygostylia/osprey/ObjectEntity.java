@@ -3,26 +3,22 @@ package com.pygostylia.osprey;
 abstract public class ObjectEntity extends Entity {
     Velocity velocity;
 
-    public int spawnData() {
-        return 0;
-    }
-
-    public ObjectEntity(EntityPosition entityPosition) {
-        super(entityPosition);
+    public ObjectEntity(Position position) {
+        super(position);
         this.velocity = Velocity.zero();
     }
 
-    public ObjectEntity(EntityPosition entityPosition, Velocity velocity) {
-        super(entityPosition);
+    public ObjectEntity(Position position, Velocity velocity) {
+        super(position);
         this.velocity = velocity;
     }
 
     public void spawnForPlayer(Player player) {
         super.spawnForPlayer(player);
-        player.sendSpawnEntity(this);
+        player.sendSpawnEntity(this, spawnData());
     }
 
     public void spawn() {
-        Main.INSTANCE.playersWithin(64, entityPosition.blockPosition()).forEach(this::spawnForPlayer);
+        Main.playersWithin(64, position.location()).forEach(this::spawnForPlayer);
     }
 }

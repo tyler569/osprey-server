@@ -61,16 +61,16 @@ public class Chunk {
         setBlock(x, y, z, (short) id);
     }
 
-    void setBlock(BlockPosition blockPosition, short id) {
-        setBlock(blockPosition.blockIndex(), id);
+    void setBlock(Location location, short id) {
+        setBlock(location.blockIndex(), id);
     }
 
-    void setBlock(BlockPosition blockPosition, int id) {
-        setBlock(blockPosition, (short) id);
+    void setBlock(Location location, int id) {
+        setBlock(location, (short) id);
     }
 
-    short block(BlockPosition blockPosition) {
-        return blockArray.get(blockPosition.blockIndex());
+    short block(Location location) {
+        return blockArray.get(location.blockIndex());
     }
 
     void encodeMap(OutputStream chunkData) throws IOException {

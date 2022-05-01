@@ -7,13 +7,13 @@ public class FallingBlockEntity extends ObjectEntity {
 
     int blockType;
 
-    public FallingBlockEntity(EntityPosition entityPosition, int blockType) {
-        super(entityPosition);
+    public FallingBlockEntity(Position position, int blockType) {
+        super(position);
         this.blockType = blockType;
     }
 
     @Override
-    public int type() {
+    int type() {
         return TYPE;
     }
 
@@ -30,7 +30,7 @@ public class FallingBlockEntity extends ObjectEntity {
     @Override
     public void spawn() {
         super.spawn();
-        Main.INSTANCE.getScheduler().submit(this::destroy, 30, TimeUnit.SECONDS);
+        Main.scheduler.submit(this::destroy, 30, TimeUnit.SECONDS);
     }
 
     @Override

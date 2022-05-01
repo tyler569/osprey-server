@@ -13,35 +13,38 @@ public class Protocol {
         return new String(data);
     }
 
-    private static ByteBuffer bytes(InputStream is, int len) throws IOException {
-        var buffer = ByteBuffer.wrap(is.readNBytes(len));
+    public static short readShort(InputStream is) throws IOException {
+        var buffer = ByteBuffer.wrap(is.readNBytes(Short.BYTES));
         buffer.order(ByteOrder.BIG_ENDIAN);
         buffer.rewind();
-        return buffer;
-    }
-
-    public static short readShort(InputStream is) throws IOException {
-        var buffer = bytes(is, Short.BYTES);
         return buffer.getShort();
     }
 
     public static int readInteger(InputStream is) throws IOException {
-        var buffer = bytes(is, Integer.BYTES);
+        var buffer = ByteBuffer.wrap(is.readNBytes(Integer.BYTES));
+        buffer.order(ByteOrder.BIG_ENDIAN);
+        buffer.rewind();
         return buffer.getInt();
     }
 
     public static long readLong(InputStream is) throws IOException {
-        var buffer = bytes(is, Long.BYTES);
+        var buffer = ByteBuffer.wrap(is.readNBytes(Long.BYTES));
+        buffer.order(ByteOrder.BIG_ENDIAN);
+        buffer.rewind();
         return buffer.getLong();
     }
 
     public static float readFloat(InputStream is) throws IOException {
-        var buffer = bytes(is, Float.BYTES);
+        var buffer = ByteBuffer.wrap(is.readNBytes(Float.BYTES));
+        buffer.order(ByteOrder.BIG_ENDIAN);
+        buffer.rewind();
         return buffer.getFloat();
     }
 
     public static double readDouble(InputStream is) throws IOException {
-        var buffer = bytes(is, Double.BYTES);
+        var buffer = ByteBuffer.wrap(is.readNBytes(Double.BYTES));
+        buffer.order(ByteOrder.BIG_ENDIAN);
+        buffer.rewind();
         return buffer.getDouble();
     }
 

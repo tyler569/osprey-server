@@ -7,22 +7,22 @@ import java.util.UUID;
 abstract public class Entity {
     int id;
     UUID uuid;
-    EntityPosition entityPosition;
+    Position position;
     List<Player> playersWithLoaded;
     boolean noCollision;
 
     Entity() {
         uuid = UUID.randomUUID();
         playersWithLoaded = new ArrayList<>();
-        id = Main.INSTANCE.addEntity(this);
+        id = Main.addEntity(this);
     }
 
-    Entity(EntityPosition entityPosition) {
+    Entity(Position position) {
         this();
-        this.entityPosition = entityPosition;
+        this.position = position;
     }
 
-    public abstract int type();
+    abstract int type();
 
     void spawnForPlayer(Player player) {
         playersWithLoaded.add(player);
@@ -36,19 +36,19 @@ abstract public class Entity {
     public void destroy() {
         playersWithLoaded.forEach(player -> player.sendDestroyEntity(this));
         playersWithLoaded.clear();
-        Main.INSTANCE.removeEntity(this);
+        Main.removeEntity(this);
     }
 
     public UUID uuid() {
         return uuid;
     }
 
-    public EntityPosition position() {
-        return entityPosition;
+    public Position position() {
+        return position;
     }
 
-    public BlockPosition location() {
-        return entityPosition.blockPosition();
+    public Location location() {
+        return position.location();
     }
 
     public int id() {
@@ -69,15 +69,15 @@ abstract public class Entity {
 
     abstract float colliderY();
 
-    boolean collides(EntityPosition point) {
+    boolean collides(Position point) {
         float ex = colliderXZ() / 2;
         float ey = colliderY();
-        if (entityPosition.getX() + ex < point.getX() || point.getX() < entityPosition.getX() - ex) return false;
-        if (entityPosition.getZ() + ex < point.getZ() || point.getZ() < entityPosition.getZ() - ex) return false;
-        return !(entityPosition.getY() + ey < point.getY()) && !(point.getY() <= entityPosition.getY());
+        if (position.x + ex < point.x || point.x < position.x - ex) return false;
+        if (position.z + ex < point.z || point.z < position.z - ex) return false;
+        return !(position.y + ey < point.y) && !(point.y <= position.y);
     }
 
-    boolean collides(BlockPosition block) {
+    boolean collides(Location block) {
         return false;
     }
 

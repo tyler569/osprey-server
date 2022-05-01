@@ -1,8 +1,5 @@
 package com.pygostylia.osprey;
 
-import com.pygostylia.osprey.packets.ClientBoundPacket;
-import com.pygostylia.osprey.streams.MinecraftOutputStream;
-
 import javax.crypto.Cipher;
 import javax.crypto.CipherInputStream;
 import javax.crypto.CipherOutputStream;
@@ -79,42 +76,28 @@ public class Connection {
                 }
             }
         }
-        return new Packet(data, originalLen);
-    }
-
-    void sendPacket(ClientBoundPacket cbp) throws IOException {
-        var m = new MinecraftOutputStream();
-        var type = cbp.getType();
-        if (type == null) {
-            System.err.println("Tried to send ClientBoundPacket with no Type");
-            return;
-        }
-        m.writeVarInt(type);
-        cbp.encode(m);
-        rawSendPacket(type, m.toByteArray(), m.size(), m);
+        Packet packet = new Packet(data, originalLen);
+        packet.type = packet.readVarInt();
+        return packet;
     }
 
     void sendPacket(int type, PacketBuilderLambda closure) throws IOException {
-        var m = new MinecraftOutputStream();
+        var m = new PacketBuilder();
         m.writeVarInt(type);
         closure.apply(m);
-        rawSendPacket(type, m.toByteArray(), m.size(), m);
-    }
-
-    private void rawSendPacket(Integer type, byte[] bytes, int size, MinecraftOutputStream m) throws IOException {
         if (!compressionEnabled) {
-            var data = bytes;
+            var data = m.toByteArray();
             synchronized (socket) {
                 VarInt.write(outstream, data.length);
                 outstream.write(data);
                 outstream.flush();
             }
         } else {
-            if (size > maxUncompressedPacket) {
-                var originalSize = size;
+            if (m.size() > maxUncompressedPacket) {
+                var originalSize = m.size();
                 var inner = new ByteArrayOutputStream();
                 var stream = new DeflaterOutputStream(inner);
-                stream.write(bytes);
+                stream.write(m.toByteArray());
                 stream.finish();
                 var compressedSize = inner.size();
                 synchronized (socket) {
@@ -126,7 +109,7 @@ public class Connection {
                     lastPacketType = type;
                 }
             } else {
-                var data = bytes;
+                var data = m.toByteArray();
                 synchronized (socket) {
                     VarInt.write(outstream, data.length + VarInt.len(0));
                     VarInt.write(outstream, 0);

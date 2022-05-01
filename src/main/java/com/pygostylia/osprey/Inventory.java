@@ -24,7 +24,7 @@ public class Inventory {
     }
 
     public void save(int playerId) throws SQLException {
-        try (var connection = Main.INSTANCE.getWorld().connect()) {
+        try (var connection = Main.world.connect()) {
             String sql = """
                     DELETE FROM inventory_slots
                     WHERE player_id = ?;
@@ -58,7 +58,7 @@ public class Inventory {
                 FROM inventory_slots
                 WHERE player_id = ?;
                 """;
-        try (var connection = Main.INSTANCE.getWorld().connect();
+        try (var connection = Main.world.connect();
              var statement = connection.prepareStatement(sql)) {
             statement.setInt(1, playerId);
             var results = statement.executeQuery();

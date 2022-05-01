@@ -5,13 +5,13 @@ public class ItemEntity extends ObjectEntity {
 
     Slot itemInfo;
 
-    public ItemEntity(EntityPosition entityPosition, Velocity velocity, Slot itemInfo) {
-        super(entityPosition, velocity);
+    public ItemEntity(Position position, Velocity velocity, Slot itemInfo) {
+        super(position, velocity);
         this.itemInfo = itemInfo;
     }
 
     @Override
-    public int type() {
+    int type() {
         return TYPE;
     }
 

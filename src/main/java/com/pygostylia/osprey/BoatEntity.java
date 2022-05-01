@@ -1,5 +1,6 @@
 package com.pygostylia.osprey;
 
+import java.io.IOException;
 import java.util.ArrayList;
 
 public class BoatEntity extends ObjectEntity {
@@ -9,12 +10,12 @@ public class BoatEntity extends ObjectEntity {
     public boolean turningRight;
     ArrayList<Entity> passengers = new ArrayList<>();
 
-    public BoatEntity(EntityPosition entityPosition) {
-        super(entityPosition);
+    public BoatEntity(Position position) {
+        super(position);
     }
 
     @Override
-    public int type() {
+    int type() {
         return TYPE;
     }
 

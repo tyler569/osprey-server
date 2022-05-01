@@ -1,4 +1,4 @@
-package com.pygostylia.osprey.commands2;
+package com.pygostylia.osprey;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
