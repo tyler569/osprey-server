@@ -1,4 +1,8 @@
-package com.pygostylia.osprey;
+package com.pygostylia.osprey.entities;
+
+import com.pygostylia.osprey.Location;
+import com.pygostylia.osprey.Main;
+import com.pygostylia.osprey.Position;
 
 import java.util.ArrayList;
 import java.util.List;

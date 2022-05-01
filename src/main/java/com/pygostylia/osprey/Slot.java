@@ -3,7 +3,6 @@ package com.pygostylia.osprey;
 import com.pygostylia.osprey.nbt.NBTCompound;
 
 import java.io.IOException;
-import java.io.OutputStream;
 
 public record Slot(boolean empty, int itemId, int count, NBTCompound data) {
     public Slot() {
@@ -29,7 +28,7 @@ public record Slot(boolean empty, int itemId, int count, NBTCompound data) {
         }
     }
 
-    static Slot from(Packet packet) throws IOException {
+    public static Slot from(Packet packet) throws IOException {
         boolean hasEntry = packet.readBoolean();
         int itemId = 0;
         int count = 0;

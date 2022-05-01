@@ -1,8 +1,6 @@
-package com.pygostylia.osprey;
+package com.pygostylia.osprey.entities;
 
-import com.pygostylia.osprey.packets.ClientBoundPacket;
-import com.pygostylia.osprey.packets.ClientBoundPacketID;
-import com.pygostylia.osprey.packets.ProtocolVersion;
+import com.pygostylia.osprey.*;
 import org.json.JSONObject;
 
 import javax.crypto.Cipher;
@@ -34,7 +32,7 @@ public class Player extends Entity {
     static final byte[] encryptionToken = "Hello World".getBytes();
     static final int maxRenderDistance = 10;
 
-    String name;
+    public String name;
     private final Connection connection;
     Duration ping;
     State state;
@@ -116,7 +114,7 @@ public class Player extends Entity {
         return isShielding;
     }
 
-    static void runThread(Socket sock) throws IOException {
+    public static void runThread(Socket sock) throws IOException {
         var player = new Player(sock);
         var thread = new Thread(player::connectionWrapper);
         thread.start();

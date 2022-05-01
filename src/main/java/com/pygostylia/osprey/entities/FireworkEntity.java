@@ -1,6 +1,10 @@
-package com.pygostylia.osprey;
+package com.pygostylia.osprey.entities;
 
-import java.io.IOException;
+import com.pygostylia.osprey.Main;
+import com.pygostylia.osprey.Position;
+import com.pygostylia.osprey.Registry;
+import com.pygostylia.osprey.Velocity;
+
 import java.util.concurrent.TimeUnit;
 
 public class FireworkEntity extends ObjectEntity {

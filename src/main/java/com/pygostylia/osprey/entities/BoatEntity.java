@@ -1,6 +1,8 @@
-package com.pygostylia.osprey;
+package com.pygostylia.osprey.entities;
 
-import java.io.IOException;
+import com.pygostylia.osprey.Position;
+import com.pygostylia.osprey.Registry;
+
 import java.util.ArrayList;
 
 public class BoatEntity extends ObjectEntity {

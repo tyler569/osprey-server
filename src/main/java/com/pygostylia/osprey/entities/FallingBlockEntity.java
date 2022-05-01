@@ -1,4 +1,8 @@
-package com.pygostylia.osprey;
+package com.pygostylia.osprey.entities;
+
+import com.pygostylia.osprey.Main;
+import com.pygostylia.osprey.Position;
+import com.pygostylia.osprey.Registry;
 
 import java.util.concurrent.TimeUnit;
 

@@ -1,4 +1,9 @@
-package com.pygostylia.osprey;
+package com.pygostylia.osprey.entities;
+
+import com.pygostylia.osprey.Position;
+import com.pygostylia.osprey.Registry;
+import com.pygostylia.osprey.Slot;
+import com.pygostylia.osprey.Velocity;
 
 public class ItemEntity extends ObjectEntity {
     static final int TYPE = Registry.entity("minecraft:item");

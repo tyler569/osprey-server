@@ -1,6 +1,7 @@
 package com.pygostylia.osprey;
 
-import java.io.IOException;
+import com.pygostylia.osprey.entities.Player;
+
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.stream.Stream;

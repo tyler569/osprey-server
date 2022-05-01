@@ -1,4 +1,7 @@
-package com.pygostylia.osprey;
+package com.pygostylia.osprey.entities;
+
+import com.pygostylia.osprey.Position;
+import com.pygostylia.osprey.Registry;
 
 public class LightningEntity extends ObjectEntity {
     static final int TYPE = Registry.entity("minecraft:lightning_bolt");

@@ -2,7 +2,10 @@ package com.pygostylia.osprey;
 
 import com.pygostylia.osprey.nbt.NBTCompound;
 
-import java.io.*;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.ShortBuffer;
 import java.util.Arrays;
@@ -129,7 +132,7 @@ public class Chunk {
         return data.toByteArray();
     }
 
-    void encodePacket(OutputStream m) throws IOException {
+    public void encodePacket(OutputStream m) throws IOException {
         if (cacheValid) {
             m.write(cachedPacket);
             return;

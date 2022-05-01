@@ -1,6 +1,7 @@
-package com.pygostylia.osprey;
+package com.pygostylia.osprey.entities;
 
-import java.io.IOException;
+import com.pygostylia.osprey.*;
+
 import java.time.Duration;
 import java.util.Collection;
 import java.util.concurrent.ScheduledFuture;

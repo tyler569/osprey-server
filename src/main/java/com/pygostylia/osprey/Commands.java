@@ -2,6 +2,8 @@ package com.pygostylia.osprey;
 
 import com.pygostylia.osprey.commands.Command;
 import com.pygostylia.osprey.commands.CommandAlias;
+import com.pygostylia.osprey.entities.LightningEntity;
+import com.pygostylia.osprey.entities.Player;
 
 import java.io.IOException;
 import java.time.Duration;

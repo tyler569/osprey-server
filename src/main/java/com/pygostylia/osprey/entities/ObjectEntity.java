@@ -1,4 +1,8 @@
-package com.pygostylia.osprey;
+package com.pygostylia.osprey.entities;
+
+import com.pygostylia.osprey.Main;
+import com.pygostylia.osprey.Position;
+import com.pygostylia.osprey.Velocity;
 
 abstract public class ObjectEntity extends Entity {
     Velocity velocity;

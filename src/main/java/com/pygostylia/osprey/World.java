@@ -15,7 +15,7 @@ public class World {
         loadedChunks = new HashMap<>();
     }
 
-    Connection connect() throws SQLException {
+    public Connection connect() throws SQLException {
         var connection = DriverManager.getConnection(databaseURL);
         connection.setAutoCommit(false);
         return connection;
@@ -28,7 +28,7 @@ public class World {
         return world;
     }
 
-    Chunk load(ChunkLocation location) {
+    public Chunk load(ChunkLocation location) {
         var chunk = loadedChunks.get(location);
         if (chunk == null) {
             try {

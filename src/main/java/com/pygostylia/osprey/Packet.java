@@ -21,35 +21,35 @@ public class Packet extends ByteArrayInputStream {
         return Protocol.readInteger(this);
     }
 
-    long readLong() throws IOException {
+    public long readLong() throws IOException {
         return Protocol.readLong(this);
     }
 
-    short readShort() throws IOException {
+    public short readShort() throws IOException {
         return Protocol.readShort(this);
     }
 
-    String readString() throws IOException {
+    public String readString() throws IOException {
         return Protocol.readString(this);
     }
 
-    boolean readBoolean() {
+    public boolean readBoolean() {
         return read() != 0;
     }
 
-    float readFloat() throws IOException {
+    public float readFloat() throws IOException {
         return Protocol.readFloat(this);
     }
 
-    double readDouble() throws IOException {
+    public double readDouble() throws IOException {
         return Protocol.readDouble(this);
     }
 
-    Location readLocation() throws IOException {
+    public Location readLocation() throws IOException {
         return new Location(Protocol.readLong(this));
     }
 
-    Position readPosition() throws IOException {
+    public Position readPosition() throws IOException {
         var x = readDouble();
         var y = readDouble();
         var z = readDouble();

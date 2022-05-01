@@ -1,6 +1,8 @@
 package com.pygostylia.osprey;
 
 import com.pygostylia.osprey.commands.CommandBucket;
+import com.pygostylia.osprey.entities.Entity;
+import com.pygostylia.osprey.entities.Player;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -19,21 +21,21 @@ import java.util.stream.Stream;
 
 public class Main {
     // TODO: read these in from configuration
-    static final String brand = "Osprey";
+    public static final String brand = "Osprey";
     private static final Map<Integer, Player> players = new ConcurrentHashMap<>();
     private static final Map<Integer, Entity> entities = new ConcurrentHashMap<>();
-    static ChunkDispatcher chunkDispatcher = new ChunkDispatcher();
-    static KeyPair encryptionKey;
+    public static ChunkDispatcher chunkDispatcher = new ChunkDispatcher();
+    public static KeyPair encryptionKey;
     public static World world;
     public static CommandBucket commands;
     static int nextEntityId = 1;
     public static Scheduler scheduler = new Scheduler();
 
-    static void addPlayer(Player player) {
+    public static void addPlayer(Player player) {
         players.put(player.id(), player);
     }
 
-    static void removePlayer(Player player) {
+    public static void removePlayer(Player player) {
         players.remove(player.id());
     }
 
@@ -47,7 +49,7 @@ public class Main {
         entities.remove(entity.id());
     }
 
-    static Collection<Player> allPlayers() {
+    public static Collection<Player> allPlayers() {
         return players.values();
     }
 
@@ -62,7 +64,7 @@ public class Main {
         return players.get(entityId);
     }
 
-    static Optional<Entity> entityById(int entityId) {
+    public static Optional<Entity> entityById(int entityId) {
         return Optional.ofNullable(entities.get(entityId));
     }
 
@@ -76,7 +78,7 @@ public class Main {
         return players.values().stream().filter((player) -> player.location().withinRadiusOf(radius, location));
     }
 
-    static String handshakeJson() {
+    public static String handshakeJson() {
         var result = new JSONObject();
         var version = new JSONObject();
         var players = new JSONObject();

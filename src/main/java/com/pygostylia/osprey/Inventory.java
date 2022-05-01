@@ -5,13 +5,13 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class Inventory {
-    Map<Integer, Slot> slots;
+    public Map<Integer, Slot> slots;
 
     Inventory() {
         slots = new HashMap<>();
     }
 
-    int size() {
+    public int size() {
         return 46;
     }
 

@@ -31,20 +31,20 @@ public class Connection {
     private final static Duration keepAliveInterval = Duration.ofSeconds(5);
     private final static Random rng = new Random();
     boolean debug;
-    int lastPacketType;
+    public int lastPacketType;
 
-    Connection(Socket s) throws IOException {
+    public Connection(Socket s) throws IOException {
         socket = s;
         instream = new BufferedInputStream(socket.getInputStream());
         outstream = new BufferedOutputStream(socket.getOutputStream());
         socket.setSoTimeout(5050);
     }
 
-    boolean isClosed() {
+    public boolean isClosed() {
         return socket.isClosed();
     }
 
-    Packet readPacket() throws IOException {
+    public Packet readPacket() throws IOException {
         byte[] data;
         int originalLen;
         int compressedLen;
@@ -81,7 +81,7 @@ public class Connection {
         return packet;
     }
 
-    void sendPacket(int type, PacketBuilderLambda closure) throws IOException {
+    public void sendPacket(int type, PacketBuilderLambda closure) throws IOException {
         var m = new PacketBuilder();
         m.writeVarInt(type);
         closure.apply(m);
@@ -122,7 +122,7 @@ public class Connection {
     }
 
 
-    void setEncryption(byte[] secret)
+    public void setEncryption(byte[] secret)
             throws NoSuchPaddingException, NoSuchAlgorithmException,
             InvalidAlgorithmParameterException, InvalidKeyException {
         var protocolKey = new SecretKeySpec(secret, "AES");
@@ -138,12 +138,12 @@ public class Connection {
         established = true;
     }
 
-    void setCompression(int maxPacket) {
+    public void setCompression(int maxPacket) {
         maxUncompressedPacket = maxPacket;
         compressionEnabled = true;
     }
 
-    void close() {
+    public void close() {
         try {
             socket.close();
         } catch (IOException ignored) {
@@ -152,25 +152,25 @@ public class Connection {
 
     // ================ persistence
 
-    void sendKeepAlive() throws IOException {
+    public void sendKeepAlive() throws IOException {
         lastKeepAlive = rng.nextLong();
         sendPacket(0x1F, (p) -> p.writeLong(lastKeepAlive));
         lastKeepAliveTime = Instant.now();
     }
 
-    boolean validateKeepAlive(long value) {
+    public boolean validateKeepAlive(long value) {
         return lastKeepAlive == value;
     }
 
-    Duration pingTime() {
+    public Duration pingTime() {
         return Duration.between(lastKeepAliveTime, Instant.now());
     }
 
-    boolean shouldKeepAlive() {
+    public boolean shouldKeepAlive() {
         return established && pingTime().compareTo(keepAliveInterval) > 0;
     }
 
-    boolean isEstablished() {
+    public boolean isEstablished() {
         return established;
     }
 

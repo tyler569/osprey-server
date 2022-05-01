@@ -25,7 +25,7 @@ public record Location(int x, int y, int z) {
         return new Location(x + dx * 16, y, z + dz * 16);
     }
 
-    Location offset(int dx, int dy, int dz) {
+    public Location offset(int dx, int dy, int dz) {
         return new Location(x + dx, y + dy, z + dz);
     }
 
@@ -44,7 +44,7 @@ public record Location(int x, int y, int z) {
         return new Location(x & 0xF, y, z & 0xF);
     }
 
-    long encode() {
+    public long encode() {
         return ((long) (x & 0x3FFFFFF) << 38) | ((long) (z & 0x3FFFFFF) << 12) | (y & 0xFFF);
     }
 
