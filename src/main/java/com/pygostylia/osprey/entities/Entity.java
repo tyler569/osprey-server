@@ -51,8 +51,8 @@ abstract public class Entity {
         return entityPosition;
     }
 
-    public BlockPosition location() {
-        return entityPosition.location();
+    public BlockPosition blockPosition() {
+        return entityPosition.blockPosition();
     }
 
     public int id() {

@@ -74,7 +74,7 @@ public class EntityPosition {
         return (int) z >> 4;
     }
 
-    public BlockPosition location() {
+    public BlockPosition blockPosition() {
         return new BlockPosition(
                 (int) Math.floor(x),
                 (int) Math.floor(y),

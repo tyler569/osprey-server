@@ -926,7 +926,7 @@ public class Player extends Entity {
                 case 7 -> p.write(((Boolean) value) ? 1 : 0);
                 case 9 -> {
                     if (value instanceof EntityPosition entityPosition) {
-                        p.writeLong(entityPosition.location().encode());
+                        p.writeLong(entityPosition.blockPosition().encode());
                     } else if (value instanceof BlockPosition blockPosition) {
                         p.writeLong(blockPosition.encode());
                     } else {
@@ -1578,7 +1578,7 @@ public class Player extends Entity {
             p.writeFloat((float) entityPosition.z);
             p.writeFloat(strength);
             p.writeInt(boomBlocks.size());
-            BlockPosition center = entityPosition.location();
+            BlockPosition center = entityPosition.blockPosition();
             for (var block : boomBlocks) {
                 p.writeByte((byte) (block.x() - center.x()));
                 p.writeByte((byte) (block.y() - center.y()));

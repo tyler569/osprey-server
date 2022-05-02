@@ -8,6 +8,7 @@ import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 /*
@@ -17,7 +18,7 @@ The idea of CommandBucket is that it's a big bucket with commands in it.
 It stores commands in two representations, as a flat array and as a tree. The
 tree matches what Brigadier is expecting to see in its packets closely.
 
-Commands are defined with an @Command annotation, whose format is the "value"
+Commands are defined with an @Command annotation, whose format is the "name"
 parameter is the name of the command (comes after the '/'), and the "args"
 parameter are string-encoded argument names and types for brigadier.
 The names and types are parsed by CommandParameter::fromArg into CommandParameters
@@ -29,11 +30,8 @@ arguments at all, as it does in the case of the root node.
 
 The tree is used for both brigadier packet generation and also for dispatching
 commands from users. When a user runs a command, it is sent to
-
-The tree is used for both brigadier packet generation and also for dispatching
-commands from users. When a user runs a command, it is sent to
-CommandBucket::findMatch which recurses through the tree until if finds a terminal
-node that represents the users command. The original method that was annotated
+CommandBucket::findMatch which recurses through the tree until it finds a terminal
+node that represents the user's command. The original method that was annotated
 is attached to a CommandParameter marked isTerminal at the leaves of the tree,
 and if one is found for a given query, it is executed.
 
@@ -111,7 +109,7 @@ public class CommandBucket {
             if (method.isAnnotationPresent(Command.class)) {
                 Command commandInfo = method.getAnnotation(Command.class);
                 var args = Arrays.stream(commandInfo.args()).map(CommandParameter::fromArg).collect(Collectors.toList());
-                flatCommand = new FlatCommand(commandInfo.value(), args, method);
+                flatCommand = new FlatCommand(commandInfo.name(), args, method);
                 flatCommands.add(flatCommand);
             } else {
                 continue;
@@ -163,11 +161,7 @@ public class CommandBucket {
             method.invoke(null, sender, args);
         } catch (Exception e) {
             var cause = e.getCause();
-            if (cause != null) {
-                sender.sendError("Error: " + cause.getMessage());
-            } else {
-                sender.sendError("Error: " + e.getMessage());
-            }
+            sender.sendError("Error: " + Objects.requireNonNullElse(cause, e).getMessage());
             e.printStackTrace();
         }
     }

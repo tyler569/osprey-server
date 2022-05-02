@@ -75,7 +75,7 @@ public class Main {
     }
 
     public static Stream<Player> playersWithin(int radius, BlockPosition blockPosition) {
-        return players.values().stream().filter((player) -> player.location().withinRadiusOf(radius, blockPosition));
+        return players.values().stream().filter((player) -> player.blockPosition().withinRadiusOf(radius, blockPosition));
     }
 
     public static String handshakeJson() {

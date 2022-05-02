@@ -11,7 +11,7 @@ import java.time.Instant;
 import java.util.Arrays;
 
 public class Commands {
-    @Command(value = "teleport", args = {"destination: vec3"})
+    @Command(name = "teleport", args = {"destination: vec3"})
     @CommandAlias("tp")
     public static void teleport(Player sender, String[] args) {
         if (args.length < 4) {
@@ -19,13 +19,13 @@ public class Commands {
             return;
         }
         BlockPosition destination = BlockPosition.relativeLocation(
-                sender.location(),
+                sender.blockPosition(),
                 Arrays.copyOfRange(args, 1, 4)
         );
         sender.teleport(destination);
     }
 
-    @Command(value = "teleport", args = {"target: player"})
+    @Command(name = "teleport", args = {"target: player"})
     public static void teleportPlayer(Player sender, String[] args) {
         if (args.length < 2) {
             sender.sendError("Not enough arguments");
@@ -36,32 +36,32 @@ public class Commands {
             sender.sendError(String.format("%s is not online", args[1]));
         }
         assert target != null;
-        sender.teleport(target.location());
+        sender.teleport(target.blockPosition());
     }
 
-    @Command("hello")
+    @Command(name = "hello")
     public static void hello(Player sender, String[] args) {
         sender.sendNotification("Hello World");
     }
 
-    @Command("/pos1")
+    @Command(name = "/pos1")
     @CommandAlias("/1")
     public static void setPos1(Player sender, String[] args) {
-        sender.setEditorLocation(0, sender.location());
+        sender.setEditorLocation(0, sender.blockPosition());
     }
 
-    @Command("/pos2")
+    @Command(name = "/pos2")
     @CommandAlias("/2")
     public static void setPos2(Player sender, String[] args) {
-        sender.setEditorLocation(1, sender.location());
+        sender.setEditorLocation(1, sender.blockPosition());
     }
 
-    @Command("/sel")
+    @Command(name = "/sel")
     public static void editorClear(Player sender, String[] args) {
         sender.unsetEditorSelection();
     }
 
-    @Command(value = "/set", args = {"block: block_state"})
+    @Command(name = "/set", args = {"block: block_state"})
     public static void editorSet(Player sender, String[] args) {
         var l1 = sender.getEditorLocations()[0];
         var l2 = sender.getEditorLocations()[1];
@@ -89,7 +89,7 @@ public class Commands {
         sender.sendEditorNotification(String.format("Set %s blocks", count));
     }
 
-    @Command("lag")
+    @Command(name = "lag")
     public static void lag(Player sender, String[] args) {
         Main.forEachPlayer((player) -> {
             player.sendNotification(String.format("%s thought there was some lag", sender.name()));
@@ -97,13 +97,13 @@ public class Commands {
         sender.kick();
     }
 
-    @Command(value = "speed", args = {"speed: float"})
+    @Command(name = "speed", args = {"speed: float"})
     public static void speed(Player sender, String[] args) {
         var speed = Float.parseFloat(args[1]);
         sender.sendSpeed(speed);
     }
 
-    @Command("save")
+    @Command(name = "save")
     public static void save(Player sender, String[] args) {
         var now = Instant.now();
         if (sender.isAdmin())
@@ -114,7 +114,7 @@ public class Commands {
                 (double) took.getNano() / 1000000));
     }
 
-    @Command(value = "gamemode", args = {"mode: integer(0,3)"})
+    @Command(name = "gamemode", args = {"mode: integer(0,3)"})
     @CommandAlias("gm")
     public static void gamemode(Player sender, String[] args) {
         if (args.length < 2) {
@@ -125,7 +125,7 @@ public class Commands {
         sender.changeGamemode(value);
     }
 
-    @Command(value = "gamestate", args = {"mode: integer(0,14)", "arg: float"})
+    @Command(name = "gamestate", args = {"mode: integer(0,14)", "arg: float"})
     @CommandAlias("gs")
     public static void gameState(Player sender, String[] args) {
         var reason = Byte.parseByte(args[1]);
@@ -135,27 +135,27 @@ public class Commands {
         });
     }
 
-    @Command("falling")
+    @Command(name = "falling")
     public static void falling(Player sender, String[] args) {
         sender.placeFalling ^= true;
     }
 
-    @Command("boom")
+    @Command(name = "boom")
     public static void boom(Player sender, String[] args) {
         sender.boom ^= true;
     }
 
-    @Command("bullettime")
+    @Command(name = "bullettime")
     public static void bulletTime(Player sender, String[] args) {
         sender.bulletTime ^= true;
     }
 
-    @Command("spawn")
+    @Command(name = "spawn")
     public static void spawn(Player sender, String[] args) throws IOException {
         sender.teleport(new BlockPosition(0, 32, 0));
     }
 
-    @Command(value = "entitystatus", args = {"id: integer", "status: integer(0,255)"})
+    @Command(name = "entitystatus", args = {"id: integer", "status: integer(0,255)"})
     @CommandAlias("es")
     public static void entityStatus(Player sender, String[] args) {
         Main.forEachPlayer(player -> {
@@ -163,7 +163,7 @@ public class Commands {
         });
     }
 
-    @Command("cloud")
+    @Command(name = "cloud")
     public static void cloud(Player sender, String[] args) {
         var future = Main.scheduler.submitForEachTick(() -> {
             Main.forEachPlayer(player -> player.sendEntityStatus(sender.id(), (byte) 43));
@@ -171,7 +171,7 @@ public class Commands {
         sender.addFuture(future);
     }
 
-    @Command(value = "cancel", args = "job: integer")
+    @Command(name = "cancel", args = "job: integer")
     public static void cancel(Player sender, String[] args) {
         int job = Integer.parseInt(args[1]);
         var future = sender.removeFuture(job);
@@ -179,7 +179,7 @@ public class Commands {
         sender.sendNotification("Job " + job + " cancelled");
     }
 
-    @Command("followlightining")
+    @Command(name = "followlightining")
     public static void followLightning(Player sender, String[] args) {
         var future = Main.scheduler.submitForEachTick(() -> {
             EntityPosition entityPosition;
@@ -195,7 +195,7 @@ public class Commands {
         sender.addFuture(future);
     }
 
-    @Command(value = "kick", args = {"target: player"})
+    @Command(name = "kick", args = {"target: player"})
     public static void kick(Player sender, String[] args) {
         Player target = Main.playerByName(args[1]);
         if (target == null) {

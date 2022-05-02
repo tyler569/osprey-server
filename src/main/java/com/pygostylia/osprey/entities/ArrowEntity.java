@@ -75,7 +75,7 @@ public class ArrowEntity extends ObjectEntity {
     }
 
     private boolean intersectingBlock() {
-        return Main.world.block(location()) != 0;
+        return Main.world.block(blockPosition()) != 0;
     }
 
     private void stepPhysics() {
@@ -111,7 +111,7 @@ public class ArrowEntity extends ObjectEntity {
         stuck = true;
         tick.cancel(false);
         if (explode) {
-            Collection<BlockPosition> boomBlocks = Explosion.generateBoomBlocks(location(), 5.5f);
+            Collection<BlockPosition> boomBlocks = Explosion.generateBoomBlocks(blockPosition(), 5.5f);
             for (BlockPosition boomBlock : boomBlocks) {
                 Main.world.setBlock(boomBlock, 0);
             }
