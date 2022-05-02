@@ -1,4 +1,7 @@
 *.class
 *.iml
-generated
-world.db
+
+/world.db
+/target
+/out
+/generated
