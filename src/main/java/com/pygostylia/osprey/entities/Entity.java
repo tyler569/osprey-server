@@ -7,6 +7,7 @@ import com.pygostylia.osprey.Main;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 abstract public class Entity {
     int id;
@@ -15,10 +16,13 @@ abstract public class Entity {
     List<Player> playersWithLoaded;
     boolean noCollision;
 
+    static ConcurrentHashMap<Integer, Entity> allEntities;
+
     Entity() {
         uuid = UUID.randomUUID();
         playersWithLoaded = new ArrayList<>();
         id = Main.addEntity(this);
+        allEntities.put(id, this);
     }
 
     Entity(EntityPosition entityPosition) {

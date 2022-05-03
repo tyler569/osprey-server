@@ -1,6 +1,8 @@
 package com.pygostylia.osprey.entities;
 
 import com.pygostylia.osprey.*;
+import com.pygostylia.osprey.packets.clientbound.ClientBoundPacket;
+import com.pygostylia.osprey.packets.clientbound.SpawnEntityPacket;
 import org.json.JSONObject;
 
 import javax.crypto.Cipher;
@@ -1401,19 +1403,15 @@ public class Player extends Entity {
 
     // spawn entity
 
-    public void sendSpawnEntity(ObjectEntity entity, int data) {
+    public void sendSpawnEntity(ObjectEntity entity) {
         sendPacket(0, p -> {
             p.writeVarInt(entity.id);
             p.writeUUID(entity.uuid);
             p.writeVarInt(entity.type());
             p.writePosition(entity.entityPosition);
-            p.writeInt(data); // TODO data
+            p.writeInt(entity.spawnData());
             entity.velocity.write(p);
         });
-    }
-
-    public void sendSpawnEntity(ObjectEntity entity) {
-        sendSpawnEntity(entity, 0);
     }
 
     public void sendDestroyEntity(Entity entity) {
