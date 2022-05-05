@@ -1,8 +1,8 @@
 package com.pygostylia.osprey.entities;
 
 import com.pygostylia.osprey.*;
-import com.pygostylia.osprey.packets.clientbound.ClientBoundPacket;
-import com.pygostylia.osprey.packets.clientbound.SpawnEntityPacket;
+import com.pygostylia.osprey.packets.serverbound.ChatPacket;
+import com.pygostylia.osprey.packets.serverbound.ServerBoundPacket;
 import org.json.JSONObject;
 
 import javax.crypto.Cipher;
@@ -10,8 +10,6 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.net.Socket;
 import java.net.SocketException;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.sql.SQLException;
@@ -285,12 +283,7 @@ public class Player extends Entity {
     }
 
     void writePingResponse(long number) {
-        sendPacket(1, p -> {
-            var b = ByteBuffer.allocate(Long.BYTES);
-            b.order(ByteOrder.BIG_ENDIAN);
-            b.putLong(number);
-            p.write(b.array());
-        });
+        sendPacket(1, p -> p.writeLong(number));
     }
 
     // handle Status packets
