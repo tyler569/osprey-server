@@ -52,6 +52,15 @@ public class MinecraftOutputStream extends DataOutputStream {
         writeByte(entityPosition.yawAngle());
     }
 
+    public void writePositionAndGround(EntityPosition entityPosition) throws IOException {
+        writeDouble(entityPosition.x);
+        writeDouble(entityPosition.y);
+        writeDouble(entityPosition.z);
+        writeByte(entityPosition.pitchAngle());
+        writeByte(entityPosition.yawAngle());
+        writeBoolean(entityPosition.onGround);
+    }
+
     public void writeVelocity(Velocity velocity) throws IOException {
         velocity.write(this);
     }

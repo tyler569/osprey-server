@@ -1,8 +1,8 @@
 package com.pygostylia.osprey.entities;
 
 import com.pygostylia.osprey.*;
-import com.pygostylia.osprey.packets.serverbound.ChatPacket;
-import com.pygostylia.osprey.packets.serverbound.ServerBoundPacket;
+import com.pygostylia.osprey.packets.clientbound.ClientBoundPacket;
+import com.pygostylia.osprey.packets.clientbound.EntityTeleportPacket;
 import org.json.JSONObject;
 
 import javax.crypto.Cipher;
@@ -215,7 +215,7 @@ public class Player extends Entity {
     public void teleport() {
         sendPositionLook();
         sendUpdateChunkPosition();
-        otherPlayers(player -> player.sendEntityTeleport(id, entityPosition));
+        otherPlayers(player -> player.sendEntityTeleport(this));
         loadCorrectChunks();
     }
 
@@ -399,15 +399,10 @@ public class Player extends Entity {
         initialSpawnPlayer();
     }
 
-    public void sendEntityTeleport(int entityId, EntityPosition entityPosition) {
+    public void sendEntityTeleport(Entity entity) {
         sendPacket(0x56, p -> {
-            p.writeVarInt(entityId);
-            p.writeDouble(entityPosition.x);
-            p.writeDouble(entityPosition.y);
-            p.writeDouble(entityPosition.z);
-            p.writeByte(entityPosition.yawAngle());
-            p.writeByte(entityPosition.pitchAngle());
-            p.writeBoolean(entityPosition.onGround);
+            p.writeVarInt(entity.id());
+            p.writePositionAndGround(entity.entityPosition);
         });
     }
 
@@ -807,7 +802,7 @@ public class Player extends Entity {
 
     private void handleMovement(MinecraftInputStream packet) throws IOException {
         boolean onGround = packet.readBoolean();
-        otherPlayers(player -> player.sendEntityTeleport(id, entityPosition));
+        otherPlayers(player -> player.sendEntityTeleport(this));
         updatePosition(onGround);
     }
 
@@ -1519,8 +1514,9 @@ public class Player extends Entity {
         if (vehicle.isEmpty()) {
             return;
         }
-        vehicle.get().entityPosition = entityPosition;
-        otherPlayers(player -> player.sendEntityTeleport(vehicleEntityId, entityPosition));
+        var vehicle = vehicle_.get();
+        vehicle.entityPosition = entityPosition;
+        otherPlayers(player -> player.sendEntityTeleport(vehicle));
     }
 
     private void handleSteerBoat(MinecraftInputStream packet) throws IOException {
