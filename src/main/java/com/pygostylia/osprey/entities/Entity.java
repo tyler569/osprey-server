@@ -2,10 +2,10 @@ package com.pygostylia.osprey.entities;
 
 import com.pygostylia.osprey.BlockPosition;
 import com.pygostylia.osprey.EntityPosition;
-import com.pygostylia.osprey.Main;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -16,18 +16,21 @@ abstract public class Entity {
     List<Player> playersWithLoaded;
     boolean noCollision;
 
-    static ConcurrentHashMap<Integer, Entity> allEntities;
+    private static ConcurrentHashMap<Integer, Entity> all = new ConcurrentHashMap<>();
 
     Entity() {
         uuid = UUID.randomUUID();
         playersWithLoaded = new ArrayList<>();
-        id = Main.addEntity(this);
-        allEntities.put(id, this);
+        all.put(id, this);
     }
 
     Entity(EntityPosition entityPosition) {
         this();
         this.entityPosition = entityPosition;
+    }
+
+    public static Optional<Entity> byId(int id) {
+        return Optional.ofNullable(all.get(id));
     }
 
     abstract public int type();
@@ -44,7 +47,7 @@ abstract public class Entity {
     public void destroy() {
         playersWithLoaded.forEach(player -> player.sendDestroyEntity(this));
         playersWithLoaded.clear();
-        Main.removeEntity(this);
+        all.remove(id);
     }
 
     public UUID uuid() {

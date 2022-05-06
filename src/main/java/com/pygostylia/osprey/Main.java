@@ -23,7 +23,6 @@ public class Main {
     // TODO: read these in from configuration
     public static final String brand = "Osprey";
     private static final Map<Integer, Player> players = new ConcurrentHashMap<>();
-    private static final Map<Integer, Entity> entities = new ConcurrentHashMap<>();
     public static ChunkDispatcher chunkDispatcher = new ChunkDispatcher();
     public static KeyPair encryptionKey;
     public static World world;
@@ -39,16 +38,6 @@ public class Main {
         players.remove(player.id());
     }
 
-    public static int addEntity(Entity entity) {
-        int id = nextEntityId++;
-        entities.put(id, entity);
-        return id;
-    }
-
-    public static void removeEntity(Entity entity) {
-        entities.remove(entity.id());
-    }
-
     public static Collection<Player> allPlayers() {
         return players.values();
     }
@@ -62,10 +51,6 @@ public class Main {
 
     static Player playerByEntityId(int entityId) {
         return players.get(entityId);
-    }
-
-    public static Optional<Entity> entityById(int entityId) {
-        return Optional.ofNullable(entities.get(entityId));
     }
 
     public static void forEachPlayer(Consumer<Player> lambda) {

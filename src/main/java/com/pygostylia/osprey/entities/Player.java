@@ -941,7 +941,7 @@ public class Player extends Entity {
         float forward = packet.readFloat();
         int flags = packet.read();
 
-        var vehicle = Main.entityById(vehicleEntityId);
+        var vehicle = Entity.byId(vehicleEntityId);
         if (vehicle.isEmpty()) {
             return;
         }
@@ -1460,7 +1460,7 @@ public class Player extends Entity {
 
     // maybe
     private void vehicle(Function<Entity, Void> lambda) {
-        Optional<Entity> maybeVehicle = Main.entityById(vehicleEntityId);
+        Optional<Entity> maybeVehicle = Entity.byId(vehicleEntityId);
         if (maybeVehicle.isEmpty()) return;
         lambda.apply(maybeVehicle.get());
     }
@@ -1479,7 +1479,7 @@ public class Player extends Entity {
         var sneak = packet.readBoolean();
         printf("Interact %d entity %d%n", type, entityId);
 
-        var target = Main.entityById(entityId);
+        var target = Entity.byId(entityId);
         if (target.isEmpty()) {
             return;
         }
@@ -1510,8 +1510,8 @@ public class Player extends Entity {
     private void handleVehicleMove(MinecraftInputStream packet) throws IOException {
         EntityPosition entityPosition = packet.readPosition();
         this.entityPosition = entityPosition;
-        var vehicle = Main.entityById(vehicleEntityId);
-        if (vehicle.isEmpty()) {
+        var vehicle_ = Entity.byId(vehicleEntityId);
+        if (vehicle_.isEmpty()) {
             return;
         }
         var vehicle = vehicle_.get();
@@ -1522,7 +1522,7 @@ public class Player extends Entity {
     private void handleSteerBoat(MinecraftInputStream packet) throws IOException {
         boolean left = packet.readBoolean();
         boolean right = packet.readBoolean();
-        var vehicle = Main.entityById(vehicleEntityId);
+        var vehicle = Entity.byId(vehicleEntityId);
         if (vehicle.isEmpty()) {
             return;
         }
