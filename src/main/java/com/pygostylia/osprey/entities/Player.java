@@ -1,8 +1,6 @@
 package com.pygostylia.osprey.entities;
 
 import com.pygostylia.osprey.*;
-import com.pygostylia.osprey.packets.clientbound.ClientBoundPacket;
-import com.pygostylia.osprey.packets.clientbound.EntityTeleportPacket;
 import org.json.JSONObject;
 
 import javax.crypto.Cipher;
@@ -21,6 +19,7 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 public class Player extends Entity {
     enum State {
@@ -31,6 +30,8 @@ public class Player extends Entity {
 
     static final byte[] encryptionToken = "Hello World".getBytes();
     static final int maxRenderDistance = 10;
+
+    static final ConcurrentHashMap<Integer, Player> all = new ConcurrentHashMap<>();
 
     public String name;
     private final Connection connection;
@@ -65,6 +66,35 @@ public class Player extends Entity {
         connection = new Connection(sock);
         state = State.Status;
     }
+
+    public static Optional<Player> byPlayerId(int id) {
+        return Optional.ofNullable(all.get(id));
+    }
+
+    public static Optional<Player> byName(String name) {
+        return all
+                .values()
+                .stream()
+                .filter(p -> Objects.equals(p.name, name))
+                .findFirst();
+    }
+
+    public static Collection<Player> within(int distance, BlockPosition center) {
+        return all
+                .values()
+                .stream()
+                .filter(player -> player.entityPosition.distanceTo(center) < distance)
+                .collect(Collectors.toCollection(ArrayList::new));
+    }
+
+    public static void forEach(Consumer<? super Player> fn) {
+        all.values().forEach(fn);
+    }
+
+    public static int count() {
+        return all.size();
+    }
+
 
     public int addFuture(ScheduledFuture<?> future) {
         var index = nextFuture++;
@@ -160,9 +190,9 @@ public class Player extends Entity {
 
     private void disconnect() {
         connection.close();
-        Main.removePlayer(this);
+        all.remove(id);
         if (connection.isEstablished()) {
-            Main.forEachPlayer(player -> {
+            Player.forEach(player -> {
                 player.sendDespawnPlayer(this);
                 player.sendRemovePlayer(this);
                 player.sendNotification(String.format("%s has left the game.", name));
@@ -186,8 +216,8 @@ public class Player extends Entity {
         return 1.8f;
     }
 
-    private void otherPlayers(Consumer<Player> lambda) {
-        Main.forEachPlayer(player -> {
+    private void otherPlayers(Consumer<? super Player> lambda) {
+        Player.forEach(player -> {
             if (player == this) return;
             lambda.accept(player);
         });
@@ -380,22 +410,22 @@ public class Player extends Entity {
         loadFromDb();
         sendJoinGame();
         sendCommandData();
-        sendAddPlayers(Main.allPlayers());
+        sendAddPlayers(all.values());
         sendAddPlayer(this);
         sendBrand(Main.brand);
         sendUpdateChunkPosition();
         sendInventory();
         sendTags();
         sendHeldItemChange((byte) selectedHotbarSlot);
-        Main.forEachPlayer(player -> {
+        Player.forEach(player -> {
             player.sendAddPlayer(this);
             player.sendSpawnPlayer(this);
             player.sendEquipment(this);
             sendSpawnPlayer(player);
             sendEquipment(player);
         });
-        Main.addPlayer(this);
-        Main.forEachPlayer(player -> player.sendNotification(String.format("%s has joined the game (id %d)", name, id)));
+        all.put(id, this);
+        Player.forEach(player -> player.sendNotification(String.format("%s has joined the game (id %d)", name, id)));
         initialSpawnPlayer();
     }
 
@@ -643,7 +673,7 @@ public class Player extends Entity {
         if (message.startsWith("/")) {
             Main.commands.dispatch(this, message.substring(1).split(" +"));
         } else {
-            Main.forEachPlayer(player -> {
+            Player.forEach(player -> {
                 player.sendChat(this, message);
             });
         }
@@ -755,7 +785,7 @@ public class Player extends Entity {
         otherPlayers(player -> player.sendEntityPositionAndRotation(id, delta_x, delta_y, delta_z, entityPosition));
         if (isElytraFlying && onGround) {
             isElytraFlying = false;
-            Main.forEachPlayer(player -> player.sendPlayerEntityMetadata(this));
+            Player.forEach(player -> player.sendPlayerEntityMetadata(this));
         }
     }
 
@@ -1016,7 +1046,7 @@ public class Player extends Entity {
             case 5 -> {
                 // finish interacting
                 isShielding = false;
-                Main.forEachPlayer(player -> {
+                Player.forEach(player -> {
                     player.sendPlayerEntityMetadata(this);
                 });
                 if (isHoldingBow(0)) {
@@ -1030,7 +1060,7 @@ public class Player extends Entity {
                 var held = selectedItem();
                 inventory.put((short) (selectedHotbarSlot + 36), offhandItem());
                 inventory.put((short) 45, held);
-                Main.forEachPlayer(player -> {
+                Player.forEach(player -> {
                     // explicitly including this player, this updates the client
                     player.sendEquipment(this);
                 });
@@ -1095,7 +1125,7 @@ public class Player extends Entity {
         printf("Place %d %s %s %f %f %f %b%n", hand, location, face, cursorX, cursorY, cursorZ, insideBlock);
 
         AtomicBoolean blockPlacement = new AtomicBoolean(false);
-        Main.forEachPlayer(player -> {
+        Player.forEach(player -> {
             if (player.intersectsLocation(location)) {
                 blockPlacement.set(true);
             }
@@ -1113,7 +1143,7 @@ public class Player extends Entity {
             return;
         }
         Main.world.setBlock(location, blockId);
-        Main.forEachPlayer(player -> player.sendBlockChange(location, blockId));
+        Player.forEach(player -> player.sendBlockChange(location, blockId));
     }
 
     boolean isHoldingItem(int item, int hand) {
@@ -1150,7 +1180,7 @@ public class Player extends Entity {
 
         if (isHoldingShield(hand)) {
             isShielding = true;
-            Main.forEachPlayer(player -> {
+            Player.forEach(player -> {
                 player.sendPlayerEntityMetadata(this);
             });
         }
@@ -1384,7 +1414,7 @@ public class Player extends Entity {
 
     public void changeGamemode(int mode) {
         sendChangeGameState(3, mode);
-        Main.forEachPlayer(player -> {
+        Player.forEach(player -> {
             player.sendChangeGamemode(this, mode);
         });
     }
@@ -1555,7 +1585,7 @@ public class Player extends Entity {
         var status = packet.read();
         isCreativeFlying = (status & 0x02) != 0;
         isElytraFlying = false;
-        Main.forEachPlayer(player -> player.sendPlayerEntityMetadata(this));
+        Player.forEach(player -> player.sendPlayerEntityMetadata(this));
     }
 
     public void sendExplosion(EntityPosition entityPosition, float strength, Collection<BlockPosition> boomBlocks, Velocity playerKick) {

@@ -1,5 +1,7 @@
 package com.pygostylia.osprey;
 
+import com.pygostylia.osprey.entities.Entity;
+
 import java.time.Duration;
 
 public class EntityPosition {
@@ -120,5 +122,19 @@ public class EntityPosition {
         x += velocity.x() / factor;
         y += velocity.y() / factor;
         z += velocity.z() / factor;
+    }
+
+    public double distanceTo(EntityPosition position) {
+        return Math.hypot(
+                Math.hypot(position.x - x, position.y - y),
+                position.z - z
+        );
+    }
+
+    public double distanceTo(BlockPosition position) {
+        return Math.hypot(
+                Math.hypot(position.x() - x, position.y() - y),
+                position.z() - z
+        );
     }
 }

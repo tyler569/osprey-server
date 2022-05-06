@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Arrays;
+import java.util.Optional;
 
 public class Commands {
     @Command(name = "teleport", args = {"destination: vec3"})
@@ -31,12 +32,12 @@ public class Commands {
             sender.sendError("Not enough arguments");
             return;
         }
-        Player target = Main.playerByName(args[1]);
-        if (target == null) {
+        Optional<Player> target = Player.byName(args[1]);
+        if (target.isEmpty()) {
             sender.sendError(String.format("%s is not online", args[1]));
+            return;
         }
-        assert target != null;
-        sender.teleport(target.blockPosition());
+        sender.teleport(target.get().blockPosition());
     }
 
     @Command(name = "hello")
@@ -80,7 +81,7 @@ public class Commands {
                     Main.world.setBlock(location, blockId);
                     count++;
                     int finalBlockId = blockId;
-                    Main.forEachPlayer((player) -> {
+                    Player.forEach((player) -> {
                         player.sendBlockChange(location, finalBlockId);
                     });
                 }
@@ -91,7 +92,7 @@ public class Commands {
 
     @Command(name = "lag")
     public static void lag(Player sender, String[] args) {
-        Main.forEachPlayer((player) -> {
+        Player.forEach((player) -> {
             player.sendNotification(String.format("%s thought there was some lag", sender.name()));
         });
         sender.kick();
@@ -130,7 +131,7 @@ public class Commands {
     public static void gameState(Player sender, String[] args) {
         var reason = Byte.parseByte(args[1]);
         var value = Float.parseFloat(args[2]);
-        Main.forEachPlayer((player) -> {
+        Player.forEach((player) -> {
             player.sendChangeGameState(reason, value);
         });
     }
@@ -158,7 +159,7 @@ public class Commands {
     @Command(name = "entitystatus", args = {"id: integer", "status: integer(0,255)"})
     @CommandAlias("es")
     public static void entityStatus(Player sender, String[] args) {
-        Main.forEachPlayer(player -> {
+        Player.forEach(player -> {
             player.sendEntityStatus(Integer.parseInt(args[1]), Byte.parseByte(args[2]));
         });
     }
@@ -166,7 +167,7 @@ public class Commands {
     @Command(name = "cloud")
     public static void cloud(Player sender, String[] args) {
         var future = Main.scheduler.submitForEachTick(() -> {
-            Main.forEachPlayer(player -> player.sendEntityStatus(sender.id(), (byte) 43));
+            Player.forEach(player -> player.sendEntityStatus(sender.id(), (byte) 43));
         });
         sender.addFuture(future);
     }
@@ -189,7 +190,7 @@ public class Commands {
                 entityPosition = sender.position().offset(0, 1.8, 0);
             }
             var bolt = new LightningEntity(entityPosition);
-            Main.forEachPlayer(player -> player.sendSpawnEntity(bolt));
+            Player.forEach(player -> player.sendSpawnEntity(bolt));
             bolt.destroy();
         });
         sender.addFuture(future);
@@ -197,11 +198,11 @@ public class Commands {
 
     @Command(name = "kick", args = {"target: player"})
     public static void kick(Player sender, String[] args) {
-        Player target = Main.playerByName(args[1]);
-        if (target == null) {
+        Optional<Player> target = Player.byName(args[1]);
+        if (target.isEmpty()) {
             sender.sendError(args[1] + " is not online");
             return;
         }
-        target.kick();
+        target.get().kick();
     }
 }
